@@ -2,10 +2,10 @@
 import { mkdtemp } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { tokens, perLine } from "./tokens.mjs";
 
 const tools = process.env.TOOLS ?? `${process.env.HOME}/tools/node_modules`;
 const esbuild = await import(`${tools}/esbuild/lib/main.js`);
-const { encode } = await import(`${tools}/gpt-tokenizer/esm/encoding/o200k_base.js`);
 
 const here = new URL(".", import.meta.url).pathname;
 const plugin = join(here, "..");
@@ -28,7 +28,8 @@ for (const [kind, text, answer] of [["sent", "Да, мне понравилос�
     asked.length = 0; reply = answer;
     await aiTranslate(kind, text);
     const system = asked[0].messages[0].content;
-    const lines = system.split("\n").map(l => [encode(l).length, l]).sort((a, b) => b[0] - a[0]);
-    console.log(`\n=== ${kind}: ${encode(system).length} tokens in ${system.split("\n").length} lines ===`);
+    const weight = perLine(system);
+    const lines = system.split("\n").map((l, at) => [weight[at], l]).sort((a, b) => b[0] - a[0]);
+    console.log(`\n=== ${kind}: ${tokens(system)} tokens in ${system.split("\n").length} lines ===`);
     for (const [n, l] of lines.slice(0, 40)) console.log(String(n).padStart(4), l.slice(0, 110));
 }

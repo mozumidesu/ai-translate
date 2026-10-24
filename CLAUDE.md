@@ -74,6 +74,34 @@ over from the older name `AiTranslate`.
 builds it. `meta.js` is the userscript header. `web/dist/` is build output and
 is gitignored. See `web-support-plan.md` if it is in the session.
 
+### The Rust side
+
+`tools/` is a binary of its own, the package `ai-translate-tools`, built as
+`tools`. It is upkeep for both repositories, not part of the plugin: nothing
+in the plugin imports it, and `tools sync` leaves it out of the copy into
+Vencord. Built for `x86_64-pc-windows-msvc`:
+
+```
+cd tools
+cargo build --release --target x86_64-pc-windows-msvc
+cargo test                 # 23 checks on the parts that are easy to get wrong
+```
+
+Every command takes `--root <path>`, which is the repository it works on, so
+the one binary serves this repository and the website's.
+
+| Command | Does |
+|---|---|
+| `tools css --root ../website` | Joins `src/css/*.css` in the order of their names into `public/assets/css/site.css`, byte for byte. `--check` writes nothing and fails when the two disagree, naming the source file, line and column where they part. This is the one the website's CLAUDE.md asks for first |
+| `tools header --root .` | Writes the row of sixteen language links at the top of all sixteen READMEs, each with its own language in bold and the paths at the right depth. Fixes the banner's path too, where there is a banner. `--check` fails and says which file is wrong. The prose is never touched |
+| `tools tokens` | o200k counts, from `tiktoken-rs` with its own tables, so counting needs no network and nothing beside the project. `--lines` counts each line on its own, `--each` several texts at once |
+| `tools preview --root ../website` | Serves the website's `public/` on `localhost:8787`. Not the Worker: no redirects, no `_headers`, nothing cached |
+| `tools sync --root . <vencord>` | Copies the plugin into a Vencord checkout's `src/userplugins/aiTranslate`, leaving out `local/`, `.git/`, `.github/`, `test/`, `tools/`, `docs/` and `web/dist/`. Files whose bytes have not changed are left alone, so Vencord rebuilds only what moved. `--dry-run` says what would happen; `--prune` also deletes what the plugin no longer has |
+
+`tools tokens` is what replaced `gpt-tokenizer` for `test/measure.mjs` and
+`test/rules.mjs`. It counts the same: both scripts print the numbers they
+printed before, line for line.
+
 ### Everything else
 
 | Path | Responsible for |
@@ -81,6 +109,8 @@ is gitignored. See `web-support-plan.md` if it is in the session.
 | `test/prompts.mjs` | 103 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
+| `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
+| `tools/` | The Rust side, a binary of its own. Not part of the plugin and not copied into Vencord |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
 | `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run |
@@ -119,16 +149,21 @@ names the language and explains what was meant.
 
 ```
 node test/prompts.mjs      # 103 checks; needs esbuild
-node test/measure.mjs      # tokens and timing; also needs gpt-tokenizer
-node test/rules.mjs        # prompt lines by weight
+node test/measure.mjs      # tokens and timing; also needs tools/ built
+node test/rules.mjs        # prompt lines by weight; the same
 ```
 
-If esbuild or gpt-tokenizer are not beside the project, point at them with
-`ESBUILD=...` and `TOOLS=...`.
+If esbuild is not beside the project, point at it with `ESBUILD=...`, or at a
+whole folder of modules with `TOOLS=...`.
 
-Building the plugin itself means a Vencord checkout: copy this folder to
-`src/userplugins/aiTranslate` there and run `pnpm build`. That cannot be done
-from a cloud session, only on a machine with Vencord and Discord.
+The two that count tokens need the binary in `tools/`, which they look for in
+`tools/target/`. Build it once with `cargo build --release` there, or say
+where it is with `TOKENS=...`.
+
+Building the plugin itself means a Vencord checkout: put this folder at
+`src/userplugins/aiTranslate` there, which is what `tools sync --root . <vencord>`
+does, and run `pnpm build`. That cannot be done from a cloud session, only on a
+machine with Vencord and Discord.
 
 ## How a change reaches users
 
