@@ -1,0 +1,11 @@
+# Personal working files, not part of the project
+local/
+
+# Built browser version, made by build/github.sh on every release
+web/dist/
+
+# Service files of cloud sync apps, never part of the project
+desktop.ini
+.debris/
+.tmp.driveupload/
+.tmp.drivedownload/
