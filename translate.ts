@@ -54,9 +54,9 @@ const KEEP_VERBATIM =
     + "the start of that line, exactly as written";
 
 /**
- * Without this, a pet form of a name becomes a generic endearment. And a
- * nickname that happens to look like a word gets decoded: one built from a
- * Japanese root and a Russian diminutive once went out as "A little wish".
+ * Without this, a pet form of a name becomes a generic endearment, and a
+ * nickname that happens to look like a word gets decoded into whatever its
+ * parts might mean.
  */
 const NAMES_RULE =
     "Names and nicknames are never translated, and neither are their affectionate or shortened "
@@ -103,30 +103,30 @@ const AGREEMENT_RULE =
     + "neuter, so it is \"это первое сообщение\", never \"эту первую сообщение\". Before answering, read every "
     + "noun phrase back and check each word around the noun against it.";
 
-/** "Пока смогу дышать": the future copied where Russian wants the present. */
+/** "Пока будет время": the future copied where Russian wants the present. */
 const TENSE_RULE =
     "Keep the time the writer meant, and say it the way the target language says that time. Something that was "
-    + "true and is over stays in the past: \"Спасибо, что любила меня\" is \"Thank you for having loved me\", not "
-    + "\"for loving me\", which reads as now. And where the target language uses a different tense for the same "
+    + "true and is over stays in the past: \"Спасибо, что помогала мне\" is \"Thank you for having helped me\", not "
+    + "\"for helping me\", which reads as now. And where the target language uses a different tense for the same "
     + "construction, use its own rather than copying the original's: a Russian clause of time with \"пока\" takes "
-    + "the present where other languages put a future — \"пока могу дышать\", never \"пока смогу дышать\". "
+    + "the present where other languages put a future — \"пока есть время\", never \"пока будет время\". "
     + "The question is never which tense the original word carries, but which tense someone would use to mean that.";
 
-/** "Выбрать себя из этой ситуации": the words carried over, the sense lost. */
+/** An idiom carried over word by word: every word right, the sense gone. */
 const SENSE_RULE =
     "Say what the sentence means. Where the words carried over one by one add up to something nobody says, the "
-    + "carry-over is wrong, however faithful it looks: English \"struggling to choose myself through it all\" is "
-    + "\"пытаюсь выбраться\" or \"пытаюсь не потерять себя\", never \"пытаюсь выбрать себя\". The same holds for "
+    + "carry-over is wrong, however faithful it looks: English \"it cost an arm and a leg\" is \"это стоило "
+    + "целое состояние\", never \"это стоило руку и ногу\". The same holds for "
     + "a word with more than one reading and for an obvious slip of the keyboard: take the reading that leaves the "
     + "sentence making sense. Russian \"из-за вин, что ты не справишься\" is about вина, guilt, not about wine; a "
     + "stray single letter between two clauses is the conjunction the writer meant to type. This is about reading "
     + "the original correctly, never about improving it.";
 
-/** "Я БЫЛ ПОЛНЫМ ГОВНОМ" came back in quiet lower case. */
+/** Shouting typed in capitals came back in quiet lower case. */
 const EMPHASIS_RULE =
     "Capitals the writer typed are emphasis, not a slip: a word or a run of words typed in capitals is "
-    + "typed in capitals in the translation too, both ways round — \"Я БЫЛ ПОЛНЫМ ГОВНОМ\" is \"I WAS A "
-    + "TOTAL PIECE OF SHIT\". And the emphasis stays on the same word instead of moving to another one: an "
+    + "typed in capitals in the translation too, both ways round — \"Я ЖЕ ГОВОРИЛ\" is \"I TOLD YOU "
+    + "SO\". And the emphasis stays on the same word instead of moving to another one: an "
     + "emphatic \"SHE'S the one who…\" is \"ОНА\" in capitals, never a demonstrative such as \"ЭТА\", which "
     + "in Russian points at a person dismissively and changes the tone of the whole sentence.";
 
@@ -145,11 +145,11 @@ const KINSHIP_RULE =
     + "a son's wife and nothing else. Where the conversation does not say which relative is meant, choose "
     + "the word that covers the most cases rather than guessing a narrow one.";
 
-/** "Жезл" came back as "член": a plain word read as a crude one. */
+/** A plain everyday word read as a crude one. */
 const CRUDENESS_RULE =
     "A word stays exactly as plain or as crude as the writer made it. Never render a neutral word by a coarser "
-    + "one, and never read a plain word as a sexual or rude euphemism unless the original plainly is one: \"жезл\" "
-    + "is a rod or a staff, and \"a little rod\" is \"жезл\" or \"палочка\", never \"член\". It holds the other "
+    + "one, and never read a plain word as a sexual or rude euphemism unless the original plainly is one: \"лицо\" "
+    + "is \"face\", never \"mug\", and an everyday word for an ordinary thing is that thing. It holds the other "
     + "way just as firmly: where the writer was blunt or swore, do not soften it.";
 
 /** "Молодец" is a thing people say, not a noun to look up. */
@@ -187,8 +187,8 @@ const ASPECT_RULE =
 
 /**
  * Shouting rather than an initialism: two capitalised words in a row, or one
- * word of four capitals or more. "TV" and "USA" are not shouting; "ПОЛНЫМ
- * ГОВНОМ" is.
+ * word of four capitals or more. "TV" and "USA" are not shouting; "ЖЕ
+ * ГОВОРИЛ" is.
  */
 const SHOUTED = /\p{Lu}{2,}(?:[^\p{L}\p{N}\n]+\p{Lu}{2,})+|\p{Lu}{4,}/u;
 
@@ -463,7 +463,7 @@ function explainPrompt(target: string) {
         `- Open by naming the language the message is written in, in ${target}. Say plainly if you are not certain which it is.`,
         "- Then say what it means, in the plainest words you have.",
         "- Use the conversation above. It usually decides which of several readings is the right one, and who is being addressed.",
-        "- It decides the language too. A word or two that could pass for English inside a conversation held in another language almost always belongs to that language: Indonesian \"bang bang\" is not English.",
+        "- It decides the language too. A word or two that could pass for English inside a conversation held in another language almost always belongs to that language: Romanian \"mare\" is not the English word for a horse.",
         "- Spell every abbreviation out: give the full words the letters stand for, then the meaning. Spanish 'xf' is 'por favor' cut down through 'porfa'; 'wdym' is 'what do you mean'; 'tqm' is 'te quiero mucho'.",
         "- Say where an expression is used if it belongs to one country or region rather than the whole language.",
         "- Name the tone when it carries one: teasing, affectionate, impatient, rude, flirtatious.",
