@@ -14,8 +14,8 @@ import { Settings, useSettings } from "@api/Settings";
 import { classNameFactory } from "@utils/css";
 import { Forms, useEffect } from "@webpack/common";
 
-import { Bridge } from "../bridge";
-import { t } from "../locales";
+import { Bridge } from "../core/bridge";
+import { t } from "../core/locales";
 import { suggestModel } from "./ModelPicker";
 
 const cl = classNameFactory("vc-aitrans-");

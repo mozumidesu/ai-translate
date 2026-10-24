@@ -54,9 +54,13 @@ pub fn run(cli: &mut Cli) -> Result<(), String> {
     let named = cli.rest();
     cli.nothing_left()?;
 
-    if !root.join("index.tsx").is_file() || !root.join("translate.ts").is_file() {
+    // The same test Vencord itself makes: a plugin is an index.tsx with a
+    // definePlugin call in it. Nothing here depends on where the rest sits.
+    let entry = fs::read_to_string(root.join("index.tsx")).unwrap_or_default();
+    if !entry.contains("definePlugin") {
         return Err(format!(
-            "{} does not look like the plugin. Point --root at its repository.",
+            "{} does not look like the plugin: no index.tsx with a definePlugin call in it. \
+             Point --root at its repository.",
             root.display()
         ));
     }
@@ -224,7 +228,7 @@ mod tests {
     #[test]
     fn what_the_plugin_is_built_from_is_kept() {
         assert!(!out("index.tsx"));
-        assert!(!out("translate.ts"));
+        assert!(!out("core/translate.ts"));
         assert!(!out("web/intercept.ts"));
         assert!(!out("build/github.sh"));
         assert!(!out("install/install.ps1"));

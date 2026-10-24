@@ -12,7 +12,7 @@ import { OptionType } from "@utils/types";
 
 import { FallbackNotice } from "./ui/FallbackNotice";
 import { KeepHelp } from "./ui/KeepHelp";
-import { LOCALES, t } from "./locales";
+import { LOCALES, t } from "./core/locales";
 import { ModelPicker } from "./ui/ModelPicker";
 import { SectionTitle } from "./ui/SectionTitle";
 import { UpdatePanel } from "./ui/UpdatePanel";

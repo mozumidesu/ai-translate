@@ -102,7 +102,7 @@ npx --yes "$pnpm" install --frozen-lockfile
 # A copy running in a browser has no build.json on a disk to read, so the name
 # of this build is written into the plugin here, where it is known. A support
 # report from the browser then names the same build a desktop one would.
-stamp="src/userplugins/aiTranslate/bridge.ts"
+stamp="src/userplugins/aiTranslate/core/bridge.ts"
 sed -i "s|^const BROWSER_BUILD = \"web\";\$|const BROWSER_BUILD = \"$build\";|" "$stamp"
 grep -q "const BROWSER_BUILD = \"$build\";" "$stamp" || {
     echo "Could not write the build name into bridge.ts. Has the line moved?"
