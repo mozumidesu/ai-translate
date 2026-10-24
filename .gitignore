@@ -4,6 +4,12 @@ local/
 # Built browser version, made by build/github.sh on every release
 web/dist/
 
+# npm or pnpm started in this folder by mistake. The plugin has no package
+# manager of its own: it is built from inside a Vencord checkout.
+node_modules/
+package.json
+pnpm-lock.yaml
+
 # Service files of cloud sync apps, never part of the project
 desktop.ini
 .debris/
