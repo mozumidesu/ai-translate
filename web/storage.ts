@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Config } from "../host";
+import { Config } from "../core/host";
 
 declare const GM_getValue: (<T>(name: string, fallback: T) => T) | undefined;
 declare const GM_setValue: ((name: string, value: unknown) => void) | undefined;

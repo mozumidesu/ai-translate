@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { config, useHost } from "../host";
-import { t } from "../locales";
+import { config, useHost } from "../core/host";
+import { t } from "../core/locales";
 import { browserHost } from "./host";
 import { install } from "./intercept";
 import { installDock, openPanel } from "./panel";

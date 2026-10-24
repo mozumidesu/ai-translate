@@ -9,11 +9,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Bridge } from "../bridge";
-import { isChannelEnabled, toggleChannel } from "../chats";
-import { config, set } from "../host";
-import { LANGUAGES } from "../languages";
-import { LOCALES, t } from "../locales";
+import { Bridge } from "../core/bridge";
+import { isChannelEnabled, toggleChannel } from "../core/chats";
+import { config, set } from "../core/host";
+import { LANGUAGES } from "../core/languages";
+import { LOCALES, t } from "../core/locales";
 import { addStyle, ui } from "./toast";
 
 /** Which chat is open. The address bar says it, and says it reliably. */

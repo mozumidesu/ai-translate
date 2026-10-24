@@ -9,8 +9,8 @@ import { classNameFactory } from "@utils/css";
 import { relaunch } from "@utils/native";
 import { Forms, useState } from "@webpack/common";
 
-import { onDesktop } from "../bridge";
-import { t } from "../locales";
+import { onDesktop } from "../core/bridge";
+import { t } from "../core/locales";
 import { checkForUpdate, installUpdate, UpdateState } from "../updater";
 
 const cl = classNameFactory("vc-aitrans-");

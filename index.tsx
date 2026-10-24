@@ -23,13 +23,13 @@ import { Message } from "@vencord/discord-types";
 import { ChannelStore, Menu, Parser, useEffect, useState, UserStore } from "@webpack/common";
 
 import { SettingsHeader } from "./ui/Feedback";
-import { keepPieces } from "./keep";
-import { LANGUAGES } from "./languages";
-import { currentLocale, shapeLanguageName, t } from "./locales";
+import { keepPieces } from "./core/keep";
+import { LANGUAGES } from "./core/languages";
+import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
-import { isChannelEnabled, toggleChannel } from "./chats";
+import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult } from "./translate";
+import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
