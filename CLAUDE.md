@@ -54,11 +54,15 @@ it is also what lets the tests run the real core without Discord.
 | `native.ts` | The desktop end, in Electron's main process: provider requests (renderer requests are blocked by CORS) and installing updates |
 | `settings.ts` | The settings page and its migrations |
 | `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours |
-| `modal.tsx` | The panel that opens on left-clicking the button |
-| `Feedback.tsx` | The feedback form at the top of the settings page |
-| `ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
-| `FallbackNotice.tsx`, `KeepHelp.tsx`, `SectionTitle.tsx`, `UpdatePanel.tsx` | Smaller settings-page pieces |
+| `ui/modal.tsx` | The panel that opens on left-clicking the button |
+| `ui/Feedback.tsx` | The feedback form at the top of the settings page |
+| `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
+| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
+
+Everything the settings page and the panel are built from sits in `ui/`. It is
+an ordinary folder, not something Vencord knows about: only `index.tsx` and
+`native.ts` are found by name, and the rest is reached by relative import.
 
 The plugin's name in `definePlugin` is **AI Translate**, with a space. Vencord
 stores settings under that name and builds the bridge to `native.ts` from it,

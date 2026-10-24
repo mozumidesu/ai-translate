@@ -7,7 +7,7 @@
 
 import { classNameFactory } from "@utils/css";
 
-import { t } from "./locales";
+import { t } from "../locales";
 
 const cl = classNameFactory("vc-aitrans-");
 
