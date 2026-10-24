@@ -135,14 +135,14 @@ const IN = { name: "incoming", text: incoming };
 // Each line below is a complaint that came back from real use. The phrase is
 // the part of the rule that answers it.
 const RULES = [
-    ["a past clause stays past", "Thank you for having loved me"],
-    ["a time clause takes the target's own tense", "пока могу дышать"],
+    ["a past clause stays past", "Thank you for having helped me"],
+    ["a time clause takes the target's own tense", "пока есть время"],
     ["words agree with their noun", "это первое сообщение"],
     ["gender is looked up in the target language", "gender does not travel between languages"],
-    ["a carry-over that means nothing is wrong", "пытаюсь выбраться"],
+    ["a carry-over that means nothing is wrong", "это стоило целое состояние"],
     ["an ambiguous word is read by sense", "guilt, not about wine"],
     ["a slip of the keyboard is read, not copied", "the conjunction the writer meant to type"],
-    ["a plain word is never made crude", "never \"член\""],
+    ["a plain word is never made crude", "never \"mug\""],
     ["a missing copula is put back", "Yes, it's better tomorrow"],
     ["family words are not guessed narrowly", "a son's wife and nothing else"],
     ["a name is not respelled by guesswork", "never \"Кляд\""],
@@ -178,7 +178,7 @@ check("the writer's own capitals are kept", IN, "typed in lower case stays in lo
 // Rules about something a message may or may not contain go only with the
 // messages that contain it, so a plain message does not pay for them.
 const CONDITIONAL = [
-    ["capitals the writer typed are kept", "I WAS A TOTAL PIECE OF SHIT"],
+    ["capitals the writer typed are kept", "I TOLD YOU SO"],
     ["emphasis stays on the same word", "never a demonstrative"],
     ["repeated marks are tone", "\"??\" is not \"?\""],
     ["app names are names", "\"tik\" is TikTok"],
@@ -250,19 +250,19 @@ await behaves(
     "shouting that was answered quietly is asked for again",
     translated(
         "sent",
-        "Я признаю, Я БЫЛ ПОЛНЫМ ГОВНОМ",
-        "[ru] I admit, I was a total piece of shit",
-        "[ru] I admit, I WAS A TOTAL PIECE OF SHIT"
+        "Я признаю, Я ЖЕ ГОВОРИЛ",
+        "[ru] I admit, I told you so",
+        "[ru] I admit, I TOLD YOU SO"
     ),
-    "I admit, I WAS A TOTAL PIECE OF SHIT"
+    "I admit, I TOLD YOU SO"
 );
 counted("and that took a second request", 2);
 
 // An answer that keeps the capitals is not asked for twice.
 await behaves(
     "shouting answered loudly is left alone",
-    translated("sent", "Скажу прямо, Я БЫЛ ПОЛНЫМ ГОВНОМ", "[ru] I'll say it plainly, I WAS A TOTAL PIECE OF SHIT"),
-    "I'll say it plainly, I WAS A TOTAL PIECE OF SHIT"
+    translated("sent", "Скажу прямо, Я ЖЕ ГОВОРИЛ", "[ru] I'll say it plainly, I TOLD YOU SO"),
+    "I'll say it plainly, I TOLD YOU SO"
 );
 counted("and that one request was enough", 1);
 
