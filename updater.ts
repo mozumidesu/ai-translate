@@ -14,8 +14,8 @@ import { showNotification } from "@api/Notifications";
 import { Settings } from "@api/Settings";
 import { relaunch } from "@utils/native";
 
-import { Bridge } from "./bridge";
-import { t } from "./locales";
+import { Bridge } from "./core/bridge";
+import { t } from "./core/locales";
 
 /** How often a copy looks for a release on its own. */
 const CHECK_EVERY_MS = 2 * 24 * 60 * 60 * 1000;

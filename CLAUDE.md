@@ -19,46 +19,54 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 - **Never commit anything from `local/`.** One line in `.gitignore` covers the
   whole folder: personal scripts, the feedback relay's source, publishing
   addresses. A cloud session cannot see it at all, which is intended.
-- **Every user-visible string exists in 16 languages** in `locales.ts`. Adding
+- **Every user-visible string exists in 16 languages** in `core/locales.ts`. Adding
   or changing one means changing all 16, not only English.
 - **The README exists in 16 languages too**: `README.md` plus
   `docs/README.<code>.md`. Same rule.
 
 ## What each file does
 
-### The core — runs anywhere, knows nothing about Vencord
+### `core/` — runs anywhere, knows nothing about Vencord
 
 | File | Responsible for |
 |---|---|
-| `translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context, and pacing against the provider's rate limits. The biggest file and the one that matters most |
-| `host.ts` | The handful of things the core cannot know by itself: settings and writing them, recent messages, who the current user is, how to show a notice. A host is installed once at load; until then these answer empty rather than throwing |
-| `bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser) |
-| `net.ts` | The one thing that differs between hosts: how to make a single HTTP request (`fetch` or `GM_xmlhttpRequest`) |
-| `providers.ts` | Each provider's address and request shape, reading rate limits out of responses, and every retry rule |
-| `keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards |
-| `languages.ts` | The language list used by the dropdowns |
-| `locales.ts` | Interface text in 16 languages. Large, mostly data |
-| `chats.ts` | Which chats have auto-translation on. One rule for every host |
+| `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context, and pacing against the provider's rate limits. The biggest file and the one that matters most |
+| `core/host.ts` | The handful of things the core cannot know by itself: settings and writing them, recent messages, who the current user is, how to show a notice. A host is installed once at load; until then these answer empty rather than throwing |
+| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser) |
+| `core/net.ts` | The one thing that differs between hosts: how to make a single HTTP request (`fetch` or `GM_xmlhttpRequest`) |
+| `core/providers.ts` | Each provider's address and request shape, reading rate limits out of responses, and every retry rule |
+| `core/keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards |
+| `core/languages.ts` | The language list used by the dropdowns |
+| `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
+| `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
 
 These eight (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
 `languages`, `locales`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
+The folder is the boundary made visible: nothing in `core/` imports anything
+above it, and that is worth keeping true. `web/` has a `host.ts` of its own, so
+inside `web/` a bare `./host` is that one and the core's is `../core/host`.
+
 ### The Vencord side
 
 | File | Responsible for |
 |---|---|
 | `index.tsx` | The plugin as Vencord sees it: the chat-bar button, the block under a message, the right-click menu, the `definePlugin` call |
-| `vencord-host.ts` | Answers `host.ts` using Vencord: its settings store, its message store, the current user, toasts. Reads settings directly from `Settings.plugins["AI Translate"]` rather than through `settings.ts`, because the host has to be ready before the settings page loads |
+| `vencord-host.ts` | Answers `core/host.ts` using Vencord: its settings store, its message store, the current user, toasts. Reads settings directly from `Settings.plugins["AI Translate"]` rather than through `settings.ts`, because the host has to be ready before the settings page loads |
 | `native.ts` | The desktop end, in Electron's main process: provider requests (renderer requests are blocked by CORS) and installing updates |
 | `settings.ts` | The settings page and its migrations |
 | `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours |
-| `modal.tsx` | The panel that opens on left-clicking the button |
-| `Feedback.tsx` | The feedback form at the top of the settings page |
-| `ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
-| `FallbackNotice.tsx`, `KeepHelp.tsx`, `SectionTitle.tsx`, `UpdatePanel.tsx` | Smaller settings-page pieces |
+| `ui/modal.tsx` | The panel that opens on left-clicking the button |
+| `ui/Feedback.tsx` | The feedback form at the top of the settings page |
+| `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
+| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
+
+Everything the settings page and the panel are built from sits in `ui/`. It is
+an ordinary folder, not something Vencord knows about: only `index.tsx` and
+`native.ts` are found by name, and the rest is reached by relative import.
 
 The plugin's name in `definePlugin` is **AI Translate**, with a space. Vencord
 stores settings under that name and builds the bridge to `native.ts` from it,
@@ -118,7 +126,8 @@ printed before, line for line.
 
 ## Prompt rules
 
-Each rule is a constant in `translate.ts`, written as full English prose, with
+Each rule is a constant in `core/translate.ts`, written as full English prose,
+with
 one comment line above it saying what went wrong without it. Each is pinned by
 a check in `test/prompts.mjs` named after that same failure. Those two anchors
 cannot drift from the code, so there is no third prose copy of them anywhere —
@@ -134,7 +143,8 @@ When changing a rule:
   nothing personal, nothing crude, nothing that points at the author. Grammar
   demonstrates just as well on a mundane sentence.
 - Rules that apply to one language, or to something a message may not contain,
-  are only sent when they can matter — see the gating in `translate.ts`. A rule
+  are only sent when they can matter — see the gating in `core/translate.ts`. A
+  rule
   added unconditionally costs every user tokens on every message.
 - Everything that varies per message goes after the "Answer format" line, under
   "For this message in particular:". Everything above it must be identical from

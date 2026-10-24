@@ -15,10 +15,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { isChannelEnabled } from "../chats";
-import { config, notice } from "../host";
-import { keepPieces } from "../keep";
-import { aiTranslate, isNotWorthTranslating } from "../translate";
+import { isChannelEnabled } from "../core/chats";
+import { config, notice } from "../core/host";
+import { keepPieces } from "../core/keep";
+import { aiTranslate, isNotWorthTranslating } from "../core/translate";
 
 /** Thrown instead of a translation when the message must not go out. */
 class Held extends Error { }

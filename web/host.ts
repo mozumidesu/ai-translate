@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Host, Said } from "../host";
+import { Host, Said } from "../core/host";
 import { toast } from "./toast";
 import { save, settings } from "./storage";
 
