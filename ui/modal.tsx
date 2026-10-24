@@ -15,10 +15,10 @@ import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
 import { ChannelStore, Forms, Modal, openModal, SearchableSelect, useMemo, useState } from "@webpack/common";
 
-import { LANGUAGES } from "./languages";
-import { isRightToLeft, t } from "./locales";
-import { isChannelEnabled, setChannelEnabled } from "./chats";
-import { settings } from "./settings";
+import { LANGUAGES } from "../languages";
+import { isRightToLeft, t } from "../locales";
+import { isChannelEnabled, setChannelEnabled } from "../chats";
+import { settings } from "../settings";
 
 const thinkingOptions = () => [
     { value: "low", label: t("thinking.low") },

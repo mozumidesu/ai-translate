@@ -15,9 +15,9 @@ import { Settings, useSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import { Forms, SearchableSelect, TextInput, useEffect, useState } from "@webpack/common";
 
-import { Bridge } from "./bridge";
-import { t } from "./locales";
-import { FREE_MODELS } from "./providers";
+import { Bridge } from "../bridge";
+import { t } from "../locales";
+import { FREE_MODELS } from "../providers";
 
 const PROVIDERS = ["gemini", "groq", "anthropic", "glm", "openai"];
 

@@ -14,8 +14,8 @@ import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Forms, Modal, openModal, Tooltip, useEffect, useState, UserStore } from "@webpack/common";
 
-import { Bridge } from "./bridge";
-import { currentLocale, isRightToLeft, t } from "./locales";
+import { Bridge } from "../bridge";
+import { currentLocale, isRightToLeft, t } from "../locales";
 
 const cl = classNameFactory("vc-aitrans-");
 

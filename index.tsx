@@ -22,11 +22,11 @@ import definePlugin, { IconComponent } from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { ChannelStore, Menu, Parser, useEffect, useState, UserStore } from "@webpack/common";
 
-import { SettingsHeader } from "./Feedback";
+import { SettingsHeader } from "./ui/Feedback";
 import { keepPieces } from "./keep";
 import { LANGUAGES } from "./languages";
 import { currentLocale, shapeLanguageName, t } from "./locales";
-import { openAiTranslateModal } from "./modal";
+import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./chats";
 import { migrateSettings, settings } from "./settings";
 import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult } from "./translate";
