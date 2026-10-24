@@ -1,0 +1,336 @@
+.vc-aitrans-accessory {
+    color: var(--text-muted);
+    margin-top: 0.5em;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.2rem;
+    white-space: break-spaces;
+}
+
+.vc-aitrans-accessory-icon {
+    margin-right: 0.25em;
+    vertical-align: text-bottom;
+}
+
+.vc-aitrans-note {
+    display: block;
+    opacity: 0.8;
+}
+
+.vc-aitrans-dismiss {
+    all: unset;
+    cursor: pointer;
+    color: var(--text-link);
+}
+
+.vc-aitrans-dismiss:is(:hover, :focus) {
+    text-decoration: underline;
+}
+
+.vc-aitrans-active {
+    color: var(--green-360);
+}
+
+.vc-aitrans-chat-button {
+    scale: 1.085;
+}
+
+/* ── the two links on the plugin's page ── */
+
+/* Vencord draws the authors last in the section above; the lift, set from
+   Feedback.tsx, brings the links level with their avatars. */
+.vc-aitrans-header-links {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+}
+
+.vc-aitrans-link-button {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--interactive-normal);
+    background: var(--background-secondary);
+}
+
+.vc-aitrans-link-button:is(:hover, :focus-visible) {
+    color: var(--interactive-hover);
+    background: var(--background-secondary-alt);
+}
+
+/* ── the support window ── */
+
+.vc-aitrans-feedback-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
+
+.vc-aitrans-feedback-badge {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    color: var(--text-normal);
+    background: var(--background-secondary);
+}
+
+.vc-aitrans-field {
+    margin-bottom: 16px;
+}
+
+.vc-aitrans-field-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-aitrans-field-label {
+    margin-bottom: 8px;
+}
+
+.vc-aitrans-optional {
+    color: var(--text-muted);
+    font-weight: 400;
+    text-transform: none;
+}
+
+.vc-aitrans-counter {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.vc-aitrans-counter-out {
+    color: var(--text-danger, var(--status-danger));
+}
+
+.vc-aitrans-hint {
+    margin-top: 6px;
+    color: var(--text-muted);
+}
+
+/* Pulled up against the setting above it, which it belongs to. Below it,
+   Vencord's own gap between settings is all the space it needs. */
+.vc-aitrans-warning.vc-aitrans-warning-attached {
+    margin-top: -14px;
+    margin-bottom: 0;
+}
+
+.vc-aitrans-warning {
+    margin-top: 4px;
+    color: var(--text-danger, var(--status-danger));
+}
+
+/* Drawn here rather than borrowed from Discord: the client restyles its own
+   inputs freely. The class is doubled and the outline colour fixed so neither
+   a reset rule nor a missing theme variable can rub the border out. */
+input.vc-aitrans-input.vc-aitrans-input,
+textarea.vc-aitrans-input.vc-aitrans-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 2px solid rgb(128 128 128 / 45%);
+    border-radius: 8px;
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-normal);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.25rem;
+    transition: border-color 0.15s ease;
+}
+
+input.vc-aitrans-input.vc-aitrans-input::placeholder,
+textarea.vc-aitrans-input.vc-aitrans-input::placeholder {
+    color: var(--text-muted);
+}
+
+input.vc-aitrans-input.vc-aitrans-input:focus,
+textarea.vc-aitrans-input.vc-aitrans-input:focus {
+    outline: none;
+    border-color: #5865f2;
+}
+
+input.vc-aitrans-input.vc-aitrans-input-wrong,
+input.vc-aitrans-input.vc-aitrans-input-wrong:focus {
+    border-color: #ed4245;
+}
+
+textarea.vc-aitrans-input.vc-aitrans-textarea {
+    height: 108px;
+    /* Long messages scroll; the corner grip belongs to a web form, not to this. */
+    resize: none;
+    overflow-y: auto;
+}
+
+.vc-aitrans-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 2px dashed rgb(128 128 128 / 45%);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.vc-aitrans-drop-over {
+    border-color: var(--brand-500, var(--text-link));
+    border-style: solid;
+}
+
+.vc-aitrans-drop-text {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
+.vc-aitrans-shots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.vc-aitrans-shot {
+    position: relative;
+}
+
+.vc-aitrans-shot img {
+    display: block;
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.vc-aitrans-shot-remove {
+    all: unset;
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    background: var(--background-floating);
+    color: var(--interactive-normal);
+    font-size: 0.875rem;
+    line-height: 1;
+    box-shadow: var(--elevation-low);
+}
+
+.vc-aitrans-shot-remove:is(:hover, :focus-visible) {
+    color: var(--interactive-hover);
+}
+
+.vc-aitrans-wide {
+    width: 100%;
+}
+
+.vc-aitrans-centre {
+    display: flex;
+    justify-content: center;
+}
+
+/* Wider than the words need, narrower than half the window. */
+.vc-aitrans-altbutton {
+    min-width: 200px;
+}
+
+/* The same gap above and below, so it sits between the two buttons rather
+   than belonging to one of them. */
+.vc-aitrans-feedback-or {
+    margin: 12px 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ── updates, at the foot of the settings ── */
+
+.vc-aitrans-updates {
+    margin-bottom: 16px;
+}
+
+.vc-aitrans-hint.vc-aitrans-hint-bad {
+    color: var(--text-danger, var(--status-danger));
+}
+
+/* ── the buttons under the model chooser ── */
+
+.vc-aitrans-model-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* ── keeping text untranslated, in the settings ── */
+
+/* Discord strips list styling everywhere, so the bullets are put back here. */
+.vc-aitrans-keep-list {
+    margin: 0;
+    padding: 0;
+    padding-inline-start: 1.25em;
+    font-size: 0.875rem;
+}
+
+.vc-aitrans-keep-list > li {
+    display: list-item;
+    list-style: disc outside;
+}
+
+.vc-aitrans-keep-list > li::marker {
+    color: var(--text-subtle);
+}
+
+.vc-aitrans-keep-list > li + li {
+    margin-top: 2px;
+}
+
+/* A fixed grey rather than a theme variable, so it shows in every theme. */
+.vc-aitrans-example {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgb(128 128 128 / 18%);
+    font-family: var(--font-code, monospace);
+    font-size: 0.875em;
+    white-space: pre-wrap;
+}
+
+/* ── the title over the optional settings ── */
+
+.vc-aitrans-section-title {
+    text-align: center;
+    font-size: 1.125rem;
+
+    /*
+     * The colour of a setting's own name: white in a dark theme, and dark in a
+     * light one, where white would vanish into the background.
+     */
+    color: var(--text-strong, var(--header-primary, #fff));
+
+    /*
+     * Vencord puts 1.25em between settings. The title stands further from the
+     * settings above it and close to the ones it names.
+     */
+    margin-top: 12px;
+    margin-bottom: -11px;
+}
