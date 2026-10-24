@@ -10,7 +10,7 @@
 
 import { Text } from "@webpack/common";
 
-import { t } from "./locales";
+import { t } from "../core/locales";
 
 /** "{example}" in a sentence becomes the example itself, set as code. */
 function withExample(key: string, example: string) {

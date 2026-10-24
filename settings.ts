@@ -10,12 +10,12 @@
 import { definePluginSettings, Settings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
-import { FallbackNotice } from "./FallbackNotice";
-import { KeepHelp } from "./KeepHelp";
-import { LOCALES, t } from "./locales";
-import { ModelPicker } from "./ModelPicker";
-import { SectionTitle } from "./SectionTitle";
-import { UpdatePanel } from "./UpdatePanel";
+import { FallbackNotice } from "./ui/FallbackNotice";
+import { KeepHelp } from "./ui/KeepHelp";
+import { LOCALES, t } from "./core/locales";
+import { ModelPicker } from "./ui/ModelPicker";
+import { SectionTitle } from "./ui/SectionTitle";
+import { UpdatePanel } from "./ui/UpdatePanel";
 
 /** The backup provider needs a key of its own, so two can be on screen. */
 function apiKeyName(id: string) {

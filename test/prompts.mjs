@@ -41,7 +41,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./host";\nexport { aiTranslate, isJustAName } from "./translate";\n`,
+        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, isJustAName } from "./core/translate";\n`,
         resolveDir: plugin,
         loader: "ts"
     },

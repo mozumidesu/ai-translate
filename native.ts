@@ -13,8 +13,8 @@ import { IpcMainInvokeEvent } from "electron";
 import { readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 
-import { fetchNet } from "./net";
-import { listModels, postFeedback, sendChat } from "./providers";
+import { fetchNet } from "./core/net";
+import { listModels, postFeedback, sendChat } from "./core/providers";
 
 export async function makeAiTranslateRequest(_: IpcMainInvokeEvent, payload: string) {
     return sendChat(fetchNet, payload);

@@ -16,7 +16,7 @@
 import { Settings } from "@api/Settings";
 import { MessageStore, showToast, UserStore } from "@webpack/common";
 
-import { Config, Host, Said, useHost } from "./host";
+import { Config, Host, Said, useHost } from "./core/host";
 
 export const vencordHost: Host = {
     config: () => ((Settings.plugins as any)?.["AI Translate"] ?? {}) as Config,

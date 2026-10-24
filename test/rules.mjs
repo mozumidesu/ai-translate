@@ -11,7 +11,7 @@ const here = new URL(".", import.meta.url).pathname;
 const plugin = join(here, "..");
 const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 await esbuild.build({
-    stdin: { contents: `export { useHost } from "./host";\nexport { aiTranslate } from "./translate";\n`, resolveDir: plugin, loader: "ts" },
+    stdin: { contents: `export { useHost } from "./core/host";\nexport { aiTranslate } from "./core/translate";\n`, resolveDir: plugin, loader: "ts" },
     bundle: true, format: "esm", platform: "node", outfile: join(out, "core.mjs"), logLevel: "error"
 });
 
