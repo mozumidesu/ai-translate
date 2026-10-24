@@ -7,17 +7,17 @@
  * translation once the network is taken out of the picture.
  *
  * Run it from the plugin folder:  node test/measure.mjs
- * Needs esbuild and gpt-tokenizer beside each other in ~/tools.
+ * Needs esbuild beside the project, and the tool in tools/ built for the
+ * token counts.
  */
 
 import { mkdtemp } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { perText } from "./tokens.mjs";
 
 const tools = process.env.TOOLS ?? `${process.env.HOME}/tools/node_modules`;
 const esbuild = await import(`${tools}/esbuild/lib/main.js`);
-const { encode } = await import(`${tools}/gpt-tokenizer/esm/encoding/o200k_base.js`);
-const tokens = text => encode(text).length;
 
 const here = new URL(".", import.meta.url).pathname;
 const plugin = join(here, "..");
@@ -83,7 +83,8 @@ async function cost(kind, text, answer, withContext) {
     const sent = asked[0];
     const system = sent.messages[0].content;
     const user = sent.messages[1].content;
-    return { requests: asked.length, chars: system.length + user.length, tokens: tokens(system) + tokens(user), max: sent.max_tokens };
+    const [forSystem, forUser] = perText([system, user]);
+    return { requests: asked.length, chars: system.length + user.length, tokens: forSystem + forUser, max: sent.max_tokens };
 }
 
 const rows = [

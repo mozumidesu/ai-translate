@@ -1,0 +1,21 @@
+[package]
+name = "ai-translate-tools"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "Upkeep for AI Translate and zolatau.com: the generated stylesheet, the sixteen READMEs, token counts, a preview server and the copy into Vencord"
+publish = false
+
+# One binary, called from both repositories as `tools <command> --root <path>`.
+[[bin]]
+name = "tools"
+path = "src/main.rs"
+
+[dependencies]
+# o200k, the tokenizer the models count with. Carries its own tables, so
+# counting never needs the network.
+tiktoken-rs = "0.12"
+
+[profile.release]
+lto = true
+strip = true
