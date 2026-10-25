@@ -114,7 +114,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 103 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 130 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
 | `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
@@ -158,7 +158,7 @@ names the language and explains what was meant.
 ## Running things
 
 ```
-node test/prompts.mjs      # 103 checks; needs esbuild
+node test/prompts.mjs      # 130 checks; needs esbuild
 node test/measure.mjs      # tokens and timing; also needs tools/ built
 node test/rules.mjs        # prompt lines by weight; the same
 ```
