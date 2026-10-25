@@ -96,12 +96,42 @@
         }
     }
 
+    # Where Discord's own installer puts each version. Vencord's installer
+    # looks in exactly these folders, and every process of a version carries
+    # the name of its folder.
+    $DiscordVersions = [ordered]@{
+        Stable      = "Discord"
+        PTB         = "DiscordPTB"
+        Canary      = "DiscordCanary"
+        Development = "DiscordDevelopment"
+    }
+
+    # Vencord's installer asks which Discord to work on itself, but by then
+    # Discord has had to be closed already, and nothing here knows which one to
+    # close. So the question is asked first and the answer handed to it.
+    function Select-Discord([string]$Title) {
+        $found = @()
+        foreach ($version in $DiscordVersions.Keys) {
+            $path = Join-Path $env:LOCALAPPDATA $DiscordVersions[$version]
+            if (Test-Path $path) { $found += [pscustomobject]@{ Label = "$version - $path"; Path = $path } }
+        }
+
+        $index = Select-Option $Title (@($found.Label) + "Another folder")
+        if ($index -lt $found.Count) { return $found[$index].Path }
+
+        $typed = (Read-Host "Path to the Discord folder").Trim('"', " ")
+        if (-not $typed) { Stop-Here "Nothing was typed, so nothing was changed." }
+        if (-not (Test-Path $typed)) { Stop-Here "There is no folder $typed." }
+        return $typed
+    }
+
     # Vencord's installer closes only one of Discord's many processes. The
     # others can still be running, even finishing an update of Discord's own,
     # and then the patch fails halfway with "cannot find the file specified".
-    # So every Discord is closed first.
-    function Close-Discord {
-        $running = Get-Process -Name "Discord", "DiscordPTB", "DiscordCanary", "DiscordDevelopment" -ErrorAction SilentlyContinue
+    # They all answer to the name of the folder they run from, so every process
+    # of the chosen Discord goes and no other version is touched.
+    function Close-Discord([string]$Path) {
+        $running = @(Get-Process -Name (Split-Path $Path -Leaf) -ErrorAction SilentlyContinue)
         if (-not $running) { return }
 
         Write-Host "Closing Discord..."
@@ -110,17 +140,19 @@
     }
 
     # Vencord's own installer, told to point Discord at these files instead of
-    # downloading plain Vencord. It asks which Discord to patch.
-    function Invoke-VencordInstaller([string]$Action, [string]$Failure) {
+    # downloading plain Vencord, and told which Discord to work on so that it
+    # does not ask a second time.
+    function Invoke-VencordInstaller([string]$Action, [string]$Title, [string]$Failure) {
         $cli = Join-Path $AitHome "VencordInstallerCli.exe"
         Get-File $VencordInstaller $cli
 
-        Close-Discord
+        $discord = Select-Discord $Title
+        Close-Discord $discord
 
         $env:VENCORD_USER_DATA_DIR = $AitHome
         $env:VENCORD_DEV_INSTALL = "1"
         try {
-            & $cli $Action
+            & $cli $Action --location $discord
             if ($LASTEXITCODE -ne 0) { Stop-Here $Failure }
         }
         finally {
@@ -162,7 +194,7 @@
         }
 
         if ($patch) {
-            Invoke-VencordInstaller "--install" "Patching Discord failed."
+            Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
             if ($moving) { Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue }
         }
 
@@ -178,7 +210,7 @@
         if (-not (Test-Path $AitHome)) { Stop-Here "Nothing to remove: $AitHome does not exist." }
 
         Write-Host "Removing the patch from Discord..."
-        Invoke-VencordInstaller "--uninstall" "Removing the patch failed."
+        Invoke-VencordInstaller "--uninstall" "Which Discord should the patch be removed from?" "Removing the patch failed."
 
         if ((Select-Option "Also delete the downloaded files in $($AitHome)?" @("No", "Yes")) -eq 1) {
             try {

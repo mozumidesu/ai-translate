@@ -103,6 +103,27 @@ function rememberOriginal(original: string, translated: string) {
     sentOriginals.set(translated, original);
 }
 
+/**
+ * Discord's message box carries a quote on by itself: inside one, every new
+ * line arrives with "> " already on it. The writer typed the marker once, so
+ * the echo of what they wrote shows it once.
+ */
+function asTyped(original: string) {
+    let quoting = false;
+
+    return original.split("\n").map(line => {
+        const marker = line.match(/^\s*>{1,3}\s?/)?.[0];
+        if (!marker) {
+            quoting = false;
+            return line;
+        }
+
+        const shown = quoting ? line.slice(marker.length) : line;
+        quoting = true;
+        return shown;
+    }).join("\n");
+}
+
 function TranslationAccessory({ message }: { message: Message; }) {
     const [translation, setTranslation] = useState<Shown | undefined>(() => shownTranslations.get(message.id));
 
@@ -142,7 +163,7 @@ function TranslationAccessory({ message }: { message: Message; }) {
                         }}>{t("message.hide")}</button>
                     </span>
                 </>
-                : <>{t("message.youWrote")} {original}</>}
+                : <>{t("message.youWrote")} {asTyped(original)}</>}
         </span>
     );
 }
