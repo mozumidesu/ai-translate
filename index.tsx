@@ -29,7 +29,7 @@ import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult } from "./core/translate";
+import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -292,19 +292,33 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         // model mistakes for a word.
         if (isJustAName(original, channelId)) return;
 
-        // A message can wait half a minute for a provider's budget, with its
-        // text still in the chat box; Enter pressed again meanwhile must not
-        // send it a second time.
+        // A message can wait on a provider's budget with its text still in the
+        // chat box; Enter pressed again meanwhile must not send it a second time.
         if (inFlight.has(sending)) return { cancel: true };
         inFlight.add(sending);
 
+        // Escape gives up on a translation that is keeping the chat box
+        // waiting. The key is watched rather than taken, so Discord keeps
+        // doing whatever else it does with it.
+        const giveUp = new AbortController();
+        const onKey = (e: KeyboardEvent) => void (e.key === "Escape" && giveUp.abort());
+        document.addEventListener("keydown", onKey, true);
+
         try {
-            message.content = (await aiTranslate("sent", original, collectContext(channelId))).text;
+            message.content = (await aiTranslate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
         } finally {
+            document.removeEventListener("keydown", onKey, true);
             inFlight.delete(sending);
         }
         rememberOriginal(original, message.content);
     } catch (e) {
+        // Given up on: the message stays in the chat box exactly as typed, and
+        // a word says so, because an untouched box says nothing by itself.
+        if (wasCancelled(e)) {
+            notify(t("message.cancelled"), "message");
+            return { cancel: true };
+        }
+
         notify(e, "failure");
 
         // Sending the untranslated text would quietly defeat the point of the
