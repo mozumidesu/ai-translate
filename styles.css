@@ -266,6 +266,12 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 
 /* ── the buttons at the foot of the settings ── */
 
+/* Logs belongs with the update button above it, closer than Vencord's own
+   gap between settings would leave the two. */
+.vc-aitrans-logs {
+    margin-top: -8px;
+}
+
 .vc-aitrans-hint.vc-aitrans-hint-bad {
     color: var(--text-danger, var(--status-danger));
 }
