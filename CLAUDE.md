@@ -179,6 +179,15 @@ Building the plugin itself means a Vencord checkout: put this folder at
 does, and run `pnpm build`. That cannot be done from a cloud session, only on a
 machine with Vencord and Discord.
 
+**A cloud session cannot see whether an import from Vencord still exists.** It
+bundles with an esbuild of its own and marks `@webpack/*`, `@api/*`, `@utils/*`
+and `@components/*` as external, so a name Vencord has since dropped builds
+cleanly here and fails there with "No matching export". That is how
+`showToast`'s own `Toasts` once went out on `release` and stopped the robot.
+What Vencord really exports is in its `src/webpack/common/`, and the shapes are
+in `packages/discord-types/src/`; check a new or changed import against those,
+and build once for real before moving `release`.
+
 ## How a change reaches users
 
 `main` is the working branch. `release` is what users get. The robot in

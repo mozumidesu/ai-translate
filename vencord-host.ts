@@ -14,25 +14,9 @@
  */
 
 import { Settings } from "@api/Settings";
-import { MessageStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { MessageStore, showToast, UserStore } from "@webpack/common";
 
 import { Config, Host, Said, useHost } from "./core/host";
-
-/**
- * Vencord's own numeric toast type. The plugin passes the kind around as a
- * word, and handing that word to showToast draws a toast with nothing in it.
- * Vencord once dropped Toasts.Type from under the plugin, so the numbers it
- * has always used stand behind it.
- */
-function toastType(kind: "message" | "failure") {
-    const plain = kind === "failure" ? 2 : 0;
-
-    try {
-        return (Toasts as any)?.Type?.[kind === "failure" ? "FAILURE" : "MESSAGE"] ?? plain;
-    } catch {
-        return plain;
-    }
-}
 
 export const vencordHost: Host = {
     config: () => ((Settings.plugins as any)?.["AI Translate"] ?? {}) as Config,
@@ -65,11 +49,15 @@ export const vencordHost: Host = {
 
     notice(text: string, kind: "message" | "failure") {
         try {
-            showToast(text, toastType(kind));
+            // One object, and the text is read off it. Handed a string, as this
+            // was, the toast is drawn with nothing in it: that was every notice
+            // the plugin ever showed, the errors among them.
+            showToast({ text, variant: kind === "failure" ? "critical" : "default" });
         } catch (e) {
-            // Vencord once dropped Toasts.Type from under the plugin, and the
-            // throw that followed escaped the error handler before it could
-            // hold a message back. A notice is never worth that.
+            // showToast is Discord's own, found in its bundle by what it
+            // contains, so a Discord update can take it away. The throw that
+            // followed once escaped the error handler before it could hold a
+            // message back, and a notice is never worth that.
             console.error("[AI Translate]", text, e);
         }
     }
