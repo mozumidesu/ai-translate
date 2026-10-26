@@ -39,9 +39,10 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
+| `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These eight (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`) build on their own, with esbuild forbidding any import
+These nine (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
+`languages`, `locales`, `log`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
@@ -61,7 +62,8 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `ui/modal.tsx` | The panel that opens on left-clicking the button |
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
 | `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
-| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces |
+| `ui/Logs.tsx` | The Logs button and the panel behind it: the log as text, with Copy, Save .txt and Clear |
+| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
 
 Everything the settings page and the panel are built from sits in `ui/`. It is
@@ -115,6 +117,7 @@ printed before, line for line.
 | Path | Responsible for |
 |---|---|
 | `test/prompts.mjs` | 130 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/log.mjs` | 15 checks on what reaches the log and what must never: a key quoted back by a provider is masked, and a failure never shows a toast with nothing in it |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
 | `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
@@ -159,6 +162,7 @@ names the language and explains what was meant.
 
 ```
 node test/prompts.mjs      # 130 checks; needs esbuild
+node test/log.mjs          # 15 checks on the log and on error notices; needs esbuild
 node test/measure.mjs      # tokens and timing; also needs tools/ built
 node test/rules.mjs        # prompt lines by weight; the same
 ```

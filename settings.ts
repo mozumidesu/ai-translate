@@ -4,6 +4,11 @@
  * Labels are getters, not strings: Vencord reads them on every draw, so the
  * interface language switches without a restart.
  *
+ * The page reads top to bottom in the order someone meets it: what to connect
+ * to, when it should translate, how it should translate, what it looks like,
+ * and the upkeep. Vencord draws the settings in the order they are written
+ * here, so that order is the layout.
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -13,8 +18,9 @@ import { OptionType } from "@utils/types";
 import { FallbackNotice } from "./ui/FallbackNotice";
 import { KeepHelp } from "./ui/KeepHelp";
 import { LOCALES, t } from "./core/locales";
+import { LogsPanel } from "./ui/Logs";
 import { ModelPicker } from "./ui/ModelPicker";
-import { SectionTitle } from "./ui/SectionTitle";
+import { sectionTitle } from "./ui/SectionTitle";
 import { UpdatePanel } from "./ui/UpdatePanel";
 
 /** The backup provider needs a key of its own, so two can be on screen. */
@@ -22,7 +28,7 @@ function apiKeyName(id: string) {
     const { provider, fallbackProvider } = settings.store;
     const two = fallbackProvider !== "none" && fallbackProvider !== provider;
 
-    return two ? `${t("apiKey.name")} \u2014 ${bareProviderLabel(id)}` : t("apiKey.name");
+    return two ? `${t("apiKey.name")} — ${bareProviderLabel(id)}` : t("apiKey.name");
 }
 
 const bareProviderLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
@@ -31,18 +37,11 @@ const bareProviderLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)
 const keyInUse = (store: any, id: string) => store.provider === id || store.fallbackProvider === id;
 
 export const settings = definePluginSettings({
-    locale: {
-        type: OptionType.SELECT,
-        get displayName() { return t("locale.name"); },
-        get description() { return t("locale.desc"); },
-        default: "auto",
-        get options() {
-            return LOCALES.map(l => ({
-                value: l.value,
-                label: l.value === "auto" ? t("locale.auto") : l.label,
-                default: l.value === "auto"
-            }));
-        }
+    // --- what it talks to ---
+
+    connectionTitle: {
+        type: OptionType.COMPONENT,
+        component: sectionTitle("section.connection")
     },
 
     provider: {
@@ -92,6 +91,7 @@ export const settings = definePluginSettings({
         default: ""
     },
 
+    // Chosen in the picker below, kept per provider so switching loses nothing.
     geminiModel: {
         type: OptionType.STRING,
         description: "internal: model chosen for gemini",
@@ -135,6 +135,19 @@ export const settings = definePluginSettings({
         default: ""
     },
 
+    thinkingLevel: {
+        type: OptionType.SELECT,
+        get displayName() { return t("thinking.name"); },
+        get description() { return t("thinking.desc"); },
+        default: "low",
+        get options() {
+            return [
+                { label: t("thinking.low"), value: "low", default: true },
+                { label: t("thinking.high"), value: "high" }
+            ];
+        }
+    },
+
     fallbackProvider: {
         type: OptionType.SELECT,
         get displayName() { return t("fallback.name"); },
@@ -157,36 +170,11 @@ export const settings = definePluginSettings({
         component: FallbackNotice
     },
 
-    // Legacy single-provider fields, migrated on start and then left empty.
-    apiKey: { type: OptionType.STRING, description: "internal: pre-migration API key", default: "", hidden: true },
-    model: { type: OptionType.STRING, description: "internal: pre-migration model", default: "", hidden: true },
+    // --- when it translates ---
 
-    // Both languages are edited from the in-chat panel (left-click the chat
-    // bar button), so they are not repeated on this page.
-    sentLanguage: {
-        type: OptionType.STRING,
-        description: "internal: language outgoing messages are translated into",
-        default: "English",
-        hidden: true
-    },
-    receivedLanguage: {
-        type: OptionType.STRING,
-        description: "internal: language incoming messages are translated into",
-        default: "English",
-        hidden: true
-    },
-
-    thinkingLevel: {
-        type: OptionType.SELECT,
-        get displayName() { return t("thinking.name"); },
-        get description() { return t("thinking.desc"); },
-        default: "low",
-        get options() {
-            return [
-                { label: t("thinking.low"), value: "low", default: true },
-                { label: t("thinking.high"), value: "high" }
-            ];
-        }
+    whenTitle: {
+        type: OptionType.COMPONENT,
+        component: sectionTitle("section.when")
     },
 
     mode: {
@@ -220,6 +208,21 @@ export const settings = definePluginSettings({
             ];
         }
     },
+
+    explain: {
+        type: OptionType.BOOLEAN,
+        get displayName() { return t("explain.name"); },
+        get description() { return t("explain.desc"); },
+        default: true
+    },
+
+    // --- how it translates ---
+
+    howTitle: {
+        type: OptionType.COMPONENT,
+        component: sectionTitle("section.how")
+    },
+
     gender: {
         type: OptionType.SELECT,
         get displayName() { return t("gender.name"); },
@@ -233,31 +236,6 @@ export const settings = definePluginSettings({
             ];
         }
     },
-    explain: {
-        type: OptionType.BOOLEAN,
-        get displayName() { return t("explain.name"); },
-        get description() { return t("explain.desc"); },
-        default: true
-    },
-    useContext: {
-        type: OptionType.BOOLEAN,
-        get displayName() { return t("context.name"); },
-        get description() { return t("context.desc"); },
-        default: true
-    },
-    showOriginal: {
-        type: OptionType.BOOLEAN,
-        get displayName() { return t("showOriginal.name"); },
-        get description() { return t("showOriginal.desc"); },
-        default: false
-    },
-
-    // Everything below is fine-tuning; a quiet title says so.
-    optionalTitle: {
-        type: OptionType.COMPONENT,
-        component: SectionTitle
-    },
-
     formality: {
         type: OptionType.SELECT,
         get displayName() { return t("formality.name"); },
@@ -270,6 +248,12 @@ export const settings = definePluginSettings({
                 { label: t("formality.formal"), value: "formal" }
             ];
         }
+    },
+    useContext: {
+        type: OptionType.BOOLEAN,
+        get displayName() { return t("context.name"); },
+        get description() { return t("context.desc"); },
+        default: true
     },
     glossary: {
         type: OptionType.STRING,
@@ -289,16 +273,73 @@ export const settings = definePluginSettings({
         component: KeepHelp
     },
 
+    // Both languages are edited from the in-chat panel (left-click the chat
+    // bar button), so they are not repeated on this page.
+    sentLanguage: {
+        type: OptionType.STRING,
+        description: "internal: language outgoing messages are translated into",
+        default: "English",
+        hidden: true
+    },
+    receivedLanguage: {
+        type: OptionType.STRING,
+        description: "internal: language incoming messages are translated into",
+        default: "English",
+        hidden: true
+    },
+
+    // --- what it looks like ---
+
+    lookTitle: {
+        type: OptionType.COMPONENT,
+        component: sectionTitle("section.look")
+    },
+
+    locale: {
+        type: OptionType.SELECT,
+        get displayName() { return t("locale.name"); },
+        get description() { return t("locale.desc"); },
+        default: "auto",
+        get options() {
+            return LOCALES.map(l => ({
+                value: l.value,
+                label: l.value === "auto" ? t("locale.auto") : l.label,
+                default: l.value === "auto"
+            }));
+        }
+    },
+    showOriginal: {
+        type: OptionType.BOOLEAN,
+        get displayName() { return t("showOriginal.name"); },
+        get description() { return t("showOriginal.desc"); },
+        default: false
+    },
+
+    // --- upkeep ---
+
+    upkeepTitle: {
+        type: OptionType.COMPONENT,
+        component: sectionTitle("section.upkeep")
+    },
+
     updates: {
         type: OptionType.COMPONENT,
         component: UpdatePanel
+    },
+    logs: {
+        type: OptionType.COMPONENT,
+        component: LogsPanel
     },
     lastUpdateCheck: {
         type: OptionType.NUMBER,
         description: "internal: when this copy last asked builds.zolatau.com for a new build",
         default: 0,
         hidden: true
-    }
+    },
+
+    // Legacy single-provider fields, migrated on start and then left empty.
+    apiKey: { type: OptionType.STRING, description: "internal: pre-migration API key", default: "", hidden: true },
+    model: { type: OptionType.STRING, description: "internal: pre-migration model", default: "", hidden: true }
 }, {
     geminiApiKey: { hidden() { return !keyInUse(this.store, "gemini"); } },
     groqApiKey: { hidden() { return !keyInUse(this.store, "groq"); } },
@@ -343,4 +384,3 @@ export function migrateSettings() {
         settings.store.model = "";
     }
 }
-

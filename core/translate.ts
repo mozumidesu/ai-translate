@@ -19,6 +19,7 @@ import { config, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
 import { LANGUAGES } from "./languages";
 import { t } from "./locales";
+import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
@@ -38,7 +39,26 @@ const fail = (key: string, values?: Record<string, string | number>) =>
  * Takes the error itself, so even turning it into text happens in here.
  */
 export function notify(what: unknown, type: "message" | "failure") {
-    notice(what instanceof Error ? what.message : String(what), type);
+    const said = (what instanceof Error ? what.message : String(what)).trim();
+
+    // A toast with nothing in it is the one failure nobody can report. An
+    // error that arrived without a message still has a name and a stack, and
+    // either beats an empty box.
+    const named = what instanceof Error
+        ? (what.name || String(what.stack ?? "").split("\n")[0].trim())
+        : "";
+
+    const text = said || named || t("error.unknown");
+
+    // The stack is kept rather than shown: it is what tells an empty message
+    // apart from the next one, and the Logs panel is where it belongs.
+    record(
+        type === "failure" ? "error" : "info",
+        "notice",
+        text,
+        what instanceof Error ? what.stack : undefined
+    );
+    notice(text, type);
 }
 
 // --- prompts ---
@@ -1031,10 +1051,35 @@ const WORTH_A_SECOND_PROVIDER = (status: number) =>
 
 const bareLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/** Thrown where a wait was given up on: nothing failed, so nothing is reported. */
+export const CANCELLED = "ai-translate: cancelled";
 
-/** The longest a message is held back waiting for a provider's budget. */
-const MAX_WAIT_MS = 30_000;
+export const wasCancelled = (e: unknown) => e instanceof Error && e.message === CANCELLED;
+
+/** Sleeps, unless the wait is given up on first, and then stops at once. */
+const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error(CANCELLED));
+
+    const stop = () => {
+        clearTimeout(timer);
+        reject(new Error(CANCELLED));
+    };
+
+    const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", stop);
+        resolve();
+    }, ms);
+
+    signal?.addEventListener("abort", stop, { once: true });
+});
+
+/**
+ * The longest a message is held back waiting for a provider's budget. It used
+ * to be half a minute, which is long enough that the chat box feels stuck:
+ * eight seconds rides out a short per-minute limit, and anything longer is
+ * reported as an error that says when to try again.
+ */
+const MAX_WAIT_MS = 8_000;
 
 interface Budget {
     limit: number;
@@ -1204,7 +1249,7 @@ function notePace(id: string, chars: number, ms: number) {
 
 const expectedMs = (id: string, chars: number) => paceOf(id).base + paceOf(id).perChar * chars;
 
-export async function aiTranslate(kind: Kind, typed: string, context = "", mine = false): Promise<TranslationResult> {
+export async function aiTranslate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
     // Code, and whatever the writer fenced off with backslashes, never reaches
     // the model as words: it travels as numbered placeholders and is put back
     // verbatim at the end. Everything below works on the text with placeholders.
@@ -1257,6 +1302,8 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
     /** One request to one provider. Returns the raw answer, errors included. */
     const callProvider = async (id: string, system: string, roomy = false) => {
+        if (signal?.aborted) throw new Error(CANCELLED);
+
         const key = (config() as any)[`${id}ApiKey`] ?? "";
         const chosen = (config() as any)[`${id}Model`] ?? "";
         const chars = system.length + text.length;
@@ -1286,6 +1333,13 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const admitted = status === 429 ? Number(data.match(/Requested (\d+)/)?.[1]) : NaN;
         if (admitted > 0) admittedPerChar.set(`${id}|${kind}`, admitted / chars);
 
+        record(
+            status === 200 ? "info" : "error",
+            kind,
+            `${id} ${chosen} answered ${status} in ${Date.now() - started} ms`,
+            status === 200 ? undefined : data
+        );
+
         return { id, model: chosen, status, data, retryMs };
     };
 
@@ -1299,7 +1353,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
         waited += ms;
         notify(t("message.waiting", { provider: bareLabel(id), seconds: Math.ceil(ms / 1000) }), "message");
-        await sleep(ms);
+        await sleep(ms, signal);
         return true;
     };
 
