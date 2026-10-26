@@ -264,11 +264,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     color: var(--text-muted);
 }
 
-/* ── updates, at the foot of the settings ── */
-
-.vc-aitrans-updates {
-    margin-bottom: 16px;
-}
+/* ── the buttons at the foot of the settings ── */
 
 .vc-aitrans-hint.vc-aitrans-hint-bad {
     color: var(--text-danger, var(--status-danger));

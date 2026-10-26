@@ -37,12 +37,7 @@ const bareProviderLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)
 const keyInUse = (store: any, id: string) => store.provider === id || store.fallbackProvider === id;
 
 export const settings = definePluginSettings({
-    // --- what it talks to ---
-
-    connectionTitle: {
-        type: OptionType.COMPONENT,
-        component: sectionTitle("section.connection")
-    },
+    // --- what it talks to: first on the page, so nothing announces it ---
 
     provider: {
         type: OptionType.SELECT,
@@ -170,11 +165,11 @@ export const settings = definePluginSettings({
         component: FallbackNotice
     },
 
-    // --- when it translates ---
+    // --- how it behaves ---
 
-    whenTitle: {
+    behaviourTitle: {
         type: OptionType.COMPONENT,
-        component: sectionTitle("section.when")
+        component: sectionTitle("section.behaviour")
     },
 
     mode: {
@@ -216,11 +211,11 @@ export const settings = definePluginSettings({
         default: true
     },
 
-    // --- how it translates ---
+    // --- how the translation reads ---
 
-    howTitle: {
+    translationTitle: {
         type: OptionType.COMPONENT,
-        component: sectionTitle("section.how")
+        component: sectionTitle("section.translation")
     },
 
     gender: {
@@ -315,12 +310,7 @@ export const settings = definePluginSettings({
         default: false
     },
 
-    // --- upkeep ---
-
-    upkeepTitle: {
-        type: OptionType.COMPONENT,
-        component: sectionTitle("section.upkeep")
-    },
+    // --- upkeep: two buttons at the foot, which need no heading ---
 
     updates: {
         type: OptionType.COMPONENT,

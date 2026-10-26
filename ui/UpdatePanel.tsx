@@ -62,7 +62,7 @@ export function UpdatePanel() {
                 : t("update.check");
 
     return (
-        <section className={cl("updates")}>
+        <section>
             <Button className={cl("wide")} disabled={busy} onClick={run}>
                 {label}
             </Button>

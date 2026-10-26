@@ -123,7 +123,7 @@ export function LogsPanel() {
     const kept = howMany();
 
     return (
-        <section className={cl("updates")}>
+        <section>
             <Button className={cl("wide")} variant="secondary" onClick={openLogsModal}>
                 {kept ? `${t("logs.open")} (${kept})` : t("logs.open")}
             </Button>
