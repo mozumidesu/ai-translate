@@ -315,7 +315,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     white-space: pre-wrap;
 }
 
-/* ── the title over the optional settings ── */
+/* ── the titles that divide the settings page ── */
 
 .vc-aitrans-section-title {
     text-align: center;
@@ -333,4 +333,31 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
      */
     margin-top: 12px;
     margin-bottom: -11px;
+}
+
+/* ── the Logs panel ── */
+
+.vc-aitrans-log {
+    max-height: 320px;
+    overflow: auto;
+    margin: 12px 0;
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--background-secondary, #2b2d31);
+    color: var(--text-default, var(--text-normal, #dbdee1));
+
+    /* A log is read by its columns, so it keeps its own spacing and its font. */
+    font-family: var(--font-code, monospace);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    tab-size: 2;
+}
+
+.vc-aitrans-log-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
 }
