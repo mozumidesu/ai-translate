@@ -131,6 +131,24 @@ Linux. Patching Discord means swapping its startup file for a small one that
 loads Vencord first and then Discord exactly as before; your Discord account,
 settings and messages are not touched.
 
+## In a browser
+
+Discord in a browser tab needs none of the above: no Vencord to install, nothing
+patched. The same plugin, with Vencord built in, also comes as a userscript.
+
+Install [Tampermonkey](https://www.tampermonkey.net/) or another userscript
+manager, then open
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js). Your
+userscript manager offers to install it, and keeps it up to date from there
+afterwards. Open discord.com and reload the page. If the Vencord Web extension
+is installed, switch it off: this script has Vencord inside it, and two of them
+in one tab do not get along.
+
+Then open **Settings → Vencord → Plugins → AI Translate**, choose a provider and
+paste your key, the same as in the app. Your key is kept by the userscript
+manager, not by the page, and requests go out through the manager as well. To
+remove it, delete the script in your userscript manager.
+
 ## Updates
 
 You do not need to do anything. AI Translate looks for a new version by itself

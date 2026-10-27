@@ -132,6 +132,25 @@ Menyambungkan Discord berarti menukar berkas awalannya dengan berkas kecil yang
 memuat Vencord dulu lalu Discord persis seperti sebelumnya; akun, pengaturan,
 dan pesan Discord Anda tidak disentuh.
 
+## Di peramban
+
+Discord di tab peramban tidak butuh semua itu: tidak ada Vencord yang perlu
+dipasang, tidak ada yang perlu ditambal. Plugin yang sama, dengan Vencord di
+dalamnya, juga ada sebagai userscript.
+
+Pasang [Tampermonkey](https://www.tampermonkey.net/) atau pengelola userscript
+lain, lalu buka
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js).
+Pengelola Anda akan menawarkan pemasangan, lalu menjaganya tetap baru dari sana.
+Buka discord.com lalu muat ulang halaman. Kalau ekstensi Vencord Web terpasang,
+matikan: skrip ini sudah berisi Vencord, dan dua-duanya dalam satu tab tidak
+akur.
+
+Lalu buka **Pengaturan → Vencord → Plugins → AI Translate**, pilih penyedia, dan
+tempel kunci Anda, sama seperti di aplikasi. Kunci dipegang oleh pengelola
+userscript, bukan oleh halamannya, dan permintaan juga keluar lewat pengelola.
+Untuk melepasnya, hapus skripnya di pengelola Anda.
+
 ## Pembaruan
 
 Anda tidak perlu melakukan apa-apa. AI Translate mencari versi baru sendiri

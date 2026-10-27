@@ -137,6 +137,25 @@ Linux. Relier Discord consiste à remplacer son fichier de démarrage par un pet
 fichier qui charge d'abord Vencord puis Discord exactement comme avant ; votre
 compte, vos paramètres et vos messages ne sont pas touchés.
 
+## Dans le navigateur
+
+Discord dans un onglet n'a besoin de rien de tout cela : aucun Vencord à
+installer, rien à modifier. Le même plugin, Vencord compris, existe aussi en
+userscript.
+
+Installez [Tampermonkey](https://www.tampermonkey.net/) ou un autre gestionnaire
+de userscripts, puis ouvrez
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js). Votre
+gestionnaire propose de l'installer, puis le tient à jour depuis là. Ouvrez
+discord.com et rechargez la page. Si l'extension Vencord Web est installée,
+désactivez-la : ce script contient déjà Vencord, et deux dans un même onglet ne
+font pas bon ménage.
+
+Ouvrez ensuite **Paramètres → Vencord → Plugins → AI Translate**, choisissez un
+fournisseur et collez votre clé, comme dans l'application. La clé est gardée par
+le gestionnaire de userscripts, pas par la page, et les requêtes passent aussi
+par lui. Pour l'enlever, supprimez le script dans votre gestionnaire.
+
 ## Mises à jour
 
 Vous n'avez rien à faire. AI Translate cherche une nouvelle version tout seul

@@ -128,6 +128,24 @@ Linux. Nối Discord nghĩa là đổi tệp khởi động của nó thành m�
 Vencord trước rồi nạp Discord y như cũ; tài khoản, cài đặt và tin nhắn Discord
 của bạn không bị đụng đến.
 
+## Trên trình duyệt
+
+Discord trong một thẻ trình duyệt không cần gì ở trên: không phải cài Vencord,
+không có gì phải vá. Cùng một plugin đó, có Vencord bên trong, cũng có dưới dạng
+userscript.
+
+Cài [Tampermonkey](https://www.tampermonkey.net/) hoặc một trình quản lý
+userscript khác, rồi mở
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js). Trình
+quản lý sẽ hỏi có cài không, rồi sau đó tự cập nhật từ đó. Mở discord.com rồi
+tải lại trang. Nếu đã cài tiện ích Vencord Web, hãy tắt nó đi: tập lệnh này đã
+có Vencord bên trong, hai cái trong một thẻ sẽ xung đột.
+
+Rồi mở **Cài đặt → Vencord → Plugins → AI Translate**, chọn một nhà cung cấp và
+dán khóa của bạn, giống như trong ứng dụng. Khóa do trình quản lý userscript
+giữ, không nằm ở trang web, và các yêu cầu cũng đi ra qua nó. Muốn bỏ thì xóa
+tập lệnh trong trình quản lý.
+
 ## Cập nhật
 
 Bạn không phải làm gì cả. Cứ 2 ngày AI Translate tự tìm bản mới, tải về trong

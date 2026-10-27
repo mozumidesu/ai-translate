@@ -131,6 +131,25 @@ bağlamak, açılış dosyasını önce Vencord'u sonra Discord'u eskisi gibi y�
 küçük bir dosyayla değiştirmek demektir; hesabınıza, ayarlarınıza ve
 mesajlarınıza dokunulmaz.
 
+## Tarayıcıda
+
+Tarayıcı sekmesindeki Discord için bunların hiçbiri gerekmez: kurulacak Vencord
+yok, yamanacak bir şey yok. Aynı eklenti, içindeki Vencord'uyla, userscript
+olarak da var.
+
+[Tampermonkey](https://www.tampermonkey.net/)'i ya da başka bir userscript
+yöneticisini kurun, sonra
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js)
+dosyasını açın. Yöneticiniz kurmayı önerir, sonrasında da oradan güncel tutar.
+discord.com'u açın ve sayfayı yenileyin. Vencord Web eklentisi kuruluysa
+kapatın: bu betiğin içinde zaten Vencord var ve aynı sekmede iki tanesi
+geçinemez.
+
+Sonra **Ayarlar → Vencord → Plugins → AI Translate** yolunu açın, uygulamadaki
+gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtarı sayfa değil
+userscript yöneticisi tutar, istekler de onun üzerinden gider. Kaldırmak için
+betiği yöneticiden silin.
+
 ## Güncellemeler
 
 Bir şey yapmanız gerekmez. AI Translate her 2 günde bir yeni sürümü kendisi

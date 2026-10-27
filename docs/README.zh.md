@@ -85,6 +85,14 @@ AI Translate 已经是开启状态。打开 **设置 → Vencord → Plugins →
 
 命令下载的全部内容都放在单独的一个文件夹里：Windows 上是 `%LOCALAPPDATA%\aiTranslate`，macOS 和 Linux 上是 `~/.aiTranslate`。接入 Discord 的意思是把它的启动文件换成一个很小的文件，先加载 Vencord，再和从前完全一样地加载 Discord；你的账号、设置和消息都不会被动。
 
+## 在浏览器里
+
+在浏览器标签页里用的 Discord 不需要上面这些：不用装 Vencord，也没有什么要打补丁。同一个插件，连着 Vencord，也做成了用户脚本。
+
+装上 [Tampermonkey](https://www.tampermonkey.net/) 或者别的用户脚本管理器，然后打开 [ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js)。管理器会询问是否安装，之后便从那里自动保持更新。打开 discord.com 并刷新页面。如果装了 Vencord Web 扩展，请把它关掉：这个脚本里已经有 Vencord，同一个标签页里两个会打架。
+
+然后打开 **设置 → Vencord → Plugins → AI Translate**，像在应用里一样选择一个提供商并粘贴你的密钥。密钥由用户脚本管理器保管，不在页面里，请求也是经它发出的。想撤掉的话，在管理器里删掉这个脚本。
+
 ## 更新
 
 你什么都不用做。AI Translate 每 2 天自己找一次新版本，在后台下载并弹出通知；点一下，Discord 就会带着新版本重启。就算你不理它，更新也会在下次启动 Discord 时自动生效。插件设置最下面的 **检查更新** 会立刻做同样的事。

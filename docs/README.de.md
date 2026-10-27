@@ -135,6 +135,25 @@ Linux. Discord zu verbinden heißt, seine Startdatei gegen eine kleine zu
 tauschen, die erst Vencord lädt und dann Discord genau wie vorher; dein
 Discord-Konto, deine Einstellungen und deine Nachrichten bleiben unberührt.
 
+## Im Browser
+
+Discord in einem Browsertab braucht nichts davon: kein Vencord zu installieren,
+nichts zu patchen. Dasselbe Plugin, mit Vencord darin, gibt es auch als
+Userscript.
+
+Installiere [Tampermonkey](https://www.tampermonkey.net/) oder einen anderen
+Userscript-Manager und öffne dann
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js). Dein
+Userscript-Manager bietet die Installation an und hält es danach von dort aus
+aktuell. Öffne discord.com und lade die Seite neu. Wenn die
+Vencord-Web-Erweiterung installiert ist, schalte sie aus: in diesem Skript
+steckt schon Vencord, und zwei davon in einem Tab vertragen sich nicht.
+
+Öffne dann **Einstellungen → Vencord → Plugins → AI Translate**, wähle einen
+Anbieter und füge deinen Schlüssel ein, genauso wie in der App. Den Schlüssel
+hält der Userscript-Manager, nicht die Seite, und die Anfragen laufen ebenfalls
+über ihn. Zum Entfernen lösche das Skript im Userscript-Manager.
+
 ## Updates
 
 Du musst nichts tun. AI Translate sucht alle 2 Tage von selbst nach einer neuen

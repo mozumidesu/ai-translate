@@ -131,6 +131,25 @@ Conectar Discord significa cambiar su archivo de arranque por uno pequeño que
 carga primero Vencord y luego Discord exactamente como antes; tu cuenta, tus
 ajustes y tus mensajes no se tocan.
 
+## En el navegador
+
+Discord en una pestaña del navegador no necesita nada de lo anterior: ningún
+Vencord que instalar, nada que parchear. El mismo plugin, con Vencord dentro,
+también existe como userscript.
+
+Instala [Tampermonkey](https://www.tampermonkey.net/) u otro gestor de
+userscripts y abre luego
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js). Tu
+gestor se ofrecerá a instalarlo y después lo mantendrá al día desde allí. Abre
+discord.com y recarga la página. Si tienes la extensión Vencord Web,
+desactívala: este script ya lleva Vencord dentro, y dos en una misma pestaña no
+se llevan bien.
+
+Después abre **Ajustes → Vencord → Plugins → AI Translate**, elige un proveedor
+y pega tu clave, igual que en la aplicación. La clave la guarda el gestor de
+userscripts, no la página, y las peticiones salen también por él. Para quitarlo,
+borra el script en tu gestor.
+
 ## Actualizaciones
 
 No tienes que hacer nada. AI Translate busca una versión nueva por su cuenta

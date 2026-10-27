@@ -85,6 +85,14 @@ AI Translate는 이미 켜져 있습니다. **설정 → Vencord → Plugins →
 
 명령이 내려받는 것은 모두 전용 폴더에 들어갑니다. Windows에서는 `%LOCALAPPDATA%\aiTranslate`, macOS와 Linux에서는 `~/.aiTranslate`입니다. Discord를 연결한다는 것은 시작 파일을 작은 파일로 바꿔, 먼저 Vencord를 불러오고 그다음 Discord를 전과 똑같이 불러오게 한다는 뜻입니다. 계정과 설정, 메시지는 건드리지 않습니다.
 
+## 브라우저에서
+
+브라우저 탭에서 쓰는 Discord는 위의 것이 하나도 필요하지 않습니다. 설치할 Vencord도, 패치할 것도 없습니다. 같은 플러그인이 Vencord까지 담긴 유저스크립트로도 나와 있습니다.
+
+[Tampermonkey](https://www.tampermonkey.net/)나 다른 유저스크립트 관리자를 설치한 뒤 [ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js)를 엽니다. 관리자가 설치할지 묻고, 그다음부터는 거기에서 알아서 최신으로 유지합니다. discord.com을 열고 페이지를 새로 고칩니다. Vencord Web 확장 프로그램이 깔려 있다면 꺼 주세요. 이 스크립트 안에 Vencord가 들어 있어서, 한 탭에 둘이 있으면 서로 부딪칩니다.
+
+그다음 **설정 → Vencord → Plugins → AI Translate**를 열고, 앱에서와 똑같이 제공자를 고른 뒤 키를 붙여 넣으세요. 키는 페이지가 아니라 유저스크립트 관리자가 갖고 있고, 요청도 관리자를 거쳐 나갑니다. 없앨 때는 관리자에서 스크립트를 지우면 됩니다.
+
 ## 업데이트
 
 할 일은 없습니다. AI Translate는 2일마다 스스로 새 버전을 찾아 백그라운드에서 내려받고 알림을 보여 줍니다. 알림을 누르면 Discord가 새 버전으로 다시 시작합니다. 그냥 두어도 다음에 Discord를 켤 때 업데이트가 적용됩니다. 플러그인 설정 맨 아래의 **업데이트 확인**도 같은 일을 바로 합니다.

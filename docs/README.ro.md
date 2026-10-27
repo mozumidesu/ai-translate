@@ -133,6 +133,24 @@ lega Discordul înseamnă a-i schimba fișierul de pornire cu unul mic, care
 încarcă întâi Vencord și apoi Discordul exact ca înainte; contul tău, setările
 și mesajele nu sunt atinse.
 
+## În browser
+
+Discord într-o filă de browser nu are nevoie de nimic din cele de mai sus:
+niciun Vencord de instalat, nimic de modificat. Același plugin, cu Vencord în
+el, există și ca userscript.
+
+Instalează [Tampermonkey](https://www.tampermonkey.net/) sau alt manager de
+userscripturi, apoi deschide
+[ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js).
+Managerul îți propune să îl instaleze și de atunci îl ține la zi de acolo.
+Deschide discord.com și reîncarcă pagina. Dacă ai extensia Vencord Web,
+oprește-o: scriptul acesta are Vencord în el, iar două într-o filă nu se împacă.
+
+Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un furnizor
+și lipește-ți cheia, la fel ca în aplicație. Cheia o ține managerul de
+userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
+șterge scriptul din manager.
+
 ## Actualizări
 
 Nu trebuie să faci nimic. AI Translate caută singur o versiune nouă o dată la 2
