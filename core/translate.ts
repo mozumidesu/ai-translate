@@ -1155,13 +1155,13 @@ const dayBlocks = new Map<string, number>();
 const modelOf = (id: string) => String((config() as any)[`${id}Model`] ?? "");
 const dayBlockedFor = (id: string) => Math.max(0, (dayBlocks.get(`${id}|${modelOf(id)}`) ?? 0) - Date.now());
 
-/** Prompt tokens the provider served from its cache. */
+/** Prompt tokens the provider served from its cache, or nothing when it does not say. */
 function cachedTokens(data: string) {
     try {
         const cached = JSON.parse(data)?.usage?.prompt_tokens_details?.cached_tokens;
-        return typeof cached === "number" && cached > 0 ? cached : 0;
+        return typeof cached === "number" && cached >= 0 ? cached : undefined;
     } catch {
-        return 0;
+        return undefined;
     }
 }
 
@@ -1316,11 +1316,14 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         }));
 
         noteBudget(id, budget);
+        let billed = 0;
+        let cached: number | undefined;
         if (status === 200) {
             notePace(id, text.length, Date.now() - started);
-            const billed = promptTokens(data);
+            billed = promptTokens(data);
             if (billed) billedPerChar.set(`${id}|${kind}`, billed / chars);
-            if (id === "groq") refund(id, cachedTokens(data));
+            cached = cachedTokens(data);
+            if (id === "groq") refund(id, cached ?? 0);
         }
 
         if (status === 429) {
@@ -1333,10 +1336,17 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const admitted = status === 429 ? Number(data.match(/Requested (\d+)/)?.[1]) : NaN;
         if (admitted > 0) admittedPerChar.set(`${id}|${kind}`, admitted / chars);
 
+        // A daily limit is spent in tokens, not in requests, and the cached
+        // ones are the part the provider does not count. A log without them
+        // cannot say where the day went.
+        const spent = billed
+            ? `, ${billed} prompt tokens${cached === undefined ? "" : `, ${cached} from cache`}`
+            : "";
+
         record(
             status === 200 ? "info" : "error",
             kind,
-            `${id} ${chosen} answered ${status} in ${Date.now() - started} ms`,
+            `${id} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
             status === 200 ? undefined : data
         );
 

@@ -39,7 +39,8 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-log-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { notify } from "./core/translate";\n`
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { notify, aiTranslate } from "./core/translate";\n`
             + `export { record, asText, clear, howMany } from "./core/log";\n`,
         resolveDir: plugin,
         loader: "ts"
@@ -51,18 +52,32 @@ await esbuild.build({
     logLevel: "error"
 });
 
-const { useHost, notify, record, asText, clear, howMany } = await import(join(out, "core.mjs"));
+const { useHost, notify, aiTranslate, record, asText, clear, howMany } = await import(join(out, "core.mjs"));
 
 /** Every toast the plugin shows, so one with nothing in it cannot hide. */
 const shown = [];
 
+let settings = { locale: "en" };
+
 useHost({
-    config: () => ({ locale: "en" }),
+    config: () => settings,
     set: () => { },
     recent: () => [],
     meId: () => undefined,
     notice: (text, kind) => shown.push({ text, kind })
 });
+
+/** A provider that answers like Groq, with a usage block of its own choosing. */
+function provider(usage) {
+    globalThis.GM_xmlhttpRequest = o => {
+        setImmediate(() => o.onload({
+            status: 200,
+            responseText: JSON.stringify({ choices: [{ message: { content: "[ru] hello" }, finish_reason: "stop" }], usage }),
+            responseHeaders: ""
+        }));
+        return { abort() { } };
+    };
+}
 
 let pass = 0, fail = 0;
 
@@ -115,6 +130,38 @@ check("an error that has a message shows it unchanged", shown[0].text === "AI Tr
 shown.length = 0;
 notify(undefined, "failure");
 check("and neither does a thrown nothing show an empty toast", shown[0].text.trim().length > 0);
+
+// --- where a day's tokens went ---
+
+settings = {
+    locale: "en", provider: "groq", groqApiKey: "k", groqModel: "openai/gpt-oss-120b",
+    baseUrl: "", sentLanguage: "English", receivedLanguage: "Russian", thinkingLevel: "low",
+    mode: "always", enabledChannels: "", onError: "hold", gender: "unset",
+    formality: "match", glossary: "", extraInstructions: "", useContext: false,
+    fallbackProvider: "none"
+};
+
+clear();
+provider({ prompt_tokens: 3105, completion_tokens: 11, prompt_tokens_details: { cached_tokens: 2944 } });
+await aiTranslate("sent", "привет");
+check("the log says what the request cost", /3105 prompt tokens/.test(asText()));
+check("and how much of it the provider had cached", /2944 from cache/.test(asText()));
+
+clear();
+provider({ prompt_tokens: 3105, completion_tokens: 11, prompt_tokens_details: { cached_tokens: 0 } });
+await aiTranslate("sent", "как дела");
+check("a cache that did not hit is written down as nothing cached", /0 from cache/.test(asText()));
+
+clear();
+provider({ prompt_tokens: 3105, completion_tokens: 11 });
+await aiTranslate("sent", "давай завтра");
+check("a provider that counts tokens but not caching still reports the cost", /3105 prompt tokens/.test(asText()));
+check("and is not made to claim a cache it never mentioned", !/from cache/.test(asText()));
+
+clear();
+provider(undefined);
+await aiTranslate("sent", "спасибо");
+check("a provider that counts nothing leaves the line as it was", /answered 200 in \d+ ms$/m.test(asText()));
 
 await rm(out, { recursive: true, force: true });
 
