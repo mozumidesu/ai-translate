@@ -10,10 +10,11 @@
 import { Button } from "@components/Button";
 import { Divider } from "@components/Divider";
 import { FormSwitch } from "@components/FormSwitch";
+import { Heading } from "@components/Heading";
 import { openPluginModal } from "@components/settings/tabs/plugins/PluginModal";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { ChannelStore, Forms, Modal, openModal, SearchableSelect, useMemo, useState } from "@webpack/common";
+import { ChannelStore, Modal, openModal, SearchableSelect, useMemo, useState } from "@webpack/common";
 
 import { LANGUAGES } from "../core/languages";
 import { isRightToLeft, t } from "../core/locales";
@@ -48,7 +49,7 @@ function LanguagePicker({ title, settingsKey }: { title: string; settingsKey: "s
 
     return (
         <section className={Margins.bottom16}>
-            <Forms.FormTitle tag="h3">{title}</Forms.FormTitle>
+            <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{title}</Heading>
             <SearchableSelect
                 options={options}
                 value={options.find(o => o.value === current)?.value}
@@ -67,7 +68,7 @@ function ThinkingPicker() {
 
     return (
         <section className={Margins.bottom16}>
-            <Forms.FormTitle tag="h3">{t("panel.thinking")}</Forms.FormTitle>
+            <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{t("panel.thinking")}</Heading>
             <SearchableSelect
                 options={options}
                 value={options.find(o => o.value === thinkingLevel)?.value}

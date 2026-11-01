@@ -9,10 +9,12 @@
  */
 
 import { Button } from "@components/Button";
+import { Heading } from "@components/Heading";
+import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Forms, Modal, openModal, Tooltip, useEffect, useState, UserStore } from "@webpack/common";
+import { Modal, openModal, Tooltip, useEffect, useState, UserStore } from "@webpack/common";
 
 import { Bridge } from "../core/bridge";
 import { currentLocale, isRightToLeft, t } from "../core/locales";
@@ -254,14 +256,14 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
                 <div className={cl("feedback-badge")}>
                     <MailIcon size={30} />
                 </div>
-                <Forms.FormText>{t("feedback.intro")}</Forms.FormText>
+                <Paragraph className={cl("quiet")} defaultColor={false}>{t("feedback.intro")}</Paragraph>
             </div>
 
             <div className={cl("field")}>
                 <div className={cl("field-head")}>
-                    <Forms.FormTitle tag="h3" className={cl("field-label")}>
+                    <Heading className={cl("field-label", "label")} defaultColor={false}>
                         {t("feedback.subject")}
-                    </Forms.FormTitle>
+                    </Heading>
                     {left <= COUNTER_FROM && (
                         <span className={cl("counter", left <= 0 ? "counter-out" : "")}>
                             {t("feedback.charsLeft", { left })}
@@ -279,9 +281,9 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
             </div>
 
             <div className={cl("field")}>
-                <Forms.FormTitle tag="h3" className={cl("field-label")}>
+                <Heading className={cl("field-label", "label")} defaultColor={false}>
                     {t("feedback.message")}
-                </Forms.FormTitle>
+                </Heading>
                 <textarea
                     className={cl("input", "textarea")}
                     value={message}
@@ -292,9 +294,9 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
             </div>
 
             <div className={cl("field")}>
-                <Forms.FormTitle tag="h3" className={cl("field-label")}>
+                <Heading className={cl("field-label", "label")} defaultColor={false}>
                     {t("feedback.screenshot")} <span className={cl("optional")}>{t("feedback.optional")}</span>
-                </Forms.FormTitle>
+                </Heading>
 
                 <div
                     ref={setZone}
@@ -351,13 +353,13 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
                     />
                 </div>
 
-                {imageError && <Forms.FormText className={cl("warning")}>{imageError}</Forms.FormText>}
+                {imageError && <Paragraph className={cl("warning")} defaultColor={false}>{imageError}</Paragraph>}
             </div>
 
             <div className={cl("field")}>
-                <Forms.FormTitle tag="h3" className={cl("field-label")}>
+                <Heading className={cl("field-label", "label")} defaultColor={false}>
                     {t("feedback.email")} <span className={cl("optional")}>{t("feedback.optional")}</span>
-                </Forms.FormTitle>
+                </Heading>
                 <input
                     className={cl("input", emailWrong ? "input-wrong" : "")}
                     type="email"
@@ -369,10 +371,10 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
                     onBlur={() => setEmailTouched(true)}
                     onFocus={() => setEmailTouched(false)}
                 />
-                {emailWrong && <Forms.FormText className={cl("warning")}>{t("feedback.emailInvalid")}</Forms.FormText>}
+                {emailWrong && <Paragraph className={cl("warning")} defaultColor={false}>{t("feedback.emailInvalid")}</Paragraph>}
 
                 {/* Kept under the field it explains rather than adrift below it. */}
-                <Forms.FormText className={cl("hint")}>{t("feedback.attached")}</Forms.FormText>
+                <Paragraph className={cl("hint")} defaultColor={false}>{t("feedback.attached")}</Paragraph>
             </div>
 
             <Button className={cl("wide")} disabled={blocked} onClick={send}>
@@ -380,18 +382,18 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
             </Button>
 
             {(state === "sent" || state === "failed") && (
-                <Forms.FormText className={Margins.top8}>
+                <Paragraph className={`${Margins.top8} ${cl("quiet")}`} defaultColor={false}>
                     {state === "sent"
                         ? t("feedback.sentHint")
                         : answered > 0
                             ? t("feedback.failedCode", { status: answered })
                             : t("feedback.failed")}
-                </Forms.FormText>
+                </Paragraph>
             )}
 
-            <Forms.FormText className={cl("feedback-or")}>
+            <Paragraph className={cl("feedback-or")} defaultColor={false}>
                 {t("feedback.or")}
-            </Forms.FormText>
+            </Paragraph>
 
             <div className={cl("centre")}>
                 <Button

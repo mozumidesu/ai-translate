@@ -5,9 +5,10 @@
  */
 
 import { Button } from "@components/Button";
+import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { relaunch } from "@utils/native";
-import { Forms, useState } from "@webpack/common";
+import { useState } from "@webpack/common";
 
 import { onDesktop } from "../core/bridge";
 import { t } from "../core/locales";
@@ -67,9 +68,9 @@ export function UpdatePanel() {
                 {label}
             </Button>
             {NOTE[phase] && (
-                <Forms.FormText className={cl("hint", phase === "failed" || phase === "offline" ? "hint-bad" : "")}>
+                <Paragraph className={cl("hint", phase === "failed" || phase === "offline" ? "hint-bad" : "")} defaultColor={false}>
                     {t(NOTE[phase]!)}
-                </Forms.FormText>
+                </Paragraph>
             )}
         </section>
     );

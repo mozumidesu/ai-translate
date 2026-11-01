@@ -10,9 +10,10 @@
  */
 
 import { Button } from "@components/Button";
+import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Forms, Modal, openModal, useState } from "@webpack/common";
+import { Modal, openModal, useState } from "@webpack/common";
 
 import { isRightToLeft, t } from "../core/locales";
 import { asText, clear, howMany } from "../core/log";
@@ -75,7 +76,7 @@ function LogsModal({ rootProps }: { rootProps: RenderModalProps; }) {
     return (
         <Modal {...rootProps} title={t("logs.title")}>
             <div dir={isRightToLeft() ? "rtl" : undefined}>
-                <Forms.FormText className={cl("hint")}>{t("logs.desc")}</Forms.FormText>
+                <Paragraph className={cl("hint")} defaultColor={false}>{t("logs.desc")}</Paragraph>
 
                 <pre className={cl("log")} dir="ltr">{text || t("logs.empty")}</pre>
 
@@ -108,7 +109,7 @@ function LogsModal({ rootProps }: { rootProps: RenderModalProps; }) {
                     </Button>
                 </div>
 
-                {!!said && <Forms.FormText className={cl("hint")}>{said}</Forms.FormText>}
+                {!!said && <Paragraph className={cl("hint")} defaultColor={false}>{said}</Paragraph>}
             </div>
         </Modal>
     );
@@ -127,7 +128,7 @@ export function LogsPanel() {
             <Button className={cl("wide")} variant="secondary" onClick={openLogsModal}>
                 {kept ? `${t("logs.open")} (${kept})` : t("logs.open")}
             </Button>
-            <Forms.FormText className={cl("hint")}>{t("logs.desc")}</Forms.FormText>
+            <Paragraph className={cl("hint")} defaultColor={false}>{t("logs.desc")}</Paragraph>
         </section>
     );
 }

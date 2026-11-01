@@ -99,7 +99,11 @@
     gap: 8px;
 }
 
-.vc-aitrans-field-label {
+.vc-aitrans-label {
+    color: var(--text-strong);
+}
+
+.vc-aitrans-field-label.vc-aitrans-field-label {
     margin-bottom: 8px;
 }
 
@@ -119,7 +123,11 @@
     color: var(--text-danger, var(--status-danger));
 }
 
-.vc-aitrans-hint {
+.vc-aitrans-quiet {
+    color: var(--text-muted);
+}
+
+.vc-aitrans-hint.vc-aitrans-hint {
     margin-top: 6px;
     color: var(--text-muted);
 }
@@ -131,7 +139,7 @@
     margin-bottom: 0;
 }
 
-.vc-aitrans-warning {
+.vc-aitrans-warning.vc-aitrans-warning {
     margin-top: 4px;
     color: var(--text-danger, var(--status-danger));
 }
@@ -257,7 +265,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 
 /* The same gap above and below, so it sits between the two buttons rather
    than belonging to one of them. */
-.vc-aitrans-feedback-or {
+.vc-aitrans-feedback-or.vc-aitrans-feedback-or {
     margin: 12px 0;
     text-align: center;
     font-size: 0.75rem;

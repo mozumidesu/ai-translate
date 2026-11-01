@@ -117,6 +117,7 @@ printed before, line for line.
 | Path | Responsible for |
 |---|---|
 | `test/prompts.mjs` | 130 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/log.mjs` | 21 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
@@ -163,6 +164,7 @@ names the language and explains what was meant.
 ```
 node test/prompts.mjs      # 130 checks; needs esbuild
 node test/log.mjs          # 21 checks on the log and on error notices; needs esbuild
+node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/measure.mjs      # tokens and timing; also needs tools/ built
 node test/rules.mjs        # prompt lines by weight; the same
 ```
@@ -179,14 +181,24 @@ Building the plugin itself means a Vencord checkout: put this folder at
 does, and run `pnpm build`. That cannot be done from a cloud session, only on a
 machine with Vencord and Discord.
 
-**A cloud session cannot see whether an import from Vencord still exists.** It
-bundles with an esbuild of its own and marks `@webpack/*`, `@api/*`, `@utils/*`
-and `@components/*` as external, so a name Vencord has since dropped builds
-cleanly here and fails there with "No matching export". That is how
-`showToast`'s own `Toasts` once went out on `release` and stopped the robot.
-What Vencord really exports is in its `src/webpack/common/`, and the shapes are
-in `packages/discord-types/src/`; check a new or changed import against those,
-and build once for real before moving `release`.
+**An import from Vencord can stop existing without anything here changing.**
+The other tests mark `@webpack/*`, `@api/*`, `@utils/*` and `@components/*` as
+external, so a name Vencord has since dropped builds cleanly under them and
+fails on the robot with "No matching export". That is how `showToast`'s own
+`Toasts` once went out on `release`, and how `Forms` and `Text` left the plugin
+red for three days in October 2026 without a single commit of its own.
+
+`node test/imports.mjs` is the answer to it: it resolves every Vencord import
+the plugin makes against a real checkout, by Vencord's own `tsconfig` paths, and
+fails exactly as the robot does. Point it at a checkout with `VENCORD=`, or let
+it clone a shallow one. Run it before moving `release`, and whenever an import
+is added or changed.
+
+Two names it already caught: `Forms` and `Text` are gone from `@webpack/common`.
+Vencord's own settings now use `Heading` from `@components/Heading` for a label
+and `Paragraph` from `@components/Paragraph` for the text under it, and neither
+carries a colour or a margin of its own, which is why `styles.css` names both
+and doubles the class to outrank Vencord's.
 
 ## How a change reaches users
 

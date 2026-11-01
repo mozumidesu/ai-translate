@@ -11,8 +11,9 @@
  */
 
 import { Settings, useSettings } from "@api/Settings";
+import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
-import { Forms, useEffect } from "@webpack/common";
+import { useEffect } from "@webpack/common";
 
 import { Bridge } from "../core/bridge";
 import { t } from "../core/locales";
@@ -67,8 +68,8 @@ export function FallbackNotice() {
     return (
         // Drawn as its own setting, so it would otherwise sit a full setting's
         // gap below the field it is about.
-        <Forms.FormText className={cl("warning", "warning-attached")}>
+        <Paragraph className={cl("warning", "warning-attached")} defaultColor={false}>
             {t("fallback.noKey", { provider: bareLabel(backup) })}
-        </Forms.FormText>
+        </Paragraph>
     );
 }

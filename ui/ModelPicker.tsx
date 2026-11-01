@@ -13,7 +13,10 @@
 
 import { Settings, useSettings } from "@api/Settings";
 import { Button } from "@components/Button";
-import { Forms, SearchableSelect, TextInput, useEffect, useState } from "@webpack/common";
+import { Heading } from "@components/Heading";
+import { Paragraph } from "@components/Paragraph";
+import { Margins } from "@utils/margins";
+import { SearchableSelect, TextInput, useEffect, useState } from "@webpack/common";
 
 import { Bridge } from "../core/bridge";
 import { t } from "../core/locales";
@@ -157,7 +160,7 @@ export function ModelPicker() {
     // would double the gap under this one.
     return (
         <section>
-            <Forms.FormTitle tag="h3">{t("model.name")}</Forms.FormTitle>
+            <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{t("model.name")}</Heading>
 
             {byHand || !models.length
                 ? <TextInput
@@ -174,7 +177,7 @@ export function ModelPicker() {
                     onChange={choose}
                 />}
 
-            <Forms.FormText>{t(note)}</Forms.FormText>
+            <Paragraph className="vc-aitrans-quiet" defaultColor={false}>{t(note)}</Paragraph>
 
             <div className="vc-aitrans-model-actions">
                 <Button size="small" variant="secondary" disabled={state === "loading"} onClick={load}>

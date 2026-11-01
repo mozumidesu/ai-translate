@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Text } from "@webpack/common";
+import { Paragraph } from "@components/Paragraph";
 
 import { t } from "../core/locales";
 
@@ -31,24 +31,24 @@ export function KeepHelp() {
         <div className="vc-plugins-setting-section">
             <div className="vc-plugins-setting-content">
                 <div className="vc-plugins-setting-label">
-                    <Text className="vc-plugins-setting-title" variant="text-md/medium">
+                    <Paragraph className="vc-plugins-setting-title" size="md" weight="medium">
                         {t("keep.name")}
-                    </Text>
+                    </Paragraph>
                     <ul className="vc-aitrans-keep-list">
                         <li>
-                            <Text className="vc-plugins-setting-description" variant="text-sm/normal">
+                            <Paragraph className="vc-plugins-setting-description">
                                 {withExample("keep.pair", "\\carpe diem\\")}
-                            </Text>
+                            </Paragraph>
                         </li>
                         <li>
-                            <Text className="vc-plugins-setting-description" variant="text-sm/normal">
+                            <Paragraph className="vc-plugins-setting-description">
                                 {withExample("keep.line", "\\" + t("keep.lineExample"))}
-                            </Text>
+                            </Paragraph>
                         </li>
                         <li>
-                            <Text className="vc-plugins-setting-description" variant="text-sm/normal">
+                            <Paragraph className="vc-plugins-setting-description">
                                 {t("keep.code")}
-                            </Text>
+                            </Paragraph>
                         </li>
                     </ul>
                 </div>
