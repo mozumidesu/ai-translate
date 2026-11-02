@@ -950,7 +950,32 @@ function readLanguageTag(out: string, original: string) {
 const CUT_OFF = /"finish_reason"\s*:\s*"length"|"finishReason"\s*:\s*"MAX_TOKENS"|"stop_reason"\s*:\s*"max_tokens"/;
 
 /** How many earlier messages are shown to the model when context is switched on. */
-const CONTEXT_MESSAGES = 6;
+const CONTEXT_MESSAGES = 4;
+
+/**
+ * Discord writes a mention, a custom emoji, a channel or a timestamp as a raw
+ * id, which tells a model nothing and costs real tokens: twelve for one emoji,
+ * nine for one mention, twenty-eight for an attachment's address. The message
+ * being translated keeps all of them exactly as typed; only these context
+ * lines, which are read once and thrown away, are cleaned.
+ */
+function readable(text: string, names: Map<string, string>) {
+    return text
+        // A custom emoji keeps its name, which carries a little meaning.
+        .replace(/<a?:(\w+):\d+>/g, ":$1:")
+        // A mention is a number until it is a name.
+        .replace(/<@!?(\d+)>/g, (_, id) => names.get(id) ?? "(someone)")
+        // The rest name nothing a reader could use, but taking them out
+        // altogether leaves a hole: "про который ты говорил в" reads worse
+        // than the number did. A word of the right shape goes in their place.
+        .replace(/<@&\d+>/g, "(a role)")
+        .replace(/<#\d+>/g, "(a channel)")
+        .replace(/<t:\d+(?::[tTdDfFR])?>/g, "(a time)")
+        // A link cannot be followed from here; that one was shared is enough.
+        .replace(/https?:\/\/\S+|www\.\S+/g, "(link)")
+        .replace(/[^\S\n]{2,}/g, " ")
+        .trim();
+}
 
 /**
  * A message on its own is often ambiguous: "да", "его", "не вставляется" only
@@ -976,11 +1001,26 @@ export function collectContext(channelId: string, beforeId?: string): string {
             else if (index === 0) said = [];
         }
 
-        const lines = said.slice(-CONTEXT_MESSAGES).map(m => {
+        // Who is who, so a mention becomes a name rather than a number. Built
+        // from the whole history, not the shown part: the person mentioned may
+        // have spoken earlier than the lines that are handed over.
+        const names = new Map<string, string>();
+        if (me) names.set(me, "Me");
+        for (const m of said)
+            if (m.authorId && m.authorName) names.set(m.authorId, m.authorName);
+
+        const lines: string[] = [];
+        for (const m of said.slice(-CONTEXT_MESSAGES)) {
             // Whoever is talking here is a person the message may name.
             if (m.authorName) protectedWords.add(m.authorName);
-            return `${m.authorId === me ? "Me" : (m.authorName || "Them")}: ${m.content.slice(0, 300)}`;
-        });
+
+            // A message that was nothing but an emoji or a mention is empty
+            // once cleaned, and an empty line only costs tokens.
+            const content = readable(m.content, names).slice(0, 300);
+            if (!content) continue;
+
+            lines.push(`${m.authorId === me ? "Me" : (m.authorName || "Them")}: ${content}`);
+        }
 
         if (lines.length)
             conversation = "\n\nRecent messages in this conversation, for context only."

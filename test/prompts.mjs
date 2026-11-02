@@ -41,7 +41,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, isJustAName } from "./core/translate";\n`,
+        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -74,7 +74,7 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, isJustAName } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, isJustAName } = await import(join(out, "core.mjs"));
 
 /** What the chat above shows, for the tests that need someone in it. */
 let history = [];
@@ -356,6 +356,70 @@ counted("and not asked about again", 1);
 
 await behaves("a one-word message sent back untranslated is still asked again", translated("sent", "Привет", "[ru] Привет", "[ru] Hi"), "Hi");
 counted("which takes a second request", 2);
+
+// --- the context block: what the model is told about the conversation
+
+/** The system prompt for one translation, with the context block built in. */
+async function promptWithContext(kind, text, reply) {
+    asked.length = 0;
+    answers = [reply];
+    await aiTranslate(kind, text, collectContext("c")).catch(() => { });
+    return { name: "context", text: asked[0]?.messages?.[0]?.content ?? "" };
+}
+
+const KAII = "2000000000000000002";
+const MOZU = "1000000000000000001";
+
+settings.useContext = true;
+history = [
+    { id: "1", authorId: KAII, authorName: "Kaii", content: "this line is too old to be sent" },
+    { id: "2", authorId: KAII, authorName: "Kaii", content: "look at this <:blobcat_hype:1234567890123456>" },
+    { id: "3", authorId: MOZU, authorName: "Mozumi", content: `<@${KAII}> saw it too` },
+    { id: "4", authorId: "3000000000000000003", authorName: "Tomo", content: "   " },
+    { id: "5", authorId: MOZU, authorName: "Mozumi", content: "the drawing, in <#555666777888999000>, https://cdn.discordapp.com/attachments/1/2/IMG.jpg" }
+];
+
+let ctx = await promptWithContext("sent", "красиво", "[ru] beautiful");
+
+const gone = (name, phrase) => {
+    const ok = !ctx.text.includes(phrase);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `context: ${name}`);
+    if (!ok) console.log("       still there:", phrase);
+};
+
+check("a custom emoji keeps its name", ctx, ":blobcat_hype:");
+check("a mention of someone who spoke becomes their name", ctx, "Kaii saw it too");
+check("a link becomes a marker rather than its address", ctx, "(link)");
+check("the newest messages are the ones handed over", ctx, "Mozumi: the drawing");
+
+gone("an emoji's number is not sent", "1234567890123456");
+gone("a mention's number is not sent", KAII);
+gone("a channel loses its number", "555666777888999000");
+gone("a timestamp loses its number", "<t:1762000000");
+// Taking these out altogether left sentences with holes in them, which
+// read worse to a model than the numbers did.
+check("a channel leaves a word of the right shape behind", ctx, "(a channel)");
+gone("an attachment's address is dropped", "cdn.discordapp.com");
+gone("a message with nothing but spaces in it is not announced as a line", "Tomo:");
+// Being in the conversation is reason enough to protect a name: the message
+// being translated may name them even though their own line was dropped.
+check("but whoever said it is still protected as a name", ctx, "Tomo");
+gone("and four messages means the fifth from the end is left out", "too old to be sent");
+
+// A message with nothing but a picture in it has empty content, and the host
+// drops it before the core ever sees it. This is the core's half of that:
+// nobody is announced who has no text left to show.
+history = [
+    { id: "1", authorId: KAII, authorName: "Kaii", content: "<:only_emoji:1234567890123456>" },
+    { id: "2", authorId: MOZU, authorName: "Mozumi", content: "" }
+];
+ctx = await promptWithContext("sent", "ну да", "[ru] well yes");
+check("a message that is only an emoji still says who laughed", ctx, "Kaii: :only_emoji:");
+gone("a message with no text of its own is not announced", "Mozumi:");
+
+settings.useContext = false;
+history = [];
 
 // --- limits
 

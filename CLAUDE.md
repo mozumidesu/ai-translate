@@ -116,7 +116,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 130 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 145 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/log.mjs` | 21 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
@@ -162,7 +162,7 @@ names the language and explains what was meant.
 ## Running things
 
 ```
-node test/prompts.mjs      # 130 checks; needs esbuild
+node test/prompts.mjs      # 145 checks; needs esbuild
 node test/log.mjs          # 21 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/measure.mjs      # tokens and timing; also needs tools/ built
