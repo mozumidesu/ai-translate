@@ -216,7 +216,7 @@ and doubles the class to outrank Vencord's.
 **Raising the version is part of moving `release`, not of a commit.** The
 number lives in `core/version.ts` and nowhere else: three numbers and a letter
 for the stage, `0.1.0a` today. The third number counts fixes, the second counts
-anything new and puts the third back to nine's other side, nine is the ceiling
+anything new and puts the third back to zero, nine is the ceiling
 for both, and `1.0.0` is where the letter goes away and the beta ends. The
 robot publishes a new build whenever Vencord changes too, and those are not new
 versions of the plugin, which is why no build ever touches this.
