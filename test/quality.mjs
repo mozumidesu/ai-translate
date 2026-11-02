@@ -14,6 +14,7 @@
  *   node test/quality.mjs --provider=groq --runs=5
  *   node test/quality.mjs --case=a-pronoun-keeps-its-part
  *   node test/quality.mjs --pace=30        seconds between requests
+ *   node test/quality.mjs --waits=0        do not wait out a refusal
  *
  * Keys come from the environment and never from the repository:
  *   GROQ_API_KEY, or GROQ_API_ADDITIONAL, or GROQ_API_KEY_2
@@ -36,6 +37,8 @@ const arg = (name, fallback) => {
 const RUNS = Number(arg("runs", 3));
 const ONLY = arg("case", "");
 const WANTED = arg("provider", "both");
+/** How many times one run may be told to wait before it counts as failed. */
+const WAITS = Number(arg("waits", 3));
 
 /** What each provider is asked, and with how long a pause between requests. */
 const PROVIDERS = {
@@ -118,6 +121,18 @@ const conversation = kase => (kase.context ?? []).map((line, i) => ({
 
 const sleep = ms => new Promise(done => setTimeout(done, ms));
 
+/** How long a refusal asked for, read back out of the message a person sees. */
+function waitAsked(message) {
+    const seconds = message.match(/Try again in (\d+) s\b/)?.[1];
+    if (seconds) return Number(seconds) * 1000;
+
+    const minutes = message.match(/Try again in (\d+) min\b/)?.[1];
+    if (minutes) return Number(minutes) * 60_000;
+
+    // A day's worth of waiting is not waiting, it is tomorrow.
+    return 0;
+}
+
 /** The settings one case is run under, with everything else left at its default. */
 function settingsFor(kase, provider) {
     const { model } = PROVIDERS[provider];
@@ -188,15 +203,31 @@ for (const provider of Object.keys(PROVIDERS)) {
             if (run || results.length) await sleep(PROVIDERS[provider].pace * 1000);
 
             let answer;
-            clear();
-            try {
-                answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
-            } catch (e) {
-                // The message a person would see says little about why; the
-                // log line underneath it carries the status and the answer.
-                const last = asText().split("\n").filter(Boolean).slice(-2).join(" / ");
-                why.add(`threw: ${e.message}`);
-                if (last) why.add(`log: ${last.slice(0, 300)}`);
+            // A free tier says how long to wait, so wait that rather than
+            // counting its refusal as the plugin getting the answer wrong.
+            for (let left = WAITS; ; left--) {
+                clear();
+                try {
+                    answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
+                    break;
+                } catch (e) {
+                    const asked = waitAsked(e.message);
+                    if (asked && left > 0) {
+                        console.log(`       … told to wait ${Math.round(asked / 1000)}s, waiting`);
+                        await sleep(asked + 2000);
+                        continue;
+                    }
+
+                    // The message a person would see says little about why; the
+                    // log line underneath it carries the status and the answer.
+                    const last = asText().split("\n").filter(Boolean).slice(-2).join(" / ");
+                    why.add(`threw: ${e.message}`);
+                    if (last) why.add(`log: ${last.slice(0, 300)}`);
+                    break;
+                }
+            }
+
+            if (answer === undefined) {
                 said.push("(threw)");
                 continue;
             }
