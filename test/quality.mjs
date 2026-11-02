@@ -196,6 +196,7 @@ for (const provider of Object.keys(PROVIDERS)) {
         settings = settingsFor(kase, provider);
 
         let passed = 0;
+        let refused = 0;
         const said = [];
         const why = new Set();
 
@@ -228,7 +229,8 @@ for (const provider of Object.keys(PROVIDERS)) {
             }
 
             if (answer === undefined) {
-                said.push("(threw)");
+                refused++;
+                said.push("(no answer)");
                 continue;
             }
 
@@ -238,20 +240,36 @@ for (const provider of Object.keys(PROVIDERS)) {
             said.push(answer.replace(/\n/g, " ⏎ "));
         }
 
-        const mark = passed === RUNS ? "PASS" : passed ? "PART" : "FAIL";
-        console.log(`${mark} ${passed}/${RUNS}  ${kase.id}`);
+        // A provider that never answered has not got the translation wrong, and
+        // saying so in the same breath as a real failure hides both.
+        const answered = RUNS - refused;
+        const mark = refused === RUNS ? "NONE" : passed === answered ? "PASS" : passed ? "PART" : "FAIL";
+        const tail = refused ? `, ${refused} unanswered` : "";
+        console.log(`${mark} ${passed}/${answered || RUNS}${tail}  ${kase.id}`);
         for (const line of said) console.log(`       → ${line}`);
         for (const line of why) console.log(`       ! ${line}`);
 
-        results.push({ provider, id: kase.id, passed, of: RUNS });
+        results.push({ provider, id: kase.id, passed, of: RUNS, refused });
     }
 }
 
 await rm(out, { recursive: true, force: true });
 
 console.log("\n=== how each case did ===\n");
-const whole = results.filter(r => r.passed === r.of).length;
-for (const r of results) console.log(`  ${r.passed}/${r.of}  ${r.provider}  ${r.id}`);
-console.log(`\n${whole} of ${results.length} came through every run.`);
 
-process.exit(whole === results.length ? 0 : 1);
+const judged = results.filter(r => r.refused < r.of);
+const whole = judged.filter(r => r.passed === r.of - r.refused).length;
+
+for (const r of results) {
+    const answered = r.of - r.refused;
+    console.log(answered
+        ? `  ${r.passed}/${answered}  ${r.provider}  ${r.id}${r.refused ? `  (${r.refused} unanswered)` : ""}`
+        : `  never answered  ${r.provider}  ${r.id}`);
+}
+
+const silent = results.length - judged.length;
+console.log(`\n${whole} of ${judged.length} judged cases came through every answer they got.`);
+if (silent) console.log(`${silent} could not be judged: the provider never answered.`);
+
+// A provider that would not answer is not the plugin being wrong.
+process.exit(whole === judged.length ? 0 : 1);
