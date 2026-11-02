@@ -39,10 +39,11 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
+| `core/version.ts` | The version people see, and the only place it is written down |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These nine (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`, `log`) build on their own, with esbuild forbidding any import
+These ten (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
+`languages`, `locales`, `log`, `version`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
@@ -211,6 +212,14 @@ carries a colour or a margin of its own, which is why `styles.css` names both
 and doubles the class to outrank Vencord's.
 
 ## How a change reaches users
+
+**Raising the version is part of moving `release`, not of a commit.** The
+number lives in `core/version.ts` and nowhere else: three numbers and a letter
+for the stage, `0.1.0a` today. The third number counts fixes, the second counts
+anything new and puts the third back to nine's other side, nine is the ceiling
+for both, and `1.0.0` is where the letter goes away and the beta ends. The
+robot publishes a new build whenever Vencord changes too, and those are not new
+versions of the plugin, which is why no build ever touches this.
 
 `main` is the working branch. `release` is what users get. The robot in
 `.github/workflows/build.yml` fetches `build/github.sh` **from `release`** every

@@ -123,6 +123,15 @@
     color: var(--text-danger, var(--status-danger));
 }
 
+/* The line above the feedback form that says this is an early build. Quieter
+   than the form and set apart from it, so it reads once and then gets out of
+   the way. */
+.vc-aitrans-alpha.vc-aitrans-alpha {
+    margin-bottom: 12px;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
 .vc-aitrans-quiet {
     color: var(--text-muted);
 }

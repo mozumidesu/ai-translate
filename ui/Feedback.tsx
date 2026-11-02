@@ -17,6 +17,7 @@ import { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, Tooltip, useEffect, useState, UserStore } from "@webpack/common";
 
 import { Bridge } from "../core/bridge";
+import { VERSION } from "../core/version";
 import { currentLocale, isRightToLeft, t } from "../core/locales";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -252,6 +253,8 @@ function FeedbackModal({ rootProps }: { rootProps: RenderModalProps; }) {
     return (
         <Modal {...rootProps} title={t("feedback.title")}>
             <div dir={isRightToLeft() ? "rtl" : undefined}>
+            <Paragraph className={cl("alpha")} defaultColor={false}>{t("feedback.alpha", { version: VERSION })}</Paragraph>
+
             <div className={cl("feedback-head")}>
                 <div className={cl("feedback-badge")}>
                     <MailIcon size={30} />

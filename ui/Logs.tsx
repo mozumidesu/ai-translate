@@ -17,6 +17,7 @@ import { Modal, openModal, useState } from "@webpack/common";
 
 import { isRightToLeft, t } from "../core/locales";
 import { asText, clear, howMany } from "../core/log";
+import { VERSION } from "../core/version";
 
 const cl = classNameFactory("vc-aitrans-");
 
@@ -128,7 +129,10 @@ export function LogsPanel() {
             <Button className={cl("wide")} variant="secondary" onClick={openLogsModal}>
                 {kept ? `${t("logs.open")} (${kept})` : t("logs.open")}
             </Button>
-            <Paragraph className={cl("hint")} defaultColor={false}>{t("logs.desc")}</Paragraph>
+            {/* The stage and the number, not a description: this is the one
+                place in the interface where a person can read which version
+                they are running. */}
+            <Paragraph className={cl("hint")} defaultColor={false}>AI Translate · {VERSION}</Paragraph>
         </section>
     );
 }
