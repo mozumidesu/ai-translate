@@ -67,6 +67,29 @@
     ]
   },
   {
+    "id": "nothing-goes-missing-into-english",
+    "why": "the same message into English, to see whether the rule only bites in the language its own example is written in: it says Japanese 「ごはんを食べました」 is \"I ate rice\", never \"I ate\"",
+    "kind": "received",
+    "to": "English",
+    "text": "ごはんを食べました",
+    "must": [
+      "rice"
+    ],
+    "mustNot": [],
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "新しいお米を買ってきた"
+      },
+      {
+        "who": "me",
+        "name": "Mozumi",
+        "text": "どうだった？"
+      }
+    ]
+  },
+  {
     "id": "explain-can-see-the-message",
     "why": "AI Explain answered that the text of the message was not provided",
     "kind": "explain",
