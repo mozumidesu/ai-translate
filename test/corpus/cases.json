@@ -1,0 +1,132 @@
+[
+  {
+    "id": "borrowed-word-stays-borrowed",
+    "why": "\"эдиты\" came back as \"ediciones\", a Spanish word in an English message",
+    "kind": "sent",
+    "to": "English",
+    "text": "я уже сделал все эдиты",
+    "must": [
+      "edits"
+    ],
+    "mustNot": [
+      "ediciones",
+      "редактирования",
+      "edições"
+    ]
+  },
+  {
+    "id": "a-spaced-dash-keeps-its-spaces",
+    "why": "a dash the writer put spaces around came back glued to the words",
+    "kind": "sent",
+    "to": "English",
+    "text": "по-моему, это важно — правда",
+    "must": [
+      " — "
+    ],
+    "mustNot": [
+      "—п",
+      "о—"
+    ]
+  },
+  {
+    "id": "a-typed-hyphen-stays-a-hyphen",
+    "why": "a hyphen the writer typed came back as a comma",
+    "kind": "sent",
+    "to": "English",
+    "text": "ладно - давай завтра",
+    "must": [
+      " - "
+    ],
+    "mustNot": [
+      "okay, let",
+      "fine, let",
+      "alright, let"
+    ]
+  },
+  {
+    "id": "nothing-the-writer-named-goes-missing",
+    "why": "ごはんを食べました came back without the rice in it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "ごはんを食べました",
+    "must": [
+      "рис"
+    ],
+    "mustNot": []
+  },
+  {
+    "id": "explain-can-see-the-message",
+    "why": "AI Explain answered that the text of the message was not provided",
+    "kind": "explain",
+    "to": "Russian",
+    "text": "ごはんを食べました",
+    "must": [
+      "япон"
+    ],
+    "mustNot": [
+      "не предоставлен",
+      "не указан",
+      "not provided",
+      "отсутствует текст"
+    ]
+  },
+  {
+    "id": "a-pronoun-keeps-its-part",
+    "why": "\"он\" was rendered \"him\", the one being done to rather than the one doing",
+    "kind": "sent",
+    "to": "English",
+    "text": "он сказал, что придёт позже",
+    "must": [
+      "he said"
+    ],
+    "mustNot": [
+      "him said",
+      "his said"
+    ]
+  },
+  {
+    "id": "a-question-ends-where-it-ends",
+    "why": "\"Some kind of queen?\" came back as \"Какой-то королевой?\", the next sentence's verb pulled through the question mark",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who's depicted there? Some kind of queen? Looks really beautiful.",
+    "must": [
+      "королева"
+    ],
+    "mustNot": [
+      "королевой",
+      "королеву"
+    ]
+  },
+  {
+    "id": "no-question-mark-is-added",
+    "why": "a question mark appeared on a message that had none",
+    "kind": "sent",
+    "to": "English",
+    "text": "интересно что он скажет",
+    "must": [],
+    "mustNot": [
+      "?"
+    ]
+  },
+  {
+    "id": "a-repeated-phrase-is-repeated-the-same-way",
+    "why": "\"через это\" twice came back as \"through it\" and then \"THROUGH it\"",
+    "kind": "sent",
+    "to": "English",
+    "text": "я прошёл через это, и ты пройдёшь через это",
+    "must": [],
+    "mustNot": [],
+    "skip": "needs a check that looks for a repeat rather than for a phrase: the model may pick any words, as long as it picks the same ones twice"
+  },
+  {
+    "id": "an-evaluation-keeps-its-temperature",
+    "why": "\"Очень красиво выглядит\" went out as \"Looks really beautiful\" and came back as \"Выглядит реально красиво\"",
+    "kind": "sent",
+    "to": "English",
+    "text": "очень красиво выглядит",
+    "must": [],
+    "mustNot": [],
+    "skip": "the fault is in the round trip, not in either direction: \"really\" is a fair reading of \"очень\". Needs a case that goes there and back"
+  }
+]
