@@ -73,7 +73,8 @@ if (!esbuild) {
 const out = await mkdtemp(join(tmpdir(), "ai-translate-quality-"));
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { aiTranslate } from "./core/translate";\n`
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { aiTranslate, collectContext } from "./core/translate";\n`
             + `export { asText, clear } from "./core/log";\n`,
         resolveDir: PLUGIN,
         loader: "ts"
@@ -87,7 +88,7 @@ await esbuild.build({
 
 // No GM_xmlhttpRequest here, so core/net.ts reaches for fetch and the requests
 // are real. That is the whole point of this file.
-const { useHost, aiTranslate, asText, clear } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, asText, clear } = await import(join(out, "core.mjs"));
 
 const cases = JSON.parse(await readFile(join(HERE, "corpus", "cases.json"), "utf-8"));
 const chosen = ONLY ? cases.filter(c => c.id === ONLY) : cases;
@@ -97,14 +98,23 @@ if (!chosen.length) {
 }
 
 let settings = {};
+let history = [];
 const notices = [];
 useHost({
     config: () => settings,
     set: () => { },
-    recent: () => [],
-    meId: () => undefined,
+    recent: () => history,
+    meId: () => "me",
     notice: text => notices.push(text)
 });
+
+/** A case's own conversation, in the shape core/host.ts hands over. */
+const conversation = kase => (kase.context ?? []).map((line, i) => ({
+    id: String(i + 1),
+    authorId: line.who === "me" ? "me" : `them-${line.name}`,
+    authorName: line.name,
+    content: line.text
+}));
 
 const sleep = ms => new Promise(done => setTimeout(done, ms));
 
@@ -127,7 +137,7 @@ function settingsFor(kase, provider) {
         formality: "match",
         glossary: "",
         extraInstructions: "",
-        useContext: false,
+        useContext: !!kase.context,
         locale: "en",
         fallbackProvider: "none",
         ...(kase.settings ?? {})
@@ -158,6 +168,8 @@ for (const provider of Object.keys(PROVIDERS)) {
     console.log(`\n=== ${provider}, ${PROVIDERS[provider].model}, ${RUNS} run(s) a case ===\n`);
 
     for (const kase of chosen) {
+        history = conversation(kase);
+
         // A case the corpus holds but cannot yet judge. Named rather than left
         // out, so it is plain what is not covered.
         if (kase.skip) {
@@ -178,7 +190,7 @@ for (const provider of Object.keys(PROVIDERS)) {
             let answer;
             clear();
             try {
-                answer = (await aiTranslate(kase.kind, kase.text)).text;
+                answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
             } catch (e) {
                 // The message a person would see says little about why; the
                 // log line underneath it carries the status and the answer.

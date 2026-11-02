@@ -45,14 +45,26 @@
   },
   {
     "id": "nothing-the-writer-named-goes-missing",
-    "why": "ごはんを食べました came back without the rice in it",
+    "why": "「ごはん」 is both rice and a meal, so the bare sentence came back as \"Поел\" with nothing eaten in it. The conversation it arrived in was about rice, which is what makes the reading plain",
     "kind": "received",
     "to": "Russian",
     "text": "ごはんを食べました",
     "must": [
       "рис"
     ],
-    "mustNot": []
+    "mustNot": [],
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "新しいお米を買ってきた"
+      },
+      {
+        "who": "me",
+        "name": "Mozumi",
+        "text": "どうだった？"
+      }
+    ]
   },
   {
     "id": "explain-can-see-the-message",
