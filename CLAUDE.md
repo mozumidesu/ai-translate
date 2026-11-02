@@ -148,6 +148,13 @@ When changing a rule:
   to the provider with every message and they sit in a public repository, so
   nothing personal, nothing crude, nothing that points at the author. Grammar
   demonstrates just as well on a mundane sentence.
+- **An example must not hand the model a finished answer in one language.** A
+  rule that said Japanese "ごはんを食べました" is "I ate rice", never "I ate" was
+  obeyed into English, 2 runs out of 2, and ignored into Russian, 5 out of 5:
+  the model matched "never I ate" against an English answer and never saw
+  "Я поел". Name the fault instead, and say it holds in whatever language is
+  being written. Seventeen of the forty rules still hand over an English
+  answer, which `test/corpus` is slowly working through with `--group=reverse`.
 - Rules that apply to one language, or to something a message may not contain,
   are only sent when they can matter — see the gating in `core/translate.ts`. A
   rule

@@ -163,5 +163,124 @@
     "must": [],
     "mustNot": [],
     "skip": "the fault is in the round trip, not in either direction: \"really\" is a fair reading of \"очень\". Needs a case that goes there and back"
+  },
+  {
+    "id": "temperature-holds-into-russian",
+    "why": "the evaluation rule names its ladder in English — \"нормально\" is \"okay\", \"хорошо\" is \"good\" — so it is only ever read in the direction the plugin was written for",
+    "kind": "received",
+    "to": "Russian",
+    "text": "yeah it's fine, nothing special",
+    "must": [],
+    "mustNot": [
+      "отлично",
+      "прекрасно",
+      "замечательно",
+      "великолепно"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "past-stays-past-into-russian",
+    "why": "the tense rule shows \"Спасибо, что помогала мне\" becoming \"Thank you for having helped me\", which is the English side of it; the same loss going the other way has never been looked at",
+    "kind": "received",
+    "to": "Russian",
+    "text": "thanks for helping me back then, I still remember it",
+    "must": [
+      "помог"
+    ],
+    "mustNot": [
+      "помогаешь",
+      "помогаете"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-duration-needs-no-officialese",
+    "why": "the rule says to add whatever preposition the target needs, with \"ждал час\" becoming \"waited for an hour\". Russian needs none, and the error in this direction is the stilted one",
+    "kind": "received",
+    "to": "Russian",
+    "text": "I waited an hour and then left",
+    "must": [
+      "час"
+    ],
+    "mustNot": [
+      "в течение часа",
+      "на протяжении часа"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "no-copula-is-put-into-russian",
+    "why": "the copula rule exists to put \"to be\" back for English. Into Russian the same rule read literally would add \"есть\", which no one says",
+    "kind": "received",
+    "to": "Russian",
+    "text": "he is a doctor and she is a teacher",
+    "must": [
+      "врач"
+    ],
+    "mustNot": [
+      "он есть",
+      "она есть"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-set-phrase-is-not-rendered-literally",
+    "why": "the rule teaches that \"Молодец\" is \"Well done\", never a noun. The same phrase coming back the other way is the part no case covers",
+    "kind": "received",
+    "to": "Russian",
+    "text": "well done!",
+    "must": [],
+    "mustNot": [
+      "хорошо сделано",
+      "хорошо выполнено",
+      "сделано хорошо"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "agreement-follows-the-russian-noun",
+    "why": "agreement is the rule that matters most when the target is Russian and least when it is English, and every case in this corpus so far had English as the target",
+    "kind": "received",
+    "to": "Russian",
+    "text": "the new coffee is really good",
+    "must": [],
+    "mustNot": [
+      "новое кофе",
+      "вкусное кофе",
+      "хорошее кофе"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "an-idiom-is-not-carried-word-by-word",
+    "why": "the idiom rule is one of the two written the right way round, with a Russian answer. Worth a case that is not the rule's own example",
+    "kind": "received",
+    "to": "Russian",
+    "text": "he let the cat out of the bag",
+    "must": [],
+    "mustNot": [
+      "кота из",
+      "кошку из",
+      "из мешка",
+      "из сумки"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-plain-word-stays-plain-into-russian",
+    "why": "the borrowing rule shows Spanish \"todo bien\" becoming \"everything is fine\", not \"everything is ok\". Into Russian the same slide is to \"всё окей\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "everything is fine, don't worry",
+    "must": [],
+    "mustNot": [
+      "всё ок",
+      "все ок",
+      "всё окей",
+      "все окей",
+      "всё файн"
+    ],
+    "group": "reverse"
   }
 ]

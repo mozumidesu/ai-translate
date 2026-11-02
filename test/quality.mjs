@@ -13,6 +13,8 @@
  *   node test/quality.mjs                  every case, both providers, 3 runs
  *   node test/quality.mjs --provider=groq --runs=5
  *   node test/quality.mjs --case=a-pronoun-keeps-its-part
+ *   node test/quality.mjs --group=reverse   one batch of cases
+ *   node test/quality.mjs --dry             say what would be asked, ask nothing
  *   node test/quality.mjs --pace=30        seconds between requests
  *   node test/quality.mjs --waits=0        do not wait out a refusal
  *
@@ -36,6 +38,9 @@ const arg = (name, fallback) => {
 
 const RUNS = Number(arg("runs", 3));
 const ONLY = arg("case", "");
+const GROUP = arg("group", "");
+/** Prints what each case would ask and sends nothing, so a typo costs no tokens. */
+const DRY = process.argv.includes("--dry");
 const WANTED = arg("provider", "both");
 /** How many times one run may be told to wait before it counts as failed. */
 const WAITS = Number(arg("waits", 3));
@@ -94,7 +99,9 @@ await esbuild.build({
 const { useHost, aiTranslate, collectContext, asText, clear } = await import(join(out, "core.mjs"));
 
 const cases = JSON.parse(await readFile(join(HERE, "corpus", "cases.json"), "utf-8"));
-const chosen = ONLY ? cases.filter(c => c.id === ONLY) : cases;
+const chosen = cases
+    .filter(c => !ONLY || c.id === ONLY)
+    .filter(c => !GROUP || c.group === GROUP);
 if (!chosen.length) {
     console.error(ONLY ? `No case called ${ONLY}.` : "The corpus is empty.");
     process.exit(2);
@@ -172,6 +179,23 @@ function faults(kase, text) {
 }
 
 const results = [];
+
+if (DRY) {
+    for (const kase of chosen) {
+        history = conversation(kase);
+        console.log(`\n${kase.skip ? "SKIP" : kase.kind.padEnd(8)} ${kase.id}  → ${kase.to}`);
+        if (kase.skip) {
+            console.log(`  ! ${kase.skip}`);
+            continue;
+        }
+        for (const line of kase.context ?? []) console.log(`  context  ${line.name}: ${line.text}`);
+        console.log(`  message  ${kase.text}`);
+        if (kase.must?.length) console.log(`  must     ${kase.must.join(" · ")}`);
+        if (kase.mustNot?.length) console.log(`  must not ${kase.mustNot.join(" · ")}`);
+    }
+    console.log(`\n${chosen.filter(c => !c.skip).length} case(s) would be asked, nothing was.`);
+    process.exit(0);
+}
 
 for (const provider of Object.keys(PROVIDERS)) {
     if (WANTED !== "both" && WANTED !== provider) continue;
