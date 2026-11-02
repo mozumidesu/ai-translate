@@ -107,6 +107,10 @@ function rememberOriginal(original: string, translated: string) {
  * Discord's message box carries a quote on by itself: inside one, every new
  * line arrives with "> " already on it. The writer typed the marker once, so
  * the echo of what they wrote shows it once.
+ *
+ * What comes back here is also the raw text Discord hands over, where an
+ * @name has already become <@1474833983115231355>. The echo goes through
+ * Parser for that reason, the same way the translation above it does.
  */
 function asTyped(original: string) {
     let quoting = false;
@@ -163,7 +167,7 @@ function TranslationAccessory({ message }: { message: Message; }) {
                         }}>{t("message.hide")}</button>
                     </span>
                 </>
-                : <>{t("message.youWrote")} {asTyped(original)}</>}
+                : <>{t("message.youWrote")} {Parser.parse(asTyped(original))}</>}
         </span>
     );
 }

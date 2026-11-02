@@ -338,10 +338,11 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     color: var(--text-strong, var(--header-primary, #fff));
 
     /*
-     * Vencord puts 1.25em between settings. The title stands further from the
-     * settings above it and close to the ones it names.
+     * Vencord puts 1.25em between settings, which is about 20px. The title
+     * still stands further from the settings above it than from the ones it
+     * names, but the gap above used to be 32px and read as a hole in the page.
      */
-    margin-top: 12px;
+    margin-top: 4px;
     margin-bottom: -11px;
 }
 

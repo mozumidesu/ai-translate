@@ -126,6 +126,7 @@ printed before, line for line.
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
 | `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run |
+| `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
 | `docs/` | The 15 translated READMEs and the banner |
 
 ## Prompt rules

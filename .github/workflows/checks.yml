@@ -1,0 +1,52 @@
+# AI Translate - the checks that run on every push.
+#
+# The build robot next door builds what has been released; this one watches
+# main, so a mistake is caught where it was made rather than the next time
+# release moves. In the same spirit as build.yml it uses no ready-made GitHub
+# actions, only git, node and npm, which every runner already has.
+#
+# test/imports.mjs clones a shallow Vencord of its own to resolve the plugin's
+# imports against. That is the check nothing else here can do: the other tests
+# mark the Vencord paths as external, so a name Vencord has dropped builds
+# cleanly under them and only fails on the robot.
+
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # By commit rather than by branch: on a pull request the ref is
+      # "123/merge", which is not a branch anyone can clone.
+      - name: Fetch the plugin
+        run: |
+          git init -q .
+          git remote add origin "https://github.com/$GITHUB_REPOSITORY"
+          git fetch -q --depth 1 origin "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
+
+      - name: Install esbuild
+        run: npm install --no-save --no-audit --no-fund esbuild
+
+      - name: The prompts, line by line
+        run: ESBUILD=node_modules/esbuild node test/prompts.mjs
+
+      - name: The log, and what must never reach it
+        run: ESBUILD=node_modules/esbuild node test/log.mjs
+
+      - name: Whether the Vencord imports still exist
+        run: ESBUILD=node_modules/esbuild node test/imports.mjs
