@@ -126,7 +126,7 @@ printed before, line for line.
 | `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
 | `tools/` | The Rust side, a binary of its own. Not part of the plugin and not copied into Vencord |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
-| `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
+| `build/github.sh` | What the build robot does, publishing on `builds.zolatau.com` and making a GitHub release when the version has changed. **Keep**: it runs on Ubuntu inside Actions |
 | `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
 | `docs/` | The 15 translated READMEs and the banner |
@@ -226,6 +226,15 @@ versions of the plugin, which is why no build ever touches this.
 hour, builds Vencord with the plugin inside, and publishes the result on
 `builds.zolatau.com`; installed copies pick it up on their next check. Moving
 `release` is a deliberate act, never a side effect of a commit.
+
+The same run also makes a **GitHub release**, tagged `v` and the version, with
+the four files Discord loads and the userscript attached, and marked a
+prerelease while the version still carries a letter. It is made only when the
+version has changed: a build happens whenever Vencord moves, and those would
+otherwise fill the releases page hourly. The site is where the install command
+and the updater take their files from; the releases are where the versions are
+kept. `gh` is told the repository outright in those calls, because the workflow
+runs the script with no checkout and so has no git remote to infer it from.
 
 One thing not to tidy: `@namespace` in the userscript header still points at a
 GitLab address. Userscript managers identify a script by name and namespace

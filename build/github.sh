@@ -386,6 +386,66 @@ npx --yes wrangler deploy
 
 echo "Published build $build on $SITE/."
 
+# --- a release on GitHub, for the version rather than for the build ---
+#
+# The site hands out the newest build and keeps one before it; GitHub keeps the
+# versions. These are not the same thing: a build happens whenever Vencord
+# moves, and that is not a new version of this plugin, so a release is made
+# only when the plugin's own number has changed. Everything here is allowed to
+# fail without undoing a build that is already published.
+version=$(sed -n 's/^export const VERSION = "\(.*\)";$/\1/p' \
+    "$work/vencord/src/userplugins/aiTranslate/core/version.ts")
+
+if [ -z "$version" ]; then
+    echo "Could not read the version out of core/version.ts. Has the line moved?"
+elif gh release view --repo "$GITHUB_REPOSITORY" "v$version" >/dev/null 2>&1; then
+    echo "Version v$version is already released; only the build is new."
+else
+    # What changed since the release before this one, written by GitHub from
+    # the commits between the two, so there is no second place to keep it.
+    changes=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+        -f tag_name="v$version" -f target_commitish="$plugin_full" --jq .body 2>/dev/null || true)
+
+    cat > "$work/notes.md" <<NOTES
+Built as \`$build\` and published on $SITE.
+
+* Vencord [\`${vencord_full:0:7}\`](https://github.com/Vendicated/Vencord/tree/$vencord_full)
+* AI Translate [\`${plugin_full:0:7}\`](https://github.com/$GITHUB_REPOSITORY/tree/$plugin_full)
+
+The files below are the same ones the site hands out. The one-command install
+and the plugin's own updater take them from $SITE rather than from here, so
+nothing has to be downloaded by hand.
+
+$changes
+NOTES
+
+    # A number that still carries a letter is an alpha or a beta, and GitHub
+    # has a word for that of its own.
+    early=""
+    case "$version" in
+        *[a-z]) early="--prerelease" ;;
+    esac
+
+    # shellcheck disable=SC2086
+    # Named outright: the workflow runs this script on its own, with no
+    # checkout anywhere, so gh has no git remote to work the repository out of.
+    if gh release create "v$version" $early \
+        --repo "$GITHUB_REPOSITORY" \
+        --target "$plugin_full" \
+        --title "v$version" \
+        --notes-file "$work/notes.md" \
+        "$site/$build/patcher.js" \
+        "$site/$build/preload.js" \
+        "$site/$build/renderer.js" \
+        "$site/$build/renderer.css" \
+        "$site/ai-translate.user.js" \
+        "$site/ai-translate.meta.js"; then
+        echo "Released v$version."
+    else
+        echo "Could not create the release for v$version. The build is out all the same."
+    fi
+fi
+
 # The newest build is also noted on a branch of its own, "robot", so the
 # repository sees activity whenever something is built, without the robot ever
 # committing to the branches people work on. A note that fails to go up does
