@@ -198,9 +198,16 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
 
     // The answer budget counts against the per-minute limit as if already
     // spent, so it is sized to the text rather than set flat and high.
-    // Most answers fit easily; a reasoning model on a long message can think
-    // its way through all of it first, so that one gets a far larger second go.
-    const room = Math.ceil(text.length / 2) + 256;
+    //
+    // Thinking comes out of this same budget, and on a long message it is most
+    // of it: measured on 623 characters over eight lines, gpt-oss spent 802
+    // tokens, 620 of them reasoning and 182 on the translation itself. The old
+    // half-a-character allowance gave 568, so the answer was cut off and the
+    // whole thing was asked again with three times the room: 8705 tokens for
+    // one message instead of 4700, and the second ask is the one the
+    // per-minute limit refuses. The slope carries the thinking now; the floor
+    // keeps a short message, which is most of them, exactly as cheap as before.
+    const room = Math.ceil(text.length * 1.5) + 256;
     const maxTokens = Math.min(4000, Math.max(512, (thinkingLevel === "high" ? room * 4 : room) * (roomy ? 3 : 1)));
 
     // "default" means: say nothing about thinking and let the model decide.

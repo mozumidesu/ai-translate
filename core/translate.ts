@@ -1434,7 +1434,14 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         return true;
     };
 
-    const ask = async (system: string, roomy = false): Promise<TranslationResult & { inTarget?: boolean; }> => {
+    /**
+     * Six different things can send one message back for a second answer, and
+     * a log showing two requests without saying which is unreadable: that is
+     * how a cut-off answer and a rate limit looked like one event for a week.
+     */
+    const ask = async (system: string, roomy = false, why = ""): Promise<TranslationResult & { inTarget?: boolean; }> => {
+        if (why) record("info", kind, `asking again: ${why}`);
+
         const cost = (id: string) => estimateTokens(`${id}|${kind}`, system.length + text.length);
 
         // The backup goes first only when it can start at once and would be
@@ -1555,7 +1562,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         // message that needs it. A half-written answer counts too: sending half
         // a sentence under someone's name is worse than sending nothing.
         if (CUT_OFF.test(data)) {
-            if (!roomy) return ask(system, true);
+            if (!roomy) return ask(system, true, "the answer was cut off where the budget ran out");
             throw fail("error.truncated");
         }
 
@@ -1621,7 +1628,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
         let retried = result;
         for (const nudge of nudges) {
-            retried = await ask(basePrompt + nudge);
+            retried = await ask(basePrompt + nudge, false, "the answer came back in the wrong language");
             if (scriptShare(retried.text, target) >= 0.3) break;
         }
 
@@ -1635,7 +1642,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const cleaner = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer still contained words in the original language.`
-            + ` Translate everything into ${target}, leaving nothing behind.`
+            + ` Translate everything into ${target}, leaving nothing behind.`,
+            false,
+            "part of the message stayed in its own language"
         );
 
         if (scriptShare(cleaner.text, target) > share) result = cleaner;
@@ -1648,7 +1657,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             basePrompt
             + `\n\nIMPORTANT: your previous answer was not written on ${lines} lines.`
             + ` Give the same translation again on ${lines} lines, broken after the same words`
-            + " as the original. Do not change the wording, only the line breaks."
+            + " as the original. Do not change the wording, only the line breaks.",
+            false,
+            "the writer's line breaks were flattened"
         );
 
         if (lineCount(rebroken.text) === lines && scriptShare(rebroken.text, target) >= 0.3) result = rebroken;
@@ -1663,7 +1674,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             basePrompt
             + "\n\nIMPORTANT: your previous answer lost the capital letters the writer typed."
             + ` The words they wrote in capitals are written in capitals in ${target} as well.`
-            + " Give the same translation again, with those words in capitals."
+            + " Give the same translation again, with those words in capitals.",
+            false,
+            "the capitals the writer typed were lost"
         );
 
         if (SHOUTED.test(louder.text) && scriptShare(louder.text, target) >= 0.3) result = louder;
@@ -1673,7 +1686,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         // A placeholder lost or doubled would drop the writer's text or say it
         // twice; one blunter request nearly always sorts it out.
         if (!kept.complete(result.text)) {
-            const again = await ask(basePrompt + kept.nudge());
+            const again = await ask(basePrompt + kept.nudge(), false, "a kept fragment was lost or doubled");
             if (kept.complete(again.text)) result = again;
         }
 

@@ -117,10 +117,10 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 145 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 154 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
-| `test/log.mjs` | 21 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
+| `test/log.mjs` | 23 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
 | `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
@@ -176,8 +176,8 @@ names the language and explains what was meant.
 ## Running things
 
 ```
-node test/prompts.mjs      # 145 checks; needs esbuild
-node test/log.mjs          # 21 checks on the log and on error notices; needs esbuild
+node test/prompts.mjs      # 154 checks; needs esbuild
+node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment
 node test/measure.mjs      # tokens and timing; also needs tools/ built

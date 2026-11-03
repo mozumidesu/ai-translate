@@ -446,6 +446,40 @@ settings.gender = "female";
 await behaves("a plural in brackets survives a translation into English", translated("sent", "сколько файлов", "[ru] how many file(s)"), "how many file(s)");
 settings.gender = "unset";
 
+// --- the answer budget
+
+// Thinking comes out of the answer budget, and on a long message it is most of
+// it: 620 of the 802 tokens one eight-line message took. Too small a budget
+// cuts the answer off and the whole message is asked again, which is the ask
+// the per-minute limit refuses.
+const budgetFor = async text => {
+    asked.length = 0;
+    answers = ["[ru] " + text];
+    await aiTranslate("sent", text).catch(() => { });
+    return asked[0]?.max_tokens;
+};
+
+const budget = (name, text, want) => {
+    const got = awaitedBudget[text];
+    const ok = got === want;
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `budget: ${name}`);
+    if (!ok) console.log(`       ${text.length} characters asked for ${got}, wanted ${want}`);
+};
+
+const short = "ок";
+const long = "я".repeat(623);
+const huge = "я".repeat(3000);
+const awaitedBudget = {
+    [short]: await budgetFor(short),
+    [long]: await budgetFor(long),
+    [huge]: await budgetFor(huge)
+};
+
+budget("a short message keeps the floor it always had", short, 512);
+budget("a long one is given room to think in", long, Math.ceil(623 * 1.5) + 256);
+budget("and nothing is ever asked for more than the cap", huge, 4000);
+
 // --- limits
 
 const groqDay = {
