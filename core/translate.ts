@@ -653,7 +653,7 @@ function expectedScript(language: string) {
 }
 
 /** Share of the letters that are written in the alphabet the target uses. */
-function scriptShare(text: string, language: string) {
+export function scriptShare(text: string, language: string) {
     const pattern = expectedScript(language);
     const letters = text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "").match(/\p{L}/gu) ?? [];
     if (!letters.length) return 1;

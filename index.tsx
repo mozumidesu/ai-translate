@@ -29,7 +29,8 @@ import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult, wasCancelled } from "./core/translate";
+import { changedWords, looksLikeOwnAttempt, Part, sameMessage } from "./core/learn";
+import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -104,6 +105,22 @@ function rememberOriginal(original: string, translated: string) {
 }
 
 /**
+ * AI Learn: sent text -> how a native speaker would have written it, word by
+ * word with what changed marked. Keyed by the text because the message has no
+ * id yet when the correction is asked for: it has only just been sent.
+ */
+const corrections = new Map<string, Part[]>();
+
+/** Told when a correction lands, since which message it belongs to is known by text. */
+const correctionListeners = new Set<() => void>();
+
+function rememberCorrection(sent: string, parts: Part[]) {
+    if (corrections.size > 100) corrections.clear();
+    corrections.set(sent, parts);
+    for (const tell of correctionListeners) tell();
+}
+
+/**
  * Discord's message box carries a quote on by itself: inside one, every new
  * line arrives with "> " already on it. The writer typed the marker once, so
  * the echo of what they wrote shows it once.
@@ -142,12 +159,22 @@ function TranslationAccessory({ message }: { message: Message; }) {
         return () => void TranslationSetters.delete(message.id);
     }, [message.id]);
 
+    // A correction arrives after the message is already on screen, and it is
+    // found by text rather than by id, so the accessory is told to look again.
+    const [, lookAgain] = useState(0);
+    useEffect(() => {
+        const tell = () => lookAgain(n => n + 1);
+        correctionListeners.add(tell);
+        return () => void correctionListeners.delete(tell);
+    }, []);
+
     const isOwn = message.author?.id === UserStore.getCurrentUser()?.id;
     const original = isOwn && settings.store.showOriginal
         ? sentOriginals.get(message.content)
         : undefined;
+    const corrected = isOwn ? corrections.get(message.content) : undefined;
 
-    if (!translation && !original) return null;
+    if (!translation && !original && !corrected) return null;
 
     return (
         <span className={cl("accessory")}>
@@ -167,7 +194,16 @@ function TranslationAccessory({ message }: { message: Message; }) {
                         }}>{t("message.hide")}</button>
                     </span>
                 </>
-                : <>{t("message.youWrote")} {Parser.parse(asTyped(original))}</>}
+                : corrected
+                    ? <>
+                        {t("message.native")}{" "}
+                        {corrected.map((part, at) => (
+                            <span key={at} className={part.changed ? cl("fixed") : undefined}>
+                                {at ? " " : ""}{part.text}
+                            </span>
+                        ))}
+                    </>
+                    : <>{t("message.youWrote")} {Parser.parse(asTyped(original!))}</>}
         </span>
     );
 }
@@ -275,6 +311,21 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
 const inFlight = new Set<string>();
 
 /**
+ * AI Learn: one request, made after the message has already gone, for how a
+ * native speaker would have written it. Nothing waits on this, and a failure
+ * says nothing: a suggestion nobody asked for must not interrupt a
+ * conversation with an error. The log keeps it either way.
+ */
+async function askForCorrection(channelId: string, sent: string) {
+    try {
+        const { text } = await aiTranslate("correct", sent, collectContext(channelId));
+        if (text && !sameMessage(sent, text)) rememberCorrection(sent, changedWords(sent, text));
+    } catch {
+        // Nothing to say and nowhere to say it.
+    }
+}
+
+/**
  * Shared by sending and editing: translate in place, or hold the message back.
  *
  * Everything happens inside the try, the checks included. Vencord catches
@@ -295,6 +346,21 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         // nothing to translate, and a nickname on its own is exactly what a
         // model mistakes for a word.
         if (isJustAName(original, channelId)) return;
+
+        // AI Learn: this is the writer having a go at the language themselves,
+        // not a message to translate. It goes as typed and the chat box waits
+        // on nothing; the correction catches up with it under the message.
+        // Script decides it here, for free, and where two languages share an
+        // alphabet it cannot, which is said plainly in core/learn.ts.
+        if (settings.store.aiLearn && looksLikeOwnAttempt(original, scriptShare(original, settings.store.sentLanguage))) {
+            // The writer's own \markers\ still have to come off, exactly as
+            // they would if this were being translated.
+            const kept = keepPieces(original, true);
+            message.content = (kept.pieces.length ? kept.restore(kept.masked) : original) ?? original;
+
+            void askForCorrection(channelId, message.content);
+            return;
+        }
 
         // A message can wait on a provider's budget with its text still in the
         // chat box; Enter pressed again meanwhile must not send it a second time.
@@ -342,7 +408,9 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
 export default definePlugin({
     name: "AI Translate",
     description: "Translate your outgoing (and incoming) Discord messages with an LLM, per chat, without wrecking your writing style.",
-    tags: ["Chat", "Utility", "Translate"],
+    // Vencord's tags are a closed list, and "Translate" is not on it: the
+    // plugin list filters by them, so an invented one filters nothing.
+    tags: ["Chat", "Utility"],
     authors: [{ name: "「OI」茂住", id: 1418804885066874880n }],
     settings,
 

@@ -211,6 +211,16 @@ export const settings = definePluginSettings({
         default: true
     },
 
+    // Off by default: it makes a request for a message that would otherwise
+    // have made none, and most people are not learning the language they
+    // translate into.
+    aiLearn: {
+        type: OptionType.BOOLEAN,
+        get displayName() { return t("learn.name"); },
+        get description() { return t("learn.desc"); },
+        default: false
+    },
+
     // --- how the translation reads ---
 
     translationTitle: {

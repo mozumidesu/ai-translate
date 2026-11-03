@@ -50,3 +50,9 @@ jobs:
 
       - name: Whether the Vencord imports still exist
         run: ESBUILD=node_modules/esbuild node test/imports.mjs
+
+      # After that one, which leaves the Vencord checkout behind for this to
+      # reuse. It answers the other half: not whether a name still exists, but
+      # whether the values handed to it are still ones Vencord accepts.
+      - name: Whether the types still agree with Vencord's
+        run: node test/types.mjs

@@ -132,6 +132,16 @@
     font-size: 0.8125rem;
 }
 
+/* The words a correction changed. Marked rather than coloured: a learner
+   reading this wants to see which words moved, and colour alone would be lost
+   in a theme that repaints the text. */
+.vc-aitrans-fixed {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
 .vc-aitrans-quiet {
     color: var(--text-muted);
 }

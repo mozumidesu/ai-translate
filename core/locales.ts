@@ -57,6 +57,9 @@ const en: Strings = {
 
     "explain.name": "Add AI Explain to the right-click menu",
     "explain.desc": "For a message that a translation alone does not make clear: chat shorthand, a regional word, an inside joke. It names the language, spells the abbreviations out and says what was meant",
+    "learn.name": "AI Learn: correct what I write myself",
+    "learn.desc": "When you write in the language you translate into, the message goes as typed and the version a native speaker would have written appears under it. Only you see it. One request a message, and only in the chats where translation is on",
+    "message.native": "a native speaker would write:",
 
     "context.name": "Use recent messages as context",
     "context.desc": "Sends the last few messages of the conversation with each request, so short replies like 'yes' or 'it won't paste' are understood correctly. Costs a little more of your provider's quota",
@@ -248,6 +251,9 @@ const ru: Strings = {
 
     "explain.name": "Добавить «Объяснить» в меню по правому клику",
     "explain.desc": "Для сообщений, которые не спасает даже перевод: сокращения, региональные словечки, шутки для своих. Назовёт язык, расшифрует сокращения и скажет, что имелось в виду",
+    "learn.name": "AI Learn: исправлять то, что я пишу сам",
+    "learn.desc": "Когда вы пишете на том языке, на который переводите, сообщение уходит как набрано, а под ним появляется вариант носителя. Видите его только вы. Один запрос на сообщение и только в чатах, где перевод включён",
+    "message.native": "носитель написал бы так:",
 
     "context.name": "Учитывать последние сообщения",
     "context.desc": "Передаёт вместе с запросом несколько предыдущих сообщений переписки, чтобы короткие реплики вроде «да» или «не вставляется» понимались правильно. Немного увеличивает расход квоты провайдера",
@@ -439,6 +445,9 @@ const uk: Strings = {
 
     "explain.name": "Додати «Пояснити» в меню за правим кліком",
     "explain.desc": "Для повідомлень, яким не допомагає навіть переклад: скорочення, регіональні слівця, жарти для своїх. Назве мову, розшифрує скорочення і скаже, що малося на увазі",
+    "learn.name": "AI Learn: виправляти те, що я пишу сам",
+    "learn.desc": "Коли ви пишете мовою, на яку перекладаєте, повідомлення йде як набрано, а під ним з’являється варіант носія. Бачите його тільки ви. Один запит на повідомлення і лише в чатах, де переклад увімкнено",
+    "message.native": "носій написав би так:",
 
     "context.name": "Враховувати останні повідомлення",
     "context.desc": "Передає разом із запитом кілька попередніх повідомлень листування, щоб короткі репліки на кшталт «так» або «не вставляється» розумілися правильно. Трохи збільшує витрату квоти провайдера",
@@ -630,6 +639,9 @@ const ro: Strings = {
 
     "explain.name": "Adaugă «Explică» în meniul de clic dreapta",
     "explain.desc": "Pentru mesajele pe care nici traducerea nu le lămurește: prescurtări, cuvinte regionale, glume interne. îți spune în ce limbă e, desface prescurtările și zice ce s-a vrut spus",
+    "learn.name": "AI Learn: corectează ce scriu eu însumi",
+    "learn.desc": "Când scrii în limba în care traduci, mesajul pleacă așa cum l-ai scris, iar sub el apare varianta pe care ar fi scris-o un vorbitor nativ. O vezi doar tu. O cerere pe mesaj și numai în conversațiile unde traducerea e pornită",
+    "message.native": "un vorbitor nativ ar scrie:",
 
     "context.name": "Folosește mesajele recente drept context",
     "context.desc": "Trimite împreună cu cererea ultimele câteva mesaje din conversație, ca replicile scurte precum „da” sau „nu se lipește” să fie înțelese corect. Consumă puțin mai mult din cota furnizorului",
@@ -811,6 +823,9 @@ const de: Strings = {
     "showOriginal.desc": "Fügt unter deinen Nachrichten eine unauffällige Zeile mit dem hinzu, was du tatsächlich geschrieben hast. Nur für dich sichtbar",
     "explain.name": "„Erklären“ im Rechtsklick-Menü anzeigen",
     "explain.desc": "Für Nachrichten, bei denen auch die Übersetzung nicht weiterhilft: Abkürzungen, regionale Wörter, Insider-Witze. Nennt die Sprache, löst die Abkürzungen auf und sagt, was gemeint war",
+    "learn.name": "AI Learn: verbessern, was ich selbst schreibe",
+    "learn.desc": "Wenn du in der Sprache schreibst, in die du übersetzt, geht die Nachricht so raus, wie du sie getippt hast, und darunter erscheint die Fassung, die ein Muttersprachler geschrieben hätte. Nur du siehst sie. Eine Anfrage pro Nachricht, und nur in den Chats, in denen übersetzt wird",
+    "message.native": "ein Muttersprachler würde schreiben:",
 
     "context.name": "Letzte Nachrichten als Zusammenhang nutzen",
     "context.desc": "Schickt die letzten Nachrichten des Gesprächs mit jeder Anfrage mit, damit kurze Antworten wie „ja“ oder „geht nicht rein“ richtig verstanden werden. Verbraucht etwas mehr vom Kontingent des Anbieters",
@@ -987,6 +1002,9 @@ const es: Strings = {
     "showOriginal.desc": "Añade bajo tus mensajes una línea discreta con lo que escribiste de verdad. Solo la ves tú",
     "explain.name": "Añadir «Explicar» al menú del clic derecho",
     "explain.desc": "Para mensajes que ni traducidos se entienden: abreviaturas, palabras regionales, bromas internas. Dice en qué idioma está, desarrolla las abreviaturas y explica qué se quiso decir",
+    "learn.name": "AI Learn: corregir lo que escribo yo",
+    "learn.desc": "Cuando escribes en el idioma al que traduces, el mensaje sale tal cual y debajo aparece la versión que habría escrito un hablante nativo. Solo la ves tú. Una petición por mensaje, y solo en los chats donde la traducción está activada",
+    "message.native": "un hablante nativo escribiría:",
 
     "context.name": "Usar los mensajes recientes como contexto",
     "context.desc": "Envía los últimos mensajes de la conversación con cada petición, para que respuestas cortas como «sí» o «no se pega» se entiendan bien. Consume algo más de la cuota del proveedor",
@@ -1163,6 +1181,9 @@ const fr: Strings = {
     "showOriginal.desc": "Ajoute sous vos messages une ligne discrète avec ce que vous avez réellement écrit. Visible de vous seul",
     "explain.name": "Ajouter « Expliquer » au menu du clic droit",
     "explain.desc": "Pour les messages que même la traduction n'éclaire pas : abréviations, mots régionaux, blagues internes. Indique la langue, développe les abréviations et dit ce qui était voulu",
+    "learn.name": "AI Learn : corriger ce que j'écris moi-même",
+    "learn.desc": "Quand vous écrivez dans la langue vers laquelle vous traduisez, le message part tel quel et la version qu'aurait écrite un locuteur natif apparaît en dessous. Vous seul la voyez. Une requête par message, et seulement dans les conversations où la traduction est active",
+    "message.native": "un locuteur natif écrirait :",
 
     "context.name": "Utiliser les messages récents comme contexte",
     "context.desc": "Envoie les derniers messages de la conversation avec chaque demande, pour que les réponses courtes comme « oui » ou « ça ne se colle pas » soient comprises correctement. Consomme un peu plus du quota du fournisseur",
@@ -1339,6 +1360,9 @@ const pt: Strings = {
     "showOriginal.desc": "Acrescenta sob suas mensagens uma linha discreta com o que você escreveu de verdade. Visível só para você",
     "explain.name": "Adicionar «Explicar» ao menu do botão direito",
     "explain.desc": "Para mensagens que nem traduzidas ficam claras: abreviações, palavras regionais, piadas internas. Diz em que idioma está, abre as abreviações e explica o que se quis dizer",
+    "learn.name": "AI Learn: corrigir o que eu mesmo escrevo",
+    "learn.desc": "Quando você escreve no idioma para o qual traduz, a mensagem sai como foi digitada e abaixo dela aparece a versão que um falante nativo teria escrito. Só você a vê. Um pedido por mensagem, e apenas nas conversas onde a tradução está ligada",
+    "message.native": "um falante nativo escreveria:",
 
     "context.name": "Usar as mensagens recentes como contexto",
     "context.desc": "Envia as últimas mensagens da conversa junto com cada pedido, para que respostas curtas como «sim» ou «não cola» sejam entendidas direito. Consome um pouco mais da cota do provedor",
@@ -1515,6 +1539,9 @@ const ja: Strings = {
     "showOriginal.desc": "自分のメッセージの下に、実際に入力した文章を控えめな行で表示します。自分にだけ見えます",
     "explain.name": "右クリックメニューに「説明する」を追加",
     "explain.desc": "翻訳しても分からないメッセージのために。略語、地域独特の言い回し、内輪のネタなど。言語を示し、略語を展開し、何が言いたかったかを伝えます",
+    "learn.name": "AI Learn: 自分で書いた文を直してもらう",
+    "learn.desc": "翻訳先の言語で自分から書くと、メッセージはそのまま送られ、その下にネイティブならこう書く、という文が出ます。見えるのはあなただけです。1 通につきリクエスト 1 回、翻訳が有効なチャットだけで動きます",
+    "message.native": "ネイティブならこう書きます:",
 
     "context.name": "直前のメッセージを文脈として使う",
     "context.desc": "会話の直近のメッセージをリクエストに添えるので、「うん」「貼れない」のような短い返事も正しく解釈されます。プロバイダーの使用量は少し増えます",
@@ -1691,6 +1718,9 @@ const zh: Strings = {
     "showOriginal.desc": "在你的消息下方加一行不显眼的原文，只有你能看到",
     "explain.name": "在右键菜单中加入「解释」",
     "explain.desc": "用于翻译之后仍看不懂的消息：缩写、地区用词、圈内梗。会说明是哪种语言、还原缩写并解释想表达什么",
+    "learn.name": "AI Learn：改我自己写的句子",
+    "learn.desc": "当你用翻译的目标语言自己写时，消息照原样发出，下面出现母语者会怎么写。只有你看得到。每条消息一次请求，且只在开了翻译的聊天里",
+    "message.native": "母语者会这样写：",
 
     "context.name": "把最近的消息作为上下文",
     "context.desc": "随每次请求附上对话中最近的几条消息，这样「嗯」「贴不上去」之类的简短回复才能被正确理解。会多消耗一些服务商额度",
@@ -1878,6 +1908,9 @@ const th: Strings = {
     "glossary.desc": "คำและวลีคั่นด้วยจุลภาคที่จะไม่ถูกแปลเลย เช่น ชื่อ ชื่อเล่น ศัพท์ในเกม เครื่องหมายเท่ากับใช้แทนที่คำหนึ่งด้วยอีกคำ: ถ้าเขียน rights = permissions คำทางซ้ายจะไม่โผล่มาทั้งในข้อความและในคำแปล ชื่อของคนในบทสนทนาจะถูกป้องกันโดยอัตโนมัติ",
     "explain.name": "เพิ่ม «อธิบาย» ในเมนูคลิกขวา",
     "explain.desc": "สำหรับข้อความที่แปลแล้วก็ยังไม่เข้าใจ เช่น ตัวย่อ คำเฉพาะถิ่น มุกในกลุ่ม จะบอกว่าเป็นภาษาอะไร ขยายตัวย่อ และอธิบายว่าหมายถึงอะไร",
+    "learn.name": "AI Learn: แก้สิ่งที่ฉันเขียนเอง",
+    "learn.desc": "เมื่อคุณเขียนด้วยภาษาที่คุณแปลไป ข้อความจะถูกส่งตามที่พิมพ์ และข้างใต้จะขึ้นว่าเจ้าของภาษาจะเขียนอย่างไร เห็นได้เฉพาะคุณ หนึ่งคำขอต่อหนึ่งข้อความ และทำงานเฉพาะในแชตที่เปิดการแปลไว้",
+    "message.native": "เจ้าของภาษาจะเขียนว่า:",
 
     "context.name": "ใช้ข้อความล่าสุดเป็นบริบท",
     "context.desc": "ส่งข้อความล่าสุดของบทสนทนาไปพร้อมทุกคำขอ เพื่อให้คำตอบสั้น ๆ อย่าง «ใช่» หรือ «วางไม่ได้» ถูกเข้าใจอย่างถูกต้อง ใช้โควตาของผู้ให้บริการเพิ่มขึ้นเล็กน้อย",
@@ -2054,6 +2087,9 @@ const vi: Strings = {
     "glossary.desc": "Các từ và cụm từ cách nhau bằng dấu phẩy, không bao giờ được dịch: tên, biệt danh, thuật ngữ trong game. Dấu bằng thay một từ bằng từ khác: với rights = permissions, từ bên trái không xuất hiện trong tin nhắn lẫn trong bản dịch. Tên của những người trong cuộc trò chuyện được bảo vệ tự động",
     "explain.name": "Thêm «Giải thích» vào menu chuột phải",
     "explain.desc": "Dành cho tin nhắn dịch rồi vẫn khó hiểu: từ viết tắt, tiếng địa phương, chuyện đùa nội bộ. Cho biết đó là tiếng gì, mở rộng từ viết tắt và nói ý người viết muốn gì",
+    "learn.name": "AI Learn: sửa những gì tôi tự viết",
+    "learn.desc": "Khi bạn tự viết bằng ngôn ngữ mình dịch sang, tin nhắn sẽ đi nguyên văn và bên dưới hiện bản mà người bản ngữ sẽ viết. Chỉ mình bạn thấy. Một yêu cầu cho mỗi tin nhắn, và chỉ trong những cuộc trò chuyện đã bật dịch",
+    "message.native": "người bản ngữ sẽ viết:",
 
     "context.name": "Dùng các tin nhắn gần đây làm ngữ cảnh",
     "context.desc": "Gửi kèm vài tin nhắn gần nhất của cuộc trò chuyện theo mỗi yêu cầu, để những câu ngắn như «ừ» hay «không dán được» được hiểu đúng. Tốn thêm một chút hạn mức của nhà cung cấp",
@@ -2230,6 +2266,9 @@ const tr: Strings = {
     "glossary.desc": "Virgülle ayrılmış, asla çevrilmeyecek sözcük ve ifadeler: adlar, takma adlar, oyun terimleri. Eşittir işareti bir sözcüğü başkasıyla değiştirir: rights = permissions yazarsanız soldaki sözcük ne mesajda ne de çeviride görünür. Sohbetteki kişilerin adları kendiliğinden korunur",
     "explain.name": "Sağ tık menüsüne «Açıkla» ekle",
     "explain.desc": "Çevirisi bile yetmeyen mesajlar için: kısaltmalar, yöresel kelimeler, aralarında geçen şakalar. Hangi dil olduğunu söyler, kısaltmaları açar ve ne denmek istendiğini anlatır",
+    "learn.name": "AI Learn: kendi yazdıklarımı düzelt",
+    "learn.desc": "Çevirdiğiniz dilde kendiniz yazdığınızda mesaj yazdığınız gibi gider, altında da bir ana dili konuşanın nasıl yazacağı görünür. Bunu yalnızca siz görürsünüz. Mesaj başına bir istek, ve yalnızca çevirinin açık olduğu sohbetlerde",
+    "message.native": "ana dili konuşan biri şöyle yazardı:",
 
     "context.name": "Son mesajları bağlam olarak kullan",
     "context.desc": "Her istekle birlikte sohbetin son birkaç mesajını gönderir; böylece «evet» ya da «yapıştıramıyorum» gibi kısa yanıtlar doğru anlaşılır. Sağlayıcı kotanızdan biraz daha fazla harcar",
@@ -2405,6 +2444,9 @@ const id: Strings = {
 
     "explain.name": "Tambahkan “Jelaskan” ke menu klik kanan",
     "explain.desc": "Untuk pesan yang tetap tidak jelas meski sudah diterjemahkan: singkatan obrolan, kata daerah, lelucon internal. Menyebut bahasanya, menguraikan singkatan, dan menjelaskan maksudnya",
+    "learn.name": "AI Learn: perbaiki yang saya tulis sendiri",
+    "learn.desc": "Ketika Anda menulis dalam bahasa tujuan terjemahan, pesannya terkirim apa adanya dan di bawahnya muncul versi yang akan ditulis penutur asli. Hanya Anda yang melihatnya. Satu permintaan per pesan, dan hanya di obrolan yang terjemahannya menyala",
+    "message.native": "penutur asli akan menulis:",
 
     "context.name": "Gunakan pesan terbaru sebagai konteks",
     "context.desc": "Mengirim beberapa pesan terakhir dalam percakapan bersama setiap permintaan, sehingga balasan pendek seperti 'ya' atau 'nggak bisa ditempel' dipahami dengan benar. Memakai sedikit lebih banyak kuota penyedia",
@@ -2596,6 +2638,9 @@ const ar: Strings = {
 
     "explain.name": "إضافة «اشرح» إلى قائمة النقر بالزر الأيمن",
     "explain.desc": "للرسائل التي لا تكفي الترجمة وحدها لفهمها: اختصارات الدردشة، أو كلمة محلية، أو نكتة خاصة. يذكر اللغة ويفك الاختصارات ويوضح المقصود",
+    "learn.name": "AI Learn: صحّح ما أكتبه بنفسي",
+    "learn.desc": "عندما تكتب باللغة التي تترجم إليها، تُرسَل الرسالة كما كتبتها ويظهر تحتها ما كان سيكتبه متحدث أصلي. لا يراه سواك. طلب واحد لكل رسالة، وفي المحادثات التي فُعّلت فيها الترجمة فقط",
+    "message.native": "متحدث أصلي كان سيكتب:",
 
     "context.name": "استخدام الرسائل الأخيرة كسياق",
     "context.desc": "يرسل آخر بضع رسائل من المحادثة مع كل طلب، فتُفهم الردود القصيرة مثل «نعم» أو «لا يلصق» فهمًا صحيحًا. يستهلك قليلًا من حصة المزوّد",
@@ -2787,6 +2832,9 @@ const ko: Strings = {
 
     "explain.name": "오른쪽 클릭 메뉴에 AI Explain 추가",
     "explain.desc": "번역만으로는 이해되지 않는 메시지를 위한 기능입니다. 채팅 줄임말, 지역 표현, 그들만의 농담 등. 어떤 언어인지 알려주고, 줄임말을 풀어 쓰고, 무슨 뜻이었는지 설명합니다",
+    "learn.name": "AI Learn: 내가 직접 쓴 문장 고치기",
+    "learn.desc": "번역해 보내는 언어로 직접 쓰면 메시지는 적은 그대로 나가고, 그 아래에 원어민이라면 이렇게 썼을 문장이 나타납니다. 당신에게만 보입니다. 메시지당 요청 한 번, 번역이 켜진 대화에서만 작동합니다",
+    "message.native": "원어민이라면 이렇게 씁니다:",
 
     "context.name": "최근 메시지를 맥락으로 사용",
     "context.desc": "대화의 최근 메시지 몇 개를 요청과 함께 보내서 '응'이나 '붙여넣기가 안 돼' 같은 짧은 답도 제대로 전달됩니다. 제공자의 한도를 조금 더 씁니다",
