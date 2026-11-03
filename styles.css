@@ -180,12 +180,12 @@ textarea.vc-aitrans-input.vc-aitrans-input::placeholder {
 input.vc-aitrans-input.vc-aitrans-input:focus,
 textarea.vc-aitrans-input.vc-aitrans-input:focus {
     outline: none;
-    border-color: #5865f2;
+    border-color: var(--brand-500, #5865f2);
 }
 
 input.vc-aitrans-input.vc-aitrans-input-wrong,
 input.vc-aitrans-input.vc-aitrans-input-wrong:focus {
-    border-color: #ed4245;
+    border-color: var(--text-danger, var(--status-danger, #ed4245));
 }
 
 textarea.vc-aitrans-input.vc-aitrans-textarea {
@@ -311,16 +311,19 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     font-size: 0.875rem;
 }
 
-.vc-aitrans-keep-list > li {
+/* Of the twenty most downloaded themes, two style ul and li themselves, one of
+   them with 126 !important rules. The class is doubled so the bullets survive
+   a theme that resets lists wholesale. */
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li {
     display: list-item;
     list-style: disc outside;
 }
 
-.vc-aitrans-keep-list > li::marker {
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li::marker {
     color: var(--text-subtle);
 }
 
-.vc-aitrans-keep-list > li + li {
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li + li {
     margin-top: 2px;
 }
 
