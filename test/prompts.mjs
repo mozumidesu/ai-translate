@@ -186,6 +186,7 @@ absent("and that rule is kept away from here", IN, "Never add a dash");
 // marks it. These checks translate into Russian one way and English the other,
 // which is the whole gate in two lines.
 check("an unknown gender is recast, not hedged", IN, "Never offer both endings in brackets");
+check("and recasting is not licence to drop a person", IN, "this is not about leaving a person out");
 absent("and English is not told to, having nothing to mark", OUT, "both endings in brackets");
 check("the writer's own capitals are kept", IN, "typed in lower case stays in lower case");
 

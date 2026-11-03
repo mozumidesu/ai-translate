@@ -260,13 +260,17 @@ const ADDRESS_RULE =
     + "form being filled in, and anh, chị, em claim a difference in age that the original may never have stated.";
 
 // "thanks for helping me back then" came back as "спасибо, что тогда помог(ла)
-// мне": both endings in brackets. Nothing had asked for that and nothing had
-// said not to, since a gender rule is only sent for the reader's own messages.
+// мне": both endings in brackets. Saying "name the action rather than who
+// performed it" did not move it, because NOTHING_LOST_RULE says every person
+// the original names is in the translation, and the model kept the person and
+// hedged the ending. So the two no longer disagree: the person stays, the verb
+// becomes a noun.
 const NO_HEDGING_RULE =
-    "Where the target language marks gender and the message does not say whose, recast the sentence so "
-    + "that it never comes up: name the action rather than who performed it, or reach for a form the "
-    + "language does not inflect. Never offer both endings in brackets or separated by a slash, and never "
-    + "pick one at random; both read as a machine answering rather than a person writing.";
+    "Where the target language marks gender and the message does not say whose, say it in a way that does "
+    + "not have to. Everyone the message names is still named, so this is not about leaving a person out: "
+    + "move the action itself into a form the language does not inflect, a noun in place of a past-tense "
+    + "verb. Never offer both endings in brackets or separated by a slash, and never pick one at random; "
+    + "both read as a machine answering rather than a person writing.";
 
 /** Many languages agree adjectives and past tense with the speaker's gender. */
 const GENDER_RULES: Record<string, string> = {
