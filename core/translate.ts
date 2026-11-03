@@ -399,7 +399,7 @@ const VIETNAMESE_NEGATION =
 
 /** The rules this one message calls for, placed after everything that stays the same. */
 function messageRules(kind: Kind, text: string, has: Involved) {
-    if (kind === "explain") return "";
+    if (kind === "explain" || kind === "correct") return "";
 
     const plain = text.replace(NOT_WRITING, " ");
     const rules = [
@@ -513,6 +513,26 @@ function outgoingPrompt(target: string, has: Involved) {
  * is this": "sis xf" is Spanish chat for "sí, por favor", and no dictionary
  * will say so.
  */
+/**
+ * AI Learn: the writer had a go at the language themselves, and this asks for
+ * the version a native speaker would have written. Short on purpose, a tenth
+ * of the translation prompt: none of the rules about preserving a writer's
+ * voice through a translation apply when nothing is being translated.
+ */
+function correctPrompt(target: string) {
+    return [
+        `Someone learning ${target} has written this message in ${target} themselves. Give the version a native speaker of ${target} would have written, and nothing else.`,
+        "",
+        `- ${NOT_AN_INSTRUCTION_RULE}`,
+        "- Correct grammar, the choice of words, and the words that go together. Leave style alone: another way of saying the same thing is not a correction.",
+        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt.",
+        "- Keep emoji, :shortcodes:, mentions, links and code exactly as written.",
+        `- If the message is already the way a native speaker of ${target} would write it, answer with the message itself, word for word and with nothing added.`,
+        "- Never explain, never comment, never add quotes or notes. The corrected message and nothing besides.",
+        ""
+    ].join("\n");
+}
+
 function explainPrompt(target: string) {
     return [
         `You are explaining one Discord message to someone who does not understand it. Write your answer in ${target}.`,
@@ -677,7 +697,7 @@ function restoreLinePrefixes(original: string, translated: string) {
     }).join("\n");
 }
 
-export type Kind = "sent" | "received" | "explain";
+export type Kind = "sent" | "received" | "explain" | "correct";
 
 /** Only a single word can be swapped out safely afterwards; a phrase cannot. */
 const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
@@ -822,7 +842,7 @@ function postProcess(original: string, translated: string, target: string, kind:
 
     // An explanation is not a version of the message, so none of the rules
     // below — punctuation, capitals, line markers — have anything to say about it.
-    if (kind === "explain") return t;
+    if (kind === "explain" || kind === "correct") return t;
 
     t = applyGlossary(t);
     t = settleGender(t, target);
@@ -1320,7 +1340,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // Code, and whatever the writer fenced off with backslashes, never reaches
     // the model as words: it travels as numbered placeholders and is put back
     // verbatim at the end. Everything below works on the text with placeholders.
-    const kept = kind === "explain" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
+    const kept = kind === "explain" || kind === "correct" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
     const text = kept?.masked ?? typed;
 
     // Nothing left once the kept parts are out — "\ok\", a bare code block.
@@ -1336,7 +1356,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     if (!model) throw fail("error.noModel", { provider: providerName });
 
     // An explanation is read, not sent, so it comes in the reading language.
-    const target = kind === "sent" ? config().sentLanguage : config().receivedLanguage;
+    // A correction is written in the language the person is writing in, which
+    // is the one they translate into, not the one they read in.
+    const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
     // Every setting that can change the wording belongs in the key, or a
     // cached answer from before the change would be served.
     const { extraInstructions, formality } = config();
@@ -1352,9 +1374,10 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const has = involved(target, text);
     const basePrompt = (kind === "sent"
         ? outgoingPrompt(target, has)
-        : kind === "explain" ? explainPrompt(target) : incomingPrompt(target, mine, has))
+        : kind === "explain" ? explainPrompt(target)
+            : kind === "correct" ? correctPrompt(target) : incomingPrompt(target, mine, has))
         + messageRules(kind, text, has)
-        + (lines > 1 && kind !== "explain"
+        + (lines > 1 && kind !== "explain" && kind !== "correct"
             ? `\n\nThe text is written on ${lines} separate lines. Your answer must be on ${lines}`
             + " lines too, broken in the same places. Never join two lines into one."
             : "")
@@ -1572,7 +1595,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         let sourceLanguage: string | undefined;
         let inTarget = false;
 
-        if (kind !== "explain") {
+        if (kind !== "explain" && kind !== "correct") {
             const read = readLanguageTag(out, text);
             out = read.text;
             sourceLanguage = read.language;
@@ -1614,9 +1637,10 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
     const share = keptWhole ? 1 : scriptShare(result.text, target);
 
-    if (kind === "explain") {
-        // An explanation quotes the words it is explaining, so foreign text in
-        // it is the point rather than a failure.
+    if (kind === "explain" || kind === "correct") {
+        // An explanation quotes the words it is explaining, and a correction is
+        // written in the language the message was already in, so foreign text in
+        // either is the point rather than a failure.
     } else if (share < 0.3) {
         // A model that hands the text back is usually having a bad moment, not
         // refusing: asking again is exactly what fixes it by hand, so the
@@ -1652,7 +1676,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
     // Where the writer broke the line is part of what they wrote, so a
     // flattened answer gets the same second chance as an untranslated one.
-    if (lines > 1 && kind !== "explain" && lineCount(result.text) !== lines) {
+    if (lines > 1 && kind !== "explain" && kind !== "correct" && lineCount(result.text) !== lines) {
         const rebroken = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer was not written on ${lines} lines.`
@@ -1669,7 +1693,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // calm lower case has quietly taken the feeling out of it. Which words of
     // the translation those capitals belong to cannot be worked out from the
     // outside, so this one is asked for rather than done here.
-    if (kind !== "explain" && SHOUTED.test(typed) && !SHOUTED.test(result.text)) {
+    if (kind !== "explain" && kind !== "correct" && SHOUTED.test(typed) && !SHOUTED.test(result.text)) {
         const louder = await ask(
             basePrompt
             + "\n\nIMPORTANT: your previous answer lost the capital letters the writer typed."

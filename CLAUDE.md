@@ -40,10 +40,11 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
 | `core/version.ts` | The version people see, and the only place it is written down |
+| `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, and what a correction changed, word by word |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These ten (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`, `log`, `version`) build on their own, with esbuild forbidding any import
+These eleven (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
+`languages`, `locales`, `log`, `version`, `learn`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
@@ -117,7 +118,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 154 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 169 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/log.mjs` | 23 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
@@ -171,12 +172,15 @@ When changing a rule:
 
 Outgoing and incoming use separate prompts: outgoing must preserve the writer's
 voice, incoming only has to be understood. A third request type, AI Explain,
-names the language and explains what was meant.
+names the language and explains what was meant. A fourth, AI Learn, asks how a
+native speaker would have written what the person wrote themselves; it is a
+tenth the size of the others, because none of the rules about carrying a
+writer's voice through a translation apply when nothing is being translated.
 
 ## Running things
 
 ```
-node test/prompts.mjs      # 154 checks; needs esbuild
+node test/prompts.mjs      # 169 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment

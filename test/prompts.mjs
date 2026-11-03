@@ -41,7 +41,9 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`,
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`
+            + `export { changedWords, looksLikeOwnAttempt, sameMessage } from "./core/learn";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -74,7 +76,8 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext, isJustAName } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, isJustAName,
+    changedWords, looksLikeOwnAttempt, sameMessage } = await import(join(out, "core.mjs"));
 
 /** What the chat above shows, for the tests that need someone in it. */
 let history = [];
@@ -445,6 +448,44 @@ await behaves("nothing is guessed when the gender is not known", translated("rec
 settings.gender = "female";
 await behaves("a plural in brackets survives a translation into English", translated("sent", "сколько файлов", "[ru] how many file(s)"), "how many file(s)");
 settings.gender = "unset";
+
+// --- AI Learn
+
+const CORRECT = { name: "correct", text: await promptFor("correct", "i have went there yesterday", "I went there yesterday") };
+check("the correction names the language being learnt", CORRECT, "learning English has written this message in English");
+check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
+check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
+check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");
+absent("none of the translation rules come with it", CORRECT, "Never add a dash");
+absent("and nor does the answer format", CORRECT, "square-bracketed ISO 639-1 code");
+
+const learn = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `learn: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "wanted:", JSON.stringify(want));
+};
+
+// Four words is where a correction stops being pedantry about "ok" and "thanks".
+learn("three words are too few to correct", looksLikeOwnAttempt("i am tired", 1), false);
+learn("four are enough", looksLikeOwnAttempt("i am very tired today", 1), true);
+learn("and the wrong alphabet is not an attempt at all", looksLikeOwnAttempt("я очень устал сегодня", 0.1), false);
+
+// A word the correction only took out cannot be marked in the corrected text:
+// there is nothing there to mark. The corrected sentence still shows.
+learn("a word only removed leaves nothing marked",
+    changedWords("i have went there yesterday", "i went there yesterday").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "went", "there", "yesterday"]);
+learn("an added word is marked where it was added",
+    changedWords("i go store", "i go to the store").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "go", "*to", "*the", "store"]);
+learn("and a message that only lost a word has nothing marked",
+    changedWords("i did go to the store", "i went to the store").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "*went", "to", "the", "store"]);
+
+learn("the same message is the same message", sameMessage("See you tomorrow!", "See you tomorrow!"), true);
+learn("and punctuation alone is not a correction", sameMessage("see you tomorrow", "See you tomorrow!"), true);
+learn("but a changed word is", sameMessage("see you tomorow", "see you tomorrow"), false);
 
 // --- the answer budget
 
