@@ -23,6 +23,8 @@ permissions:
   contents: write
   # Asks GitHub to keep this hourly schedule on.
   actions: write
+  # Opens an issue when the build starts failing, and closes it when it stops.
+  issues: write
 
 concurrency:
   group: build
@@ -41,3 +43,47 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/mozumidesu/ai-translate/release/build/github.sh -o github.sh
           bash github.sh
+
+      # A robot that fails silently is how Forms and Text left the plugin
+      # unbuilt for three days in October 2026: the runs were red the whole
+      # time and nobody was told. One issue is opened for an outage and closed
+      # when it ends, rather than a comment an hour for as long as it lasts.
+      #
+      # This lives in the workflow rather than in github.sh because a run can
+      # fail before that file has even been fetched.
+      - name: Say so if the build is failing
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The build robot is failing
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --search "in:title \"$TITLE\"" --json number --jq '.[0].number // empty')
+
+          if [ -n "$open" ]; then
+              echo "Issue #$open is already open about this."
+              exit 0
+          fi
+
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body \
+              "The hourly build failed and nothing new was published. Installed
+          copies keep running the build that is already out, so nothing is
+          broken for anyone, but no change reaches users until this is fixed.
+
+          The run that failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          This issue closes itself when a build succeeds again."
+
+      - name: Close that if it is building again
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The build robot is failing
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --search "in:title \"$TITLE\"" --json number --jq '.[0].number // empty')
+
+          if [ -n "$open" ]; then
+              gh issue close "$open" --repo "$GITHUB_REPOSITORY" --reason completed \
+                  --comment "Building again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi

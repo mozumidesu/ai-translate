@@ -127,7 +127,7 @@ printed before, line for line.
 | `tools/` | The Rust side, a binary of its own. Not part of the plugin and not copied into Vencord |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does, publishing on `builds.zolatau.com` and making a GitHub release when the version has changed. **Keep**: it runs on Ubuntu inside Actions |
-| `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run |
+| `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run. Also opens one issue when the build starts failing and closes it when it builds again, so an outage is noticed rather than sitting red |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
 | `docs/` | The 15 translated READMEs and the banner |
 
