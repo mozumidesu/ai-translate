@@ -185,8 +185,7 @@ absent("and that rule is kept away from here", IN, "Never add a dash");
 // An unknown gender only has to be worked around where the target language
 // marks it. These checks translate into Russian one way and English the other,
 // which is the whole gate in two lines.
-check("an unknown gender is recast, not hedged", IN, "Never offer both endings in brackets");
-check("and recasting is not licence to drop a person", IN, "this is not about leaving a person out");
+
 absent("and English is not told to, having nothing to mark", OUT, "both endings in brackets");
 check("the writer's own capitals are kept", IN, "typed in lower case stays in lower case");
 
@@ -427,6 +426,25 @@ gone("a message with no text of its own is not announced", "Mozumi:");
 
 settings.useContext = false;
 history = [];
+
+// --- a word carrying both endings
+
+// Asking the model not to write "помог(ла)" was read twice and ignored twice,
+// so this is settled after the answer comes back rather than before it goes.
+settings.gender = "female";
+await behaves("a hedged ending takes the writer's own", translated("received", "thanks for helping me", "[en] спасибо, что помог(ла) мне"), "спасибо, что помогла мне");
+await behaves("and a dash inside the brackets goes with it", translated("received", "glad to hear it", "[en] рад(-а) слышать"), "рада слышать");
+
+settings.gender = "male";
+await behaves("the other way for the other gender", translated("received", "thanks for helping me", "[en] спасибо, что помог(ла) мне"), "спасибо, что помог мне");
+
+settings.gender = "unset";
+await behaves("nothing is guessed when the gender is not known", translated("received", "thanks for helping me", "[en] спасибо, что помог(ла) мне"), "спасибо, что помог(ла) мне");
+
+// "file(s)" is the same shape and means something else entirely.
+settings.gender = "female";
+await behaves("a plural in brackets survives a translation into English", translated("sent", "сколько файлов", "[ru] how many file(s)"), "how many file(s)");
+settings.gender = "unset";
 
 // --- limits
 

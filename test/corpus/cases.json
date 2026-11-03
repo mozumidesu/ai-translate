@@ -284,8 +284,8 @@
     "group": "reverse"
   },
   {
-    "id": "gender-is-recast-not-hedged",
-    "why": "with no gender set, \"thanks for helping me back then\" came back as \"спасибо, что тогда помог(ла) мне\": both endings in brackets, which nobody writes. The message carries no bracket and no slash of its own, so either one in the answer is the fault",
+    "id": "a-hedged-ending-is-settled",
+    "why": "\"thanks for helping me back then\" came back as \"спасибо, что тогда помог(ла) мне\". Two prompt rules were read and ignored, so the bracket is settled after the answer arrives instead. With a gender set there should be no bracket left; with none set the plugin does not know, and both endings stay on purpose",
     "kind": "received",
     "to": "Russian",
     "text": "thanks for helping me back then, I still remember it",
@@ -294,6 +294,9 @@
       "(",
       "/"
     ],
-    "group": "reverse"
+    "group": "reverse",
+    "settings": {
+      "gender": "female"
+    }
   }
 ]

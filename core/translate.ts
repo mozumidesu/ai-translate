@@ -259,19 +259,6 @@ const ADDRESS_RULE =
     + "Between friends of about the same age Vietnamese says mình and bạn (or tớ and cậu); tôi reads like a "
     + "form being filled in, and anh, chị, em claim a difference in age that the original may never have stated.";
 
-// "thanks for helping me back then" came back as "спасибо, что тогда помог(ла)
-// мне": both endings in brackets. Saying "name the action rather than who
-// performed it" did not move it, because NOTHING_LOST_RULE says every person
-// the original names is in the translation, and the model kept the person and
-// hedged the ending. So the two no longer disagree: the person stays, the verb
-// becomes a noun.
-const NO_HEDGING_RULE =
-    "Where the target language marks gender and the message does not say whose, say it in a way that does "
-    + "not have to. Everyone the message names is still named, so this is not about leaving a person out: "
-    + "move the action itself into a form the language does not inflect, a noun in place of a past-tense "
-    + "verb. Never offer both endings in brackets or separated by a slash, and never pick one at random; "
-    + "both read as a machine answering rather than a person writing.";
-
 /** Many languages agree adjectives and past tense with the speaker's gender. */
 const GENDER_RULES: Record<string, string> = {
     unset: "",
@@ -507,7 +494,6 @@ function outgoingPrompt(target: string, has: Involved) {
         "- Keep who does what to whom. If the writer apologises for distracting someone, the translation must not say the other person distracted them. Check the direction before you write it.",
         "- Write the standard form of the target language. Reach for a regional dialect only when the original is clearly dialectal itself.",
         GENDER_RULES[config().gender],
-        isLanguage(target, "english") ? "" : `- ${NO_HEDGING_RULE}`,
         glossaryRule(),
         `- ${NAMES_RULE}`,
         isLanguage(target, "english") ? "" : `- ${RELATED_LANGUAGES_WARNING}`,
@@ -591,8 +577,7 @@ function incomingPrompt(target: string, mine: boolean, has: Involved) {
         `- ${AGREEMENT_RULE}`,
         // Reading back one's own message: the settings already say which gender
         // to use, so the model is told instead of guessing from a display name.
-isLanguage(target, "english") ? "" : `- ${NO_HEDGING_RULE}`,
-        mine && GENDER_RULES[config().gender]
+mine && GENDER_RULES[config().gender]
             ? `- This message is the reader's own, written by them and translated by this plugin when they sent it. ${GENDER_RULES[config().gender].replace(/^- /, "")}`
             : `- Where ${target} marks the speaker's gender (past tense, short adjectives), work it out from the writer's name and how they speak about themselves. If nothing tells you, choose wording that does not mark it.`,
         "- Keep the writer's own capitals and ending. A message typed in lower case stays in lower case, and one that ends without a full stop does not gain one: you are making their writing understandable, not tidying it.",
@@ -803,6 +788,30 @@ function keepWritersDash(source: string, translated: string) {
     });
 }
 
+/**
+ * A word with both endings on it: "помог(ла)", "рад(а)", "готов(-а)". Asking
+ * the model not to do this was read twice and ignored twice, so it is settled
+ * here instead, where it is a pattern rather than a request.
+ */
+const HEDGED_ENDING = /(\p{L}{2,})\((-?)(\p{L}{1,3})\)/gu;
+
+/**
+ * Which ending the writer's own gender asks for. Nothing is guessed: with the
+ * gender unset both endings stay, because the plugin genuinely does not know
+ * and a silent masculine would be worse than a visible bracket.
+ */
+function settleGender(text: string, target: string) {
+    const gender = config().gender;
+    if (gender !== "male" && gender !== "female") return text;
+
+    // English marks no gender, and "file(s)" has the very same shape: without
+    // this, a plural in brackets would quietly lose its ending.
+    if (isLanguage(target, "english")) return text;
+
+    return text.replace(HEDGED_ENDING, (whole, stem: string, dash: string, ending: string) =>
+        gender === "male" ? stem : stem + ending.replace(/^-/, ""));
+}
+
 function postProcess(original: string, translated: string, target: string, kind: Kind) {
     let t = translated.trim();
     const source = original.trim();
@@ -816,6 +825,7 @@ function postProcess(original: string, translated: string, target: string, kind:
     if (kind === "explain") return t;
 
     t = applyGlossary(t);
+    t = settleGender(t, target);
 
     // The writer's own message goes out looking the way they typed it: no dash
     // where they typed none, and otherwise the dash they typed, spaced the way
