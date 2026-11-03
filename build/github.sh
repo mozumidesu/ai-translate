@@ -401,10 +401,27 @@ if [ -z "$version" ]; then
 elif gh release view --repo "$GITHUB_REPOSITORY" "v$version" >/dev/null 2>&1; then
     echo "Version v$version is already released; only the build is new."
 else
-    # What changed since the release before this one, written by GitHub from
-    # the commits between the two, so there is no second place to keep it.
-    changes=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
-        -f tag_name="v$version" -f target_commitish="$plugin_full" --jq .body 2>/dev/null || true)
+    # What changed since the release before this one. GitHub's own generator
+    # lists pull requests, and this repository is pushed to directly, so it
+    # leaves nothing but a link to the comparison. The subjects of the commits
+    # themselves are the changelog, minus the one that only raised the number.
+    previous=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 \
+        --json tagName --jq '.[0].tagName' 2>/dev/null || true)
+
+    changes=""
+    if [ -n "$previous" ]; then
+        changes=$(gh api "repos/$GITHUB_REPOSITORY/compare/$previous...$plugin_full" \
+            --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null |
+            grep -v "^v\?$version\$" | sed 's/^/* /' || true)
+        [ -n "$changes" ] && changes=$(printf '## Changes since %s\n\n%s' "$previous" "$changes")
+    fi
+
+    # The first release has nothing to compare against, and a repository
+    # without releases answers nothing above; GitHub's own link covers both.
+    if [ -z "$changes" ]; then
+        changes=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+            -f tag_name="v$version" -f target_commitish="$plugin_full" --jq .body 2>/dev/null || true)
+    fi
 
     cat > "$work/notes.md" <<NOTES
 Built as \`$build\` and published on $SITE.
