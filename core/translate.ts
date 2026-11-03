@@ -259,6 +259,15 @@ const ADDRESS_RULE =
     + "Between friends of about the same age Vietnamese says mình and bạn (or tớ and cậu); tôi reads like a "
     + "form being filled in, and anh, chị, em claim a difference in age that the original may never have stated.";
 
+// "thanks for helping me back then" came back as "спасибо, что тогда помог(ла)
+// мне": both endings in brackets. Nothing had asked for that and nothing had
+// said not to, since a gender rule is only sent for the reader's own messages.
+const NO_HEDGING_RULE =
+    "Where the target language marks gender and the message does not say whose, recast the sentence so "
+    + "that it never comes up: name the action rather than who performed it, or reach for a form the "
+    + "language does not inflect. Never offer both endings in brackets or separated by a slash, and never "
+    + "pick one at random; both read as a machine answering rather than a person writing.";
+
 /** Many languages agree adjectives and past tense with the speaker's gender. */
 const GENDER_RULES: Record<string, string> = {
     unset: "",
@@ -494,6 +503,7 @@ function outgoingPrompt(target: string, has: Involved) {
         "- Keep who does what to whom. If the writer apologises for distracting someone, the translation must not say the other person distracted them. Check the direction before you write it.",
         "- Write the standard form of the target language. Reach for a regional dialect only when the original is clearly dialectal itself.",
         GENDER_RULES[config().gender],
+        isLanguage(target, "english") ? "" : `- ${NO_HEDGING_RULE}`,
         glossaryRule(),
         `- ${NAMES_RULE}`,
         isLanguage(target, "english") ? "" : `- ${RELATED_LANGUAGES_WARNING}`,
@@ -577,6 +587,7 @@ function incomingPrompt(target: string, mine: boolean, has: Involved) {
         `- ${AGREEMENT_RULE}`,
         // Reading back one's own message: the settings already say which gender
         // to use, so the model is told instead of guessing from a display name.
+isLanguage(target, "english") ? "" : `- ${NO_HEDGING_RULE}`,
         mine && GENDER_RULES[config().gender]
             ? `- This message is the reader's own, written by them and translated by this plugin when they sent it. ${GENDER_RULES[config().gender].replace(/^- /, "")}`
             : `- Where ${target} marks the speaker's gender (past tense, short adjectives), work it out from the writer's name and how they speak about themselves. If nothing tells you, choose wording that does not mark it.`,

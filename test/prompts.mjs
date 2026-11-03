@@ -181,6 +181,12 @@ check("a hyphen stays a hyphen, not a comma", OUT, "never a long dash and never 
 // On purpose: in an incoming translation a dash is often what the grammar
 // asks for, as in "Мой друг — программист".
 absent("and that rule is kept away from here", IN, "Never add a dash");
+
+// An unknown gender only has to be worked around where the target language
+// marks it. These checks translate into Russian one way and English the other,
+// which is the whole gate in two lines.
+check("an unknown gender is recast, not hedged", IN, "Never offer both endings in brackets");
+absent("and English is not told to, having nothing to mark", OUT, "both endings in brackets");
 check("the writer's own capitals are kept", IN, "typed in lower case stays in lower case");
 
 // AI Explain is told the same thing: a message that asks something is still a
