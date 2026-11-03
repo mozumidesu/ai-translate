@@ -149,13 +149,17 @@ When changing a rule:
   to the provider with every message and they sit in a public repository, so
   nothing personal, nothing crude, nothing that points at the author. Grammar
   demonstrates just as well on a mundane sentence.
-- **An example must not hand the model a finished answer in one language.** A
-  rule that said Japanese "ごはんを食べました" is "I ate rice", never "I ate" was
-  obeyed into English, 2 runs out of 2, and ignored into Russian, 5 out of 5:
-  the model matched "never I ate" against an English answer and never saw
-  "Я поел". Name the fault instead, and say it holds in whatever language is
-  being written. Seventeen of the forty rules still hand over an English
-  answer, which `test/corpus` is slowly working through with `--group=reverse`.
+- **Where a rule has to overcome a real ambiguity, name the fault rather than
+  the answer.** A rule saying Japanese "ごはんを食べました" is "I ate rice", never
+  "I ate" was obeyed into English, 2 runs out of 2, and ignored into Russian, 5
+  out of 5. 「ごはん」 means both the rice and the meal, so the model had a
+  defensible reading of its own to hold on to, and a finished English answer was
+  not enough to move it; naming the fault, in whatever language is being
+  written, was. Seventeen of the forty rules hand over an English answer in the
+  same way, and eight of them were then measured the other way round,
+  `--group=reverse`: all eight held, 3 runs out of 3. So this is not a fault
+  the whole rule set has. It appears where the rule is arguing against a
+  reading the model can justify, not merely against a habit.
 - Rules that apply to one language, or to something a message may not contain,
   are only sent when they can matter — see the gating in `core/translate.ts`. A
   rule
