@@ -64,6 +64,37 @@ export function Providers() {
     const verdict = (id: string, said: Verdict) =>
         setVerdicts(was => (was[id] === said ? was : { ...was, [id]: said }));
 
+    /** The slot's own two buttons, which stand at the end of the row of them. */
+    const actions = (at: number) => (
+        <>
+            {at > 0 && (
+                <Button
+                    className={cl("slot-sign")}
+                    size="small"
+                    variant="secondary"
+                    aria-label={t("fallback.remove")}
+                    onClick={() => save(slots.filter((_, i) => i !== at))}
+                >
+                    &minus;
+                </Button>
+            )}
+
+            {/* There is one list to add to, not one per slot, so the plus
+                belongs to the last of them. */}
+            {at === slots.length - 1 && slots.length < MOST_SLOTS && (
+                <Button
+                    className={cl("slot-sign")}
+                    size="small"
+                    variant="secondary"
+                    aria-label={t("fallback.add")}
+                    onClick={() => save([...slots, emptySlot(NONE)])}
+                >
+                    +
+                </Button>
+            )}
+        </>
+    );
+
     return (
         <section>
             {slots.map((slot, at) => {
@@ -150,37 +181,14 @@ export function Providers() {
                                         onChoose={model => change(at, s =>
                                             ({ ...s, models: { ...s.models, [s.provider]: model } }))}
                                         onVerdict={said => verdict(slot.id, said)}
+                                        actions={actions(at)}
                                     />
                                 </div>
                             </>
                         )}
 
-                        {(!first || slots.length < MOST_SLOTS) && (
-                            <div className={cl("slot-actions")}>
-                                {!first && (
-                                    <Button
-                                        size="small"
-                                        variant="secondary"
-                                        aria-label={t("fallback.remove")}
-                                        onClick={() => save(slots.filter((_, i) => i !== at))}
-                                    >
-                                        &minus;
-                                    </Button>
-                                )}
-
-                                {/* Beside the one it follows, on the last slot only: there is
-                                    one list to add to, not one per slot. */}
-                                {at === slots.length - 1 && slots.length < MOST_SLOTS && (
-                                    <Button
-                                        size="small"
-                                        variant="secondary"
-                                        aria-label={t("fallback.add")}
-                                        onClick={() => save([...slots, emptySlot(NONE)])}
-                                    >
-                                        +
-                                    </Button>
-                                )}
-                            </div>
+                        {slot.provider === NONE && (!first || slots.length < MOST_SLOTS) && (
+                            <div className={cl("slot-actions")}>{actions(at)}</div>
                         )}
                     </div>
                 );

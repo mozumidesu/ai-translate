@@ -62,12 +62,14 @@ export type Verdict = "unknown" | "ok" | "bad";
 /** Only the newest request may change what is on screen. */
 let request = 0;
 
-export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
+export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
     slot: Slot;
     /** Bumped when the key or the address is finished, to ask again. */
     revision: number;
     onChoose(model: string): void;
     onVerdict(verdict: Verdict): void;
+    /** The slot's own buttons, so one row of buttons is one row. */
+    actions?: React.ReactNode;
 }) {
     const apiKey = keyOf(slot);
     const baseUrl = baseUrlOf(slot);
@@ -75,7 +77,6 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
 
     const [models, setModels] = useState<string[]>([]);
     const [state, setState] = useState<State>(apiKey ? "loading" : "noKey");
-    const [byHand, setByHand] = useState(false);
 
     async function load() {
         const mine = ++request;
@@ -123,7 +124,6 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
 
     useEffect(() => {
         setModels([]);
-        setByHand(false);
         setState(apiKey ? "loading" : "noKey");
         if (!apiKey) return onVerdict("unknown");
 
@@ -152,7 +152,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
         <section>
             <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{t("model.name")}</Heading>
 
-            {byHand || !models.length
+            {!models.length
                 ? <TextInput
                     value={current}
                     placeholder={t("model.pick")}
@@ -174,11 +174,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
                     {t("model.refresh")}
                 </Button>
 
-                {!!models.length && (
-                    <Button size="small" variant="secondary" onClick={() => setByHand(!byHand)}>
-                        {byHand ? t("model.fromList") : t("model.byHand")}
-                    </Button>
-                )}
+                {actions}
             </div>
         </section>
     );

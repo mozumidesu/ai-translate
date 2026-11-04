@@ -365,7 +365,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 }
 
 /* Square, because the sign in it is one character wide. */
-.vc-aitrans-slot-actions button {
+.vc-aitrans-slot-sign {
     min-width: 32px;
 }
 
