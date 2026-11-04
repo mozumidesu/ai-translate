@@ -68,11 +68,29 @@ useHost({
 });
 
 /** A provider that answers like Groq, with a usage block of its own choosing. */
-function provider(usage) {
+function provider(usage, finish = "stop", content = "[ru] hello") {
     globalThis.GM_xmlhttpRequest = o => {
         setImmediate(() => o.onload({
             status: 200,
-            responseText: JSON.stringify({ choices: [{ message: { content: "[ru] hello" }, finish_reason: "stop" }], usage }),
+            responseText: JSON.stringify({ choices: [{ message: { content }, finish_reason: finish }], usage }),
+            responseHeaders: ""
+        }));
+        return { abort() { } };
+    };
+}
+
+/** The same, but cut off the first time and whole the second. */
+function providerCutsOffOnce(usage) {
+    let first = true;
+    globalThis.GM_xmlhttpRequest = o => {
+        const cut = first;
+        first = false;
+        setImmediate(() => o.onload({
+            status: 200,
+            responseText: JSON.stringify({
+                choices: [{ message: { content: "[ru] hello" }, finish_reason: cut ? "length" : "stop" }],
+                usage
+            }),
             responseHeaders: ""
         }));
         return { abort() { } };
@@ -162,6 +180,18 @@ clear();
 provider(undefined);
 await aiTranslate("sent", "спасибо");
 check("a provider that counts nothing leaves the line as it was", /answered 200 in \d+ ms$/m.test(asText()));
+
+// --- why a message was asked about twice ---
+//
+// Six different things send one message back for a second answer. A log that
+// shows two requests and no reason is how a cut-off answer and a rate limit
+// looked like one event.
+
+clear();
+providerCutsOffOnce({ prompt_tokens: 4197 });
+await aiTranslate("sent", "очень длинное сообщение про всё на свете");
+check("a cut-off answer says so before asking again", /asking again: the answer was cut off/.test(asText()));
+check("and both requests are in the log", asText().split("answered 200").length - 1 === 2);
 
 await rm(out, { recursive: true, force: true });
 

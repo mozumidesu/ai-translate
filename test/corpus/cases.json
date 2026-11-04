@@ -298,5 +298,48 @@
     "settings": {
       "gender": "female"
     }
+  },
+  {
+    "id": "learner-mistakes-are-fixed",
+    "why": "AI Learn has never been measured at all: this is the floor, the mistakes it must catch",
+    "kind": "correct",
+    "to": "English",
+    "text": "i has two cat and they is very cute",
+    "must": [
+      "have",
+      "cats",
+      "are",
+      "why:"
+    ],
+    "group": "learn"
+  },
+  {
+    "id": "nothing-wrong-is-left-alone",
+    "why": "a sentence with nothing wrong came back rewritten, which teaches a learner a mistake they did not make",
+    "kind": "correct",
+    "to": "English",
+    "text": "i'll be there in about ten minutes",
+    "must": [
+      "ten minutes"
+    ],
+    "mustNot": [
+      "why:"
+    ],
+    "group": "learn"
+  },
+  {
+    "id": "style-is-not-a-mistake",
+    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one",
+    "kind": "correct",
+    "to": "English",
+    "text": "ok im gonna head out now see ya tomorrow",
+    "must": [
+      "gonna"
+    ],
+    "mustNot": [
+      "i am going to",
+      "i'm"
+    ],
+    "group": "learn"
   }
 ]

@@ -1,7 +1,7 @@
 /*
  * AI Translate — the panel behind the chat bar button.
  *
- * Holds what changes often: languages, thinking level, and the switch for the
+ * Holds what changes often: the languages, and the switch for the
  * current chat. Credentials stay in the plugin settings.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -20,11 +20,6 @@ import { LANGUAGES } from "../core/languages";
 import { isRightToLeft, t } from "../core/locales";
 import { isChannelEnabled, setChannelEnabled } from "../core/chats";
 import { settings } from "../settings";
-
-const thinkingOptions = () => [
-    { value: "low", label: t("thinking.low") },
-    { value: "high", label: t("thinking.high") }
-];
 
 function channelLabel(channelId: string) {
     const channel = ChannelStore.getChannel(channelId);
@@ -62,25 +57,6 @@ function LanguagePicker({ title, settingsKey }: { title: string; settingsKey: "s
     );
 }
 
-function ThinkingPicker() {
-    const { thinkingLevel } = settings.use(["thinkingLevel"]);
-    const options = thinkingOptions();
-
-    return (
-        <section className={Margins.bottom16}>
-            <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{t("panel.thinking")}</Heading>
-            <SearchableSelect
-                options={options}
-                value={options.find(o => o.value === thinkingLevel)?.value}
-                placeholder={t("panel.pickLevel")}
-                maxVisibleItems={4}
-                closeOnSelect={true}
-                onChange={(v: string) => settings.store.thinkingLevel = v as any}
-            />
-        </section>
-    );
-}
-
 function ChannelToggle({ channelId }: { channelId: string; }) {
     const { mode } = settings.use(["mode", "enabledChannels"]);
     const [on, setOn] = useState(() => isChannelEnabled(channelId));
@@ -112,15 +88,11 @@ function ChannelToggle({ channelId }: { channelId: string; }) {
 }
 
 function AiTranslateModal({ rootProps, channelId }: { rootProps: RenderModalProps; channelId: string; }) {
-    const { provider } = settings.use(["provider"]);
-
     return (
         <Modal {...rootProps} title={t("panel.title")}>
             <div dir={isRightToLeft() ? "rtl" : undefined}>
             <LanguagePicker title={t("panel.sentLanguage")} settingsKey="sentLanguage" />
             <LanguagePicker title={t("panel.receivedLanguage")} settingsKey="receivedLanguage" />
-
-            {provider !== "anthropic" && <ThinkingPicker />}
 
             <Divider className={Margins.bottom16} />
 

@@ -41,7 +41,10 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`,
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`
+            + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
+            + `export { isReady, keyOf, modelOf, readSlots } from "./core/slots";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -74,7 +77,9 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext, isJustAName } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, isJustAName,
+    changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
+    isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
 
 /** What the chat above shows, for the tests that need someone in it. */
 let history = [];
@@ -445,6 +450,146 @@ await behaves("nothing is guessed when the gender is not known", translated("rec
 settings.gender = "female";
 await behaves("a plural in brackets survives a translation into English", translated("sent", "сколько файлов", "[ru] how many file(s)"), "how many file(s)");
 settings.gender = "unset";
+
+// --- AI Learn
+
+const CORRECT = { name: "correct", text: await promptFor("correct", "i have went there yesterday", "I went there yesterday") };
+check("the correction names the language being learnt", CORRECT, "learning English has written this message in English");
+check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
+check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
+// Measured against Groq: "i'll be there in about ten minutes" came back as
+// "I'll", 2 runs out of 2, with a reason about capital letters, and naming
+// two instances left a third behind.
+check("and neither is the way somebody types", CORRECT, "Capital letters and the apostrophes people leave out while typing are never corrections");
+check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");
+// The reason is for the learner to read, so it goes in the language they read
+// rather than the one they are still learning.
+check("the reason comes in the language the person reads", CORRECT, 'one last line beginning "why:" and written in Russian');
+// "wrong verb form and number agreement" names the kind of mistake without
+// saying what to do instead, which teaches nobody anything.
+check("and it quotes the words rather than naming the fault", CORRECT, "Quote the words that were wrong and give the rule behind them");
+check("and a message with nothing wrong gets no reason", CORRECT, "When you changed nothing there is no such line");
+absent("none of the translation rules come with it", CORRECT, "Never add a dash");
+absent("and nor does the answer format", CORRECT, "square-bracketed ISO 639-1 code");
+
+const learn = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `learn: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "wanted:", JSON.stringify(want));
+};
+
+// Four words is where a correction stops being pedantry about "ok" and "thanks".
+learn("three words are too few to correct", looksLikeOwnAttempt("i am tired", 1), false);
+learn("four are enough", looksLikeOwnAttempt("i am very tired today", 1), true);
+learn("and the wrong alphabet is not an attempt at all", looksLikeOwnAttempt("я очень устал сегодня", 0.1), false);
+
+// A word the correction only took out cannot be marked in the corrected text:
+// there is nothing there to mark. The corrected sentence still shows.
+learn("a word only removed leaves nothing marked",
+    changedWords("i have went there yesterday", "i went there yesterday").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "went", "there", "yesterday"]);
+learn("an added word is marked where it was added",
+    changedWords("i go store", "i go to the store").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "go", "*to", "*the", "store"]);
+learn("and a message that only lost a word has nothing marked",
+    changedWords("i did go to the store", "i went to the store").map(p => (p.changed ? "*" : "") + p.text),
+    ["i", "*went", "to", "the", "store"]);
+
+// The reason arrives as one more line, and a message can have lines of its
+// own, so only the last one is ever read as the reason.
+learn("an answer with no reason is all message",
+    splitCorrection("I went there yesterday"),
+    { native: "I went there yesterday", why: "" });
+learn("the last line is the reason when it says so",
+    splitCorrection("I went there yesterday\nwhy: the past of go is went"),
+    { native: "I went there yesterday", why: "the past of go is went" });
+learn("a message of several lines keeps every one of them",
+    splitCorrection("the first line\nthe second line"),
+    { native: "the first line\nthe second line", why: "" });
+learn("and a line that only looks like one is not the reason",
+    splitCorrection("why: this is the message itself\nand this is its second line"),
+    { native: "why: this is the message itself\nand this is its second line", why: "" });
+
+// --- the providers, in order
+
+const shaped = () => readSlots().map(s => [s.provider, keyOf(s), modelOf(s), isReady(s)]);
+
+// A copy that has never opened the new page has no list, and everything still
+// has to work from what it does have.
+learn("settings from before the list read as the provider and an empty backup",
+    shaped(), [["groq", "k", "m", true], ["none", "", "", false]]);
+
+settings.fallbackProvider = "gemini";
+settings.geminiApiKey = "g";
+settings.geminiModel = "n";
+learn("and a backup that was set up reads as a second slot",
+    shaped(), [["groq", "k", "m", true], ["gemini", "g", "n", true]]);
+
+// Two keys from two accounts are two quotas, which is the whole reason the
+// same provider may stand in two slots.
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "groq", keys: { groq: "first" }, models: { groq: "m" } },
+    { id: "two", provider: "groq", keys: { groq: "second" }, models: { groq: "m" } }
+]);
+learn("a written list wins over the fields it replaced",
+    shaped(), [["groq", "first", "m", true], ["groq", "second", "m", true]]);
+
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "groq", keys: { groq: "k" }, models: { groq: "m" } },
+    { id: "two", provider: "gemini", keys: { gemini: "g" }, models: {} },
+    { id: "three", provider: "glm", keys: {}, models: { glm: "m" } }
+]);
+learn("and a slot missing either half is not ready to be asked",
+    shaped().map(s => s[3]), [true, false, false]);
+
+// A key kept per provider inside the slot: switching away and back loses none.
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "gemini", keys: { groq: "k", gemini: "g" }, models: { groq: "m", gemini: "n" } }
+]);
+learn("a slot keeps a key for every provider it has been set to",
+    shaped(), [["gemini", "g", "n", true]]);
+
+settings.providerSlots = "";
+settings.fallbackProvider = "none";
+
+learn("the same message is the same message", sameMessage("See you tomorrow!", "See you tomorrow!"), true);
+learn("and punctuation alone is not a correction", sameMessage("see you tomorrow", "See you tomorrow!"), true);
+learn("but a changed word is", sameMessage("see you tomorow", "see you tomorrow"), false);
+
+// --- the answer budget
+
+// Thinking comes out of the answer budget, and on a long message it is most of
+// it: 620 of the 802 tokens one eight-line message took. Too small a budget
+// cuts the answer off and the whole message is asked again, which is the ask
+// the per-minute limit refuses.
+const budgetFor = async text => {
+    asked.length = 0;
+    answers = ["[ru] " + text];
+    await aiTranslate("sent", text).catch(() => { });
+    return asked[0]?.max_tokens;
+};
+
+const budget = (name, text, want) => {
+    const got = awaitedBudget[text];
+    const ok = got === want;
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `budget: ${name}`);
+    if (!ok) console.log(`       ${text.length} characters asked for ${got}, wanted ${want}`);
+};
+
+const short = "ок";
+const long = "я".repeat(623);
+const huge = "я".repeat(3000);
+const awaitedBudget = {
+    [short]: await budgetFor(short),
+    [long]: await budgetFor(long),
+    [huge]: await budgetFor(huge)
+};
+
+budget("a short message keeps the floor it always had", short, 512);
+budget("a long one is given room to think in", long, Math.ceil(623 * 1.5) + 256);
+budget("and nothing is ever asked for more than the cap", huge, 4000);
 
 // --- limits
 

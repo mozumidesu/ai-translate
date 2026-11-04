@@ -15,7 +15,6 @@
 export interface Config {
     provider: string;
     baseUrl: string;
-    thinkingLevel: string;
     fallbackProvider: string;
     sentLanguage: string;
     receivedLanguage: string;

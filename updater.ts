@@ -30,8 +30,38 @@ const store = () => (Settings.plugins as any)["AI Translate"];
 
 export type UpdateState = "current" | "available" | "dev" | "offline" | "failed";
 
+/**
+ * Which builds a copy follows. "release" is what the install command gives
+ * everyone; "testing" follows the plugin's main branch, where a change can be
+ * tried before it is released.
+ */
+export type Channel = "release" | "testing";
+
+/** Anything but the one word is the released channel. */
+export const channel = (): Channel => store()?.updateChannel === "testing" ? "testing" : "release";
+
+export function setChannel(next: Channel) {
+    store().updateChannel = next;
+}
+
+/**
+ * A copy installed with AIT_CHANNEL=testing is already running testing builds
+ * while the setting has never been touched. The copy on the disk is what the
+ * person asked for, so it decides, once, until the settings say otherwise.
+ */
+async function adoptInstalledChannel() {
+    if (store()?.updateChannel) return;
+
+    try {
+        const { channel: installed } = await Bridge.aiTranslateBuild();
+        if (installed) store().updateChannel = installed;
+    } catch {
+        // The setting stays empty, which is read as the released channel.
+    }
+}
+
 export async function checkForUpdate(): Promise<{ state: UpdateState; details: string; }> {
-    const result = await Bridge.checkAiTranslateUpdate();
+    const result = await Bridge.checkAiTranslateUpdate(channel());
 
     // Only an answer counts as a check; a failed attempt is retried next start.
     if (result.state === "current" || result.state === "available" || result.state === "dev")
@@ -43,7 +73,7 @@ export async function checkForUpdate(): Promise<{ state: UpdateState; details: s
 /** Downloads the latest build into place. False means nothing changed. */
 export async function installUpdate(): Promise<{ ok: boolean; details: string; }> {
     try {
-        return await Bridge.installAiTranslateUpdate();
+        return await Bridge.installAiTranslateUpdate(channel());
     } catch (e) {
         return { ok: false, details: String(e) };
     }
@@ -80,6 +110,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let repeat: ReturnType<typeof setInterval> | undefined;
 
 export function scheduleUpdateCheck() {
+    void adoptInstalledChannel();
     timer = setTimeout(checkIfDue, FIRST_CHECK_AFTER_MS);
     repeat = setInterval(checkIfDue, LOOK_AGAIN_EVERY_MS);
 }

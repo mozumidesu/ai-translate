@@ -17,13 +17,18 @@
     opacity: 0.8;
 }
 
-.vc-aitrans-dismiss {
+/* A word inside a line of text that does something: the notice's dismiss, and
+   the channel switch under the update button. A button, so the keyboard
+   reaches it, with everything a button looks like taken off again. */
+.vc-aitrans-dismiss,
+.vc-aitrans-switch {
     all: unset;
     cursor: pointer;
     color: var(--text-link);
 }
 
-.vc-aitrans-dismiss:is(:hover, :focus) {
+.vc-aitrans-dismiss:is(:hover, :focus),
+.vc-aitrans-switch:is(:hover, :focus) {
     text-decoration: underline;
 }
 
@@ -132,12 +137,22 @@
     font-size: 0.8125rem;
 }
 
+/* The words a correction changed. Marked rather than coloured: a learner
+   reading this wants to see which words moved, and colour alone would be lost
+   in a theme that repaints the text. */
+.vc-aitrans-fixed {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
 .vc-aitrans-quiet {
     color: var(--text-muted);
 }
 
 .vc-aitrans-hint.vc-aitrans-hint {
-    margin-top: 6px;
+    margin-top: 5px;
     color: var(--text-muted);
 }
 
@@ -180,12 +195,12 @@ textarea.vc-aitrans-input.vc-aitrans-input::placeholder {
 input.vc-aitrans-input.vc-aitrans-input:focus,
 textarea.vc-aitrans-input.vc-aitrans-input:focus {
     outline: none;
-    border-color: #5865f2;
+    border-color: var(--brand-500, #5865f2);
 }
 
 input.vc-aitrans-input.vc-aitrans-input-wrong,
 input.vc-aitrans-input.vc-aitrans-input-wrong:focus {
-    border-color: #ed4245;
+    border-color: var(--text-danger, var(--status-danger, #ed4245));
 }
 
 textarea.vc-aitrans-input.vc-aitrans-textarea {
@@ -286,7 +301,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 /* Logs belongs with the update button above it, closer than Vencord's own
    gap between settings would leave the two. */
 .vc-aitrans-logs {
-    margin-top: -8px;
+    margin-top: -9px;
 }
 
 .vc-aitrans-hint.vc-aitrans-hint-bad {
@@ -311,17 +326,108 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     font-size: 0.875rem;
 }
 
-.vc-aitrans-keep-list > li {
+/* Of the twenty most downloaded themes, two style ul and li themselves, one of
+   them with 126 !important rules. The class is doubled so the bullets survive
+   a theme that resets lists wholesale. */
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li {
     display: list-item;
     list-style: disc outside;
 }
 
-.vc-aitrans-keep-list > li::marker {
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li::marker {
     color: var(--text-subtle);
 }
 
-.vc-aitrans-keep-list > li + li {
+.vc-aitrans-keep-list.vc-aitrans-keep-list > li + li {
     margin-top: 2px;
+}
+
+/* ── the providers, one block each ── */
+
+/* Vencord spaces one setting from the next; inside one setting the slots have
+   to space themselves, or five of them read as one wall. */
+.vc-aitrans-slot + .vc-aitrans-slot {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--background-secondary-alt);
+}
+
+.vc-aitrans-slot-model {
+    margin-top: 16px;
+}
+
+/* The same gap the model's buttons keep, so a row of buttons is a row of
+   buttons wherever it stands. */
+.vc-aitrans-slot-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* Square, because the sign in it is one character wide. */
+.vc-aitrans-slot-sign {
+    min-width: 32px;
+}
+
+/* The key, and the eye that shows it, on one line. */
+.vc-aitrans-key-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.vc-aitrans-key-row > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ── the corrections AI Learn has kept ── */
+
+/* Doubled for the same reason as the list above, the other way round: a theme
+   that styles every li must not put bullets on these. */
+.vc-aitrans-kept-list.vc-aitrans-kept-list {
+    margin: 8px 0 16px;
+    padding: 0;
+}
+
+.vc-aitrans-kept-list.vc-aitrans-kept-list > li {
+    display: block;
+    list-style: none;
+}
+
+.vc-aitrans-kept {
+    padding: 10px 0;
+    border-top: 1px solid var(--background-secondary-alt);
+}
+
+.vc-aitrans-kept-typed {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.vc-aitrans-kept-native {
+    margin-top: 2px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-aitrans-kept-why {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
+.vc-aitrans-kept-when {
+    margin-top: 4px;
+    color: var(--text-subtle);
+    font-size: 0.75rem;
+}
+
+/* Both ends stated, and the class doubled, because the paragraph Vencord draws
+   brings spacing of its own: tight under the line above, clear of the button
+   below, which has no margin over it. */
+.vc-aitrans-kept-empty.vc-aitrans-kept-empty {
+    margin: 4px 0 16px;
+    color: var(--text-muted);
 }
 
 /* A fixed grey rather than a theme variable, so it shows in every theme. */

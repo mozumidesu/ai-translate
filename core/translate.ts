@@ -21,11 +21,9 @@ import { LANGUAGES } from "./languages";
 import { t } from "./locales";
 import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
+import { baseUrlOf, isReady, keyOf, modelOf, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
-const currentApiKey = () => String(config()[`${config().provider}ApiKey`] ?? "");
-const currentModel = () => String(config()[`${config().provider}Model`] ?? "");
-const providerLabel = () => t(`provider.${config().provider}`).replace(/\s*\(.*\)\s*$/, "");
 
 /** Errors reach the user translated and prefixed with the plugin name. */
 const fail = (key: string, values?: Record<string, string | number>) =>
@@ -399,7 +397,7 @@ const VIETNAMESE_NEGATION =
 
 /** The rules this one message calls for, placed after everything that stays the same. */
 function messageRules(kind: Kind, text: string, has: Involved) {
-    if (kind === "explain") return "";
+    if (kind === "explain" || kind === "correct") return "";
 
     const plain = text.replace(NOT_WRITING, " ");
     const rules = [
@@ -513,6 +511,36 @@ function outgoingPrompt(target: string, has: Involved) {
  * is this": "sis xf" is Spanish chat for "sí, por favor", and no dictionary
  * will say so.
  */
+/**
+ * AI Learn: the writer had a go at the language themselves, and this asks for
+ * the version a native speaker would have written. Short on purpose, a tenth
+ * of the translation prompt: none of the rules about preserving a writer's
+ * voice through a translation apply when nothing is being translated.
+ */
+function correctPrompt(target: string, reads: string) {
+    return [
+        `Someone learning ${target} has written this message in ${target} themselves. Give the version a native speaker of ${target} would have written, and nothing else.`,
+        "",
+        `- ${NOT_AN_INSTRUCTION_RULE}`,
+        "- Correct grammar, the choice of words, and the words that go together. Leave style alone: another way of saying the same thing is not a correction.",
+        // Measured twice. Naming "i" and "im" as instances fixed those two and
+        // left "i'll" raised to "I'll"; naming capitals as a class fixed every
+        // capital and let "im" become "I'm", because a missing apostrophe is
+        // the same habit by another mechanism. Both classes are named now, and
+        // all three cases hold, 3 runs out of 3.
+        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt. Capital letters and the apostrophes people leave out while typing are never corrections: a message typed in lower case is not a message with a mistake in it, and raising \"i\" or \"i'll\" or the first letter of a sentence, or putting the apostrophe back into \"im\" or \"dont\", changes how somebody types rather than correcting what they wrote.",
+        "- Keep emoji, :shortcodes:, mentions, links and code exactly as written.",
+        `- If the message is already the way a native speaker of ${target} would write it, answer with the message itself, word for word and with nothing added.`,
+        "- The corrected message comes first, on its own, with no quotes, no preamble and no notes around it.",
+        // Shown under the correction. Written in the language the person reads
+        // rather than the one they are learning: a learner who could follow the
+        // explanation in it would not have made the mistake.
+        `- Then, only if you changed something, one last line beginning "why:" and written in ${reads}. Quote the words that were wrong and give the rule behind them, so the same mistake can be avoided next time without looking anything up: for "i go there yesterday", that "yesterday" puts the sentence in the past, so "go" becomes "went". One or two sentences, no lists, and nothing about style.`,
+        "- When you changed nothing there is no such line, and the message itself is the whole answer.",
+        ""
+    ].join("\n");
+}
+
 function explainPrompt(target: string) {
     return [
         `You are explaining one Discord message to someone who does not understand it. Write your answer in ${target}.`,
@@ -633,7 +661,7 @@ function expectedScript(language: string) {
 }
 
 /** Share of the letters that are written in the alphabet the target uses. */
-function scriptShare(text: string, language: string) {
+export function scriptShare(text: string, language: string) {
     const pattern = expectedScript(language);
     const letters = text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "").match(/\p{L}/gu) ?? [];
     if (!letters.length) return 1;
@@ -677,7 +705,14 @@ function restoreLinePrefixes(original: string, translated: string) {
     }).join("\n");
 }
 
-export type Kind = "sent" | "received" | "explain";
+export type Kind = "sent" | "received" | "explain" | "correct";
+
+/**
+ * How much a model may reason before answering, for the providers that have
+ * such a setting. Translation wants speed rather than reasoning, and the
+ * answer was the same for everyone, so it stopped being a question to ask.
+ */
+const THINKING = "low";
 
 /** Only a single word can be swapped out safely afterwards; a phrase cannot. */
 const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
@@ -822,7 +857,7 @@ function postProcess(original: string, translated: string, target: string, kind:
 
     // An explanation is not a version of the message, so none of the rules
     // below — punctuation, capitals, line markers — have anything to say about it.
-    if (kind === "explain") return t;
+    if (kind === "explain" || kind === "correct") return t;
 
     t = applyGlossary(t);
     t = settleGender(t, target);
@@ -1219,8 +1254,8 @@ function humanWait(ms: number) {
  */
 const dayBlocks = new Map<string, number>();
 
-const modelOf = (id: string) => String((config() as any)[`${id}Model`] ?? "");
-const dayBlockedFor = (id: string) => Math.max(0, (dayBlocks.get(`${id}|${modelOf(id)}`) ?? 0) - Date.now());
+const dayBlockedFor = (account: string, model: string) =>
+    Math.max(0, (dayBlocks.get(`${account}|${model}`) ?? 0) - Date.now());
 
 /** Prompt tokens the provider served from its cache, or nothing when it does not say. */
 function cachedTokens(data: string) {
@@ -1246,8 +1281,8 @@ function refund(id: string, tokens: number) {
 }
 
 /** Until `cost` tokens are free: 0 if they are or nobody knows, Infinity if they never will be. */
-function waitFor(id: string, cost: number) {
-    if (dayBlockedFor(id) > 0) return Infinity;
+function waitFor(id: string, model: string, cost: number) {
+    if (dayBlockedFor(id, model) > 0) return Infinity;
 
     const budget = budgets.get(id);
     if (!budget) return 0;
@@ -1320,28 +1355,32 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // Code, and whatever the writer fenced off with backslashes, never reaches
     // the model as words: it travels as numbered placeholders and is put back
     // verbatim at the end. Everything below works on the text with placeholders.
-    const kept = kind === "explain" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
+    const kept = kind === "explain" || kind === "correct" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
     const text = kept?.masked ?? typed;
 
     // Nothing left once the kept parts are out — "\ok\", a bare code block.
     if (kept?.pieces.length && isNotWorthTranslating(kept.bare(text)))
         return { text: kept.restore(text) ?? typed };
 
-    const { provider, baseUrl, thinkingLevel, fallbackProvider } = config();
-    const apiKey = currentApiKey();
-    const model = currentModel();
-    const providerName = providerLabel();
+    // The first is the one asked; the rest are behind it, in their own order.
+    const slots = readSlots();
+    const first = slots[0];
+    const apiKey = keyOf(first);
+    const model = modelOf(first);
+    const providerName = bareLabel(first.provider);
 
     if (!apiKey) throw fail("error.noKey", { provider: providerName });
     if (!model) throw fail("error.noModel", { provider: providerName });
 
     // An explanation is read, not sent, so it comes in the reading language.
-    const target = kind === "sent" ? config().sentLanguage : config().receivedLanguage;
+    // A correction is written in the language the person is writing in, which
+    // is the one they translate into, not the one they read in.
+    const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
     // Every setting that can change the wording belongs in the key, or a
     // cached answer from before the change would be served.
     const { extraInstructions, formality } = config();
     const cacheKey = [
-        kind, provider, model, target, thinkingLevel, extraInstructions,
+        kind, first.provider, model, target, extraInstructions,
         formality, config().gender, config().glossary, context, mine, typed
     ].join("|");
     const hit = cache.get(cacheKey);
@@ -1352,34 +1391,34 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const has = involved(target, text);
     const basePrompt = (kind === "sent"
         ? outgoingPrompt(target, has)
-        : kind === "explain" ? explainPrompt(target) : incomingPrompt(target, mine, has))
+        : kind === "explain" ? explainPrompt(target)
+            : kind === "correct" ? correctPrompt(target, config().receivedLanguage) : incomingPrompt(target, mine, has))
         + messageRules(kind, text, has)
-        + (lines > 1 && kind !== "explain"
+        + (lines > 1 && kind !== "explain" && kind !== "correct"
             ? `\n\nThe text is written on ${lines} separate lines. Your answer must be on ${lines}`
             + " lines too, broken in the same places. Never join two lines into one."
             : "")
         + (kept?.note() ?? "")
         + context;
 
-    const isSetUp = (id: string) =>
-        !!(config() as any)[`${id}ApiKey`] && !!(config() as any)[`${id}Model`];
-    const backup = fallbackProvider !== "none" && fallbackProvider !== provider && isSetUp(fallbackProvider)
-        ? fallbackProvider
-        : null;
+    // A backup with no key or no model would only fail slower than not asking.
+    const backups = slots.slice(1).filter(isReady);
 
-    /** One request to one provider. Returns the raw answer, errors included. */
-    const callProvider = async (id: string, system: string, roomy = false) => {
+    /** One request to one slot. Returns the raw answer, errors included. */
+    const callProvider = async (slot: Slot, system: string, roomy = false) => {
         if (signal?.aborted) throw new Error(CANCELLED);
 
-        const key = (config() as any)[`${id}ApiKey`] ?? "";
-        const chosen = (config() as any)[`${id}Model`] ?? "";
+        const id = slot.id;
+        const key = keyOf(slot);
+        const chosen = modelOf(slot);
         const chars = system.length + text.length;
 
         reserve(id, estimateTokens(`${id}|${kind}`, chars));
         const started = Date.now();
 
         const { status, data, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
-            provider: id, apiKey: key, model: chosen, baseUrl, thinkingLevel, system, text, roomy
+            provider: slot.provider, apiKey: key, model: chosen, baseUrl: baseUrlOf(slot),
+            thinkingLevel: THINKING, system, text, roomy
         }));
 
         noteBudget(id, budget);
@@ -1390,7 +1429,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             billed = promptTokens(data);
             if (billed) billedPerChar.set(`${id}|${kind}`, billed / chars);
             cached = cachedTokens(data);
-            if (id === "groq") refund(id, cached ?? 0);
+            if (slot.provider === "groq") refund(id, cached ?? 0);
         }
 
         if (status === 429) {
@@ -1413,11 +1452,11 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         record(
             status === 200 ? "info" : "error",
             kind,
-            `${id} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
+            `${slot.provider} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
             status === 200 ? undefined : data
         );
 
-        return { id, model: chosen, status, data, retryMs };
+        return { slot: id, provider: slot.provider, model: chosen, status, data, retryMs };
     };
 
     // However many requests a message takes, it is held back for half a
@@ -1434,66 +1473,89 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         return true;
     };
 
-    const ask = async (system: string, roomy = false): Promise<TranslationResult & { inTarget?: boolean; }> => {
-        const cost = (id: string) => estimateTokens(`${id}|${kind}`, system.length + text.length);
+    /**
+     * Six different things can send one message back for a second answer, and
+     * a log showing two requests without saying which is unreadable: that is
+     * how a cut-off answer and a rate limit looked like one event for a week.
+     */
+    const ask = async (system: string, roomy = false, why = ""): Promise<TranslationResult & { inTarget?: boolean; }> => {
+        if (why) record("info", kind, `asking again: ${why}`);
 
-        // The backup goes first only when it can start at once and would be
-        // done before the main provider, its wait included.
-        const backupSooner = (wait: number) =>
-            backup !== null && waitFor(backup, cost(backup)) === 0
-            && (waited + wait > MAX_WAIT_MS || expectedMs(backup, text.length) < wait + expectedMs(provider, text.length));
+        const cost = (slot: Slot) => estimateTokens(`${slot.id}|${kind}`, system.length + text.length);
+
+        // Each backup is asked at most once a message, however many ways the
+        // first one can fail.
+        const tried = new Set<string>();
+
+        /** The next backup that has not been asked yet, until one answers. */
+        const askBackups = async () => {
+            for (const slot of backups) {
+                if (tried.has(slot.id)) continue;
+                tried.add(slot.id);
+
+                const second = await callProvider(slot, system, roomy);
+                if (second.status === 200) return second;
+            }
+
+            return undefined;
+        };
+
+        // A backup goes first only when it can start at once and would be done
+        // before the first slot, its wait included.
+        const soonerBackup = (wait: number) => backups.find(slot =>
+            !tried.has(slot.id)
+            && waitFor(slot.id, modelOf(slot), cost(slot)) === 0
+            && (waited + wait > MAX_WAIT_MS
+                || expectedMs(slot.id, text.length) < wait + expectedMs(first.id, text.length)));
 
         let answer: Awaited<ReturnType<typeof callProvider>> | undefined;
-        let triedBackup = false;
 
         // Known to be short of tokens for this one: hand it over at once, or
         // wait for the budget, whichever ends sooner.
-        const wait = waitFor(provider, cost(provider));
-        if (wait > 0 && backupSooner(wait)) {
-            triedBackup = true;
-            const second = await callProvider(backup!, system, roomy);
+        const wait = waitFor(first.id, model, cost(first));
+        const sooner = wait > 0 ? soonerBackup(wait) : undefined;
+        if (sooner) {
+            tried.add(sooner.id);
+            const second = await callProvider(sooner, system, roomy);
             if (second.status === 200) answer = second;
         }
 
-        // Used up for the day: the backup if there is one, and otherwise the
+        // Used up for the day: the backups if there are any, and otherwise the
         // answer the provider would give, without asking it for it again.
-        const blocked = dayBlockedFor(provider);
+        const blocked = dayBlockedFor(first.id, model);
         if (!answer && blocked > 0) {
-            if (backup && !triedBackup) {
-                triedBackup = true;
-                const second = await callProvider(backup, system, roomy);
-                if (second.status === 200) answer = second;
-            }
+            answer = await askBackups();
             if (!answer) throw fail("error.dailyLimit", { provider: providerName, model, wait: humanWait(blocked) });
         }
 
         if (!answer) {
-            await waitOut(provider, waitFor(provider, cost(provider)));
-            answer = await callProvider(provider, system, roomy);
+            await waitOut(first.provider, waitFor(first.id, model, cost(first)));
+            answer = await callProvider(first, system, roomy);
 
             // Refused for its budget after all: the estimate was off, or nothing
             // was known yet. The refusal says how long; the same choice again.
             // A daily limit is not waited out: the day block makes that wait
             // endless, and the backup takes over or the error says so.
             if (answer.status === 429) {
-                const again = Math.max(readLimit(answer.data, answer.retryMs).waitMs ?? 0, waitFor(provider, cost(provider)));
-                if (!backupSooner(again) && await waitOut(provider, again))
-                    answer = await callProvider(provider, system, roomy);
+                const again = Math.max(readLimit(answer.data, answer.retryMs).waitMs ?? 0, waitFor(first.id, model, cost(first)));
+                if (!soonerBackup(again) && await waitOut(first.provider, again))
+                    answer = await callProvider(first, system, roomy);
             }
 
             // A provider can refuse for reasons that have nothing to do with the
             // user — an overload, a rate limit, its bot protection misfiring on a
             // VPN address. If a second provider is set up, it takes over quietly.
-            if (WORTH_A_SECOND_PROVIDER(answer.status) && backup && !triedBackup) {
-                const second = await callProvider(backup, system, roomy);
-                if (second.status === 200) answer = second;
+            if (WORTH_A_SECOND_PROVIDER(answer.status)) {
+                const second = await askBackups();
+                if (second) answer = second;
             }
         }
 
-        if (answer.id !== provider) notify(t("message.switchedProvider", { provider: bareLabel(answer.id) }), "message");
+        if (answer.slot !== first.id)
+            notify(t("message.switchedProvider", { provider: bareLabel(answer.provider) }), "message");
 
-        const { status, data, model: usedModel, id: usedProvider } = answer;
-        const name = usedProvider === provider ? providerName : bareLabel(usedProvider);
+        const { status, data, model: usedModel, provider: usedProvider } = answer;
+        const name = answer.slot === first.id ? providerName : bareLabel(usedProvider);
 
         if (status === -1) throw fail("error.network", { details: data });
         if (status === 401) throw fail("error.badKey", { provider: name, status });
@@ -1555,7 +1617,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         // message that needs it. A half-written answer counts too: sending half
         // a sentence under someone's name is worse than sending nothing.
         if (CUT_OFF.test(data)) {
-            if (!roomy) return ask(system, true);
+            if (!roomy) return ask(system, true, "the answer was cut off where the budget ran out");
             throw fail("error.truncated");
         }
 
@@ -1565,7 +1627,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         let sourceLanguage: string | undefined;
         let inTarget = false;
 
-        if (kind !== "explain") {
+        if (kind !== "explain" && kind !== "correct") {
             const read = readLanguageTag(out, text);
             out = read.text;
             sourceLanguage = read.language;
@@ -1607,9 +1669,10 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
     const share = keptWhole ? 1 : scriptShare(result.text, target);
 
-    if (kind === "explain") {
-        // An explanation quotes the words it is explaining, so foreign text in
-        // it is the point rather than a failure.
+    if (kind === "explain" || kind === "correct") {
+        // An explanation quotes the words it is explaining, and a correction is
+        // written in the language the message was already in, so foreign text in
+        // either is the point rather than a failure.
     } else if (share < 0.3) {
         // A model that hands the text back is usually having a bad moment, not
         // refusing: asking again is exactly what fixes it by hand, so the
@@ -1621,7 +1684,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
         let retried = result;
         for (const nudge of nudges) {
-            retried = await ask(basePrompt + nudge);
+            retried = await ask(basePrompt + nudge, false, "the answer came back in the wrong language");
             if (scriptShare(retried.text, target) >= 0.3) break;
         }
 
@@ -1635,7 +1698,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const cleaner = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer still contained words in the original language.`
-            + ` Translate everything into ${target}, leaving nothing behind.`
+            + ` Translate everything into ${target}, leaving nothing behind.`,
+            false,
+            "part of the message stayed in its own language"
         );
 
         if (scriptShare(cleaner.text, target) > share) result = cleaner;
@@ -1643,12 +1708,14 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
     // Where the writer broke the line is part of what they wrote, so a
     // flattened answer gets the same second chance as an untranslated one.
-    if (lines > 1 && kind !== "explain" && lineCount(result.text) !== lines) {
+    if (lines > 1 && kind !== "explain" && kind !== "correct" && lineCount(result.text) !== lines) {
         const rebroken = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer was not written on ${lines} lines.`
             + ` Give the same translation again on ${lines} lines, broken after the same words`
-            + " as the original. Do not change the wording, only the line breaks."
+            + " as the original. Do not change the wording, only the line breaks.",
+            false,
+            "the writer's line breaks were flattened"
         );
 
         if (lineCount(rebroken.text) === lines && scriptShare(rebroken.text, target) >= 0.3) result = rebroken;
@@ -1658,12 +1725,14 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // calm lower case has quietly taken the feeling out of it. Which words of
     // the translation those capitals belong to cannot be worked out from the
     // outside, so this one is asked for rather than done here.
-    if (kind !== "explain" && SHOUTED.test(typed) && !SHOUTED.test(result.text)) {
+    if (kind !== "explain" && kind !== "correct" && SHOUTED.test(typed) && !SHOUTED.test(result.text)) {
         const louder = await ask(
             basePrompt
             + "\n\nIMPORTANT: your previous answer lost the capital letters the writer typed."
             + ` The words they wrote in capitals are written in capitals in ${target} as well.`
-            + " Give the same translation again, with those words in capitals."
+            + " Give the same translation again, with those words in capitals.",
+            false,
+            "the capitals the writer typed were lost"
         );
 
         if (SHOUTED.test(louder.text) && scriptShare(louder.text, target) >= 0.3) result = louder;
@@ -1673,7 +1742,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         // A placeholder lost or doubled would drop the writer's text or say it
         // twice; one blunter request nearly always sorts it out.
         if (!kept.complete(result.text)) {
-            const again = await ask(basePrompt + kept.nudge());
+            const again = await ask(basePrompt + kept.nudge(), false, "a kept fragment was lost or doubled");
             if (kept.complete(again.text)) result = again;
         }
 

@@ -15,154 +15,63 @@
 import { definePluginSettings, Settings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
-import { FallbackNotice } from "./ui/FallbackNotice";
 import { KeepHelp } from "./ui/KeepHelp";
+import { LearnPanel } from "./ui/LearnPanel";
 import { LOCALES, t } from "./core/locales";
 import { LogsPanel } from "./ui/Logs";
-import { ModelPicker } from "./ui/ModelPicker";
+import { Providers } from "./ui/Providers";
 import { sectionTitle } from "./ui/SectionTitle";
 import { UpdatePanel } from "./ui/UpdatePanel";
-
-/** The backup provider needs a key of its own, so two can be on screen. */
-function apiKeyName(id: string) {
-    const { provider, fallbackProvider } = settings.store;
-    const two = fallbackProvider !== "none" && fallbackProvider !== provider;
-
-    return two ? `${t("apiKey.name")} — ${bareProviderLabel(id)}` : t("apiKey.name");
-}
-
-const bareProviderLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
-
-/** Shown for the provider in use and for the backup, never for the rest. */
-const keyInUse = (store: any, id: string) => store.provider === id || store.fallbackProvider === id;
 
 export const settings = definePluginSettings({
     // --- what it talks to: first on the page, so nothing announces it ---
 
-    provider: {
-        type: OptionType.SELECT,
-        get displayName() { return t("provider.name"); },
-        get description() { return t("provider.desc"); },
-        default: "groq",
-        get options() {
-            return [
-                { label: t("provider.groq"), value: "groq", default: true },
-                { label: t("provider.gemini"), value: "gemini" },
-                { label: t("provider.glm"), value: "glm" },
-                { label: t("provider.anthropic"), value: "anthropic" },
-                { label: t("provider.openai"), value: "openai" }
-            ];
-        }
-    },
-
-    geminiApiKey: {
-        type: OptionType.STRING,
-        get displayName() { return apiKeyName("gemini"); },
-        get description() { return t("apiKey.desc"); },
-        default: ""
-    },
-    groqApiKey: {
-        type: OptionType.STRING,
-        get displayName() { return apiKeyName("groq"); },
-        get description() { return t("apiKey.desc"); },
-        default: ""
-    },
-    anthropicApiKey: {
-        type: OptionType.STRING,
-        get displayName() { return apiKeyName("anthropic"); },
-        get description() { return t("apiKey.desc"); },
-        default: ""
-    },
-    glmApiKey: {
-        type: OptionType.STRING,
-        get displayName() { return apiKeyName("glm"); },
-        get description() { return t("apiKey.desc"); },
-        default: ""
-    },
-    openaiApiKey: {
-        type: OptionType.STRING,
-        get displayName() { return apiKeyName("openai"); },
-        get description() { return t("apiKey.desc"); },
-        default: ""
-    },
-
-    // Chosen in the picker below, kept per provider so switching loses nothing.
-    geminiModel: {
-        type: OptionType.STRING,
-        description: "internal: model chosen for gemini",
-        default: "gemini-3.8-flash",
-        hidden: true
-    },
-    groqModel: {
-        type: OptionType.STRING,
-        description: "internal: model chosen for groq",
-        default: "openai/gpt-oss-120b",
-        hidden: true
-    },
-    anthropicModel: {
-        type: OptionType.STRING,
-        description: "internal: model chosen for anthropic",
-        default: "",
-        hidden: true
-    },
-    glmModel: {
-        type: OptionType.STRING,
-        description: "internal: model chosen for glm",
-        default: "glm-4.5-flash",
-        hidden: true
-    },
-    openaiModel: {
-        type: OptionType.STRING,
-        description: "internal: model chosen for openai",
-        default: "",
-        hidden: true
-    },
-
-    modelPicker: {
+    // Drawn whole rather than as rows: a row is named once for the whole
+    // plugin, which is why one key per provider was all there could be.
+    providers: {
         type: OptionType.COMPONENT,
-        component: ModelPicker
+        component: Providers
     },
+    providerSlots: {
+        type: OptionType.STRING,
+        description: "internal: the providers to ask, in order, as JSON",
+        default: "",
+        hidden: true
+    },
+
+    // Everything below is the layout from before the list. It is still read
+    // when no list has been written yet, which is how a copy that has never
+    // opened this page keeps working, and it is kept rather than deleted so
+    // that a copy going back to an older build still finds its keys.
+    provider: {
+        type: OptionType.STRING,
+        description: "internal: the provider, before there was a list of them",
+        default: "groq",
+        hidden: true
+    },
+    geminiApiKey: { type: OptionType.STRING, description: "internal: pre-list key for gemini", default: "", hidden: true },
+    groqApiKey: { type: OptionType.STRING, description: "internal: pre-list key for groq", default: "", hidden: true },
+    anthropicApiKey: { type: OptionType.STRING, description: "internal: pre-list key for anthropic", default: "", hidden: true },
+    glmApiKey: { type: OptionType.STRING, description: "internal: pre-list key for glm", default: "", hidden: true },
+    openaiApiKey: { type: OptionType.STRING, description: "internal: pre-list key for openai", default: "", hidden: true },
+
+    geminiModel: { type: OptionType.STRING, description: "internal: pre-list model for gemini", default: "gemini-3.8-flash", hidden: true },
+    groqModel: { type: OptionType.STRING, description: "internal: pre-list model for groq", default: "openai/gpt-oss-120b", hidden: true },
+    anthropicModel: { type: OptionType.STRING, description: "internal: pre-list model for anthropic", default: "", hidden: true },
+    glmModel: { type: OptionType.STRING, description: "internal: pre-list model for glm", default: "glm-4.5-flash", hidden: true },
+    openaiModel: { type: OptionType.STRING, description: "internal: pre-list model for openai", default: "", hidden: true },
 
     baseUrl: {
         type: OptionType.STRING,
-        get displayName() { return t("baseUrl.name"); },
-        get description() { return t("baseUrl.desc"); },
-        default: ""
+        description: "internal: pre-list address for the OpenAI-compatible provider",
+        default: "",
+        hidden: true
     },
-
-    thinkingLevel: {
-        type: OptionType.SELECT,
-        get displayName() { return t("thinking.name"); },
-        get description() { return t("thinking.desc"); },
-        default: "low",
-        get options() {
-            return [
-                { label: t("thinking.low"), value: "low", default: true },
-                { label: t("thinking.high"), value: "high" }
-            ];
-        }
-    },
-
     fallbackProvider: {
-        type: OptionType.SELECT,
-        get displayName() { return t("fallback.name"); },
-        get description() { return t("fallback.desc"); },
+        type: OptionType.STRING,
+        description: "internal: the one backup there used to be room for",
         default: "none",
-        get options() {
-            return [
-                { label: t("fallback.none"), value: "none", default: true },
-                { label: t("provider.groq").replace(/\s*\(.*\)\s*$/, ""), value: "groq" },
-                { label: t("provider.gemini"), value: "gemini" },
-                { label: t("provider.glm").replace(/\s*\(.*\)\s*$/, ""), value: "glm" },
-                { label: t("provider.anthropic"), value: "anthropic" },
-                { label: t("provider.openai"), value: "openai" }
-            ];
-        }
-    },
-
-    fallbackNotice: {
-        type: OptionType.COMPONENT,
-        component: FallbackNotice
+        hidden: true
     },
 
     // --- how it behaves ---
@@ -204,11 +113,34 @@ export const settings = definePluginSettings({
         }
     },
 
+    // Off by default: it puts an item in the right-click menu of every
+    // message, which is a thing to choose rather than to arrive with.
     explain: {
         type: OptionType.BOOLEAN,
         get displayName() { return t("explain.name"); },
         get description() { return t("explain.desc"); },
-        default: true
+        default: false
+    },
+
+    // Off by default: most people are not learning the language they translate
+    // into, and while it is on, anything written in that language's alphabet is
+    // corrected rather than translated. Not for the cost: such a message makes
+    // a request either way, and this one's prompt is the smaller of the two.
+    aiLearn: {
+        type: OptionType.BOOLEAN,
+        get displayName() { return t("learn.name"); },
+        get description() { return t("learn.desc"); },
+        default: false
+    },
+    learnPanel: {
+        type: OptionType.COMPONENT,
+        component: LearnPanel
+    },
+    learnHistory: {
+        type: OptionType.STRING,
+        description: "internal: the corrections kept, newest first, as JSON",
+        default: "",
+        hidden: true
     },
 
     // --- how the translation reads ---
@@ -326,19 +258,23 @@ export const settings = definePluginSettings({
         default: 0,
         hidden: true
     },
+    // Deliberately not a setting of its own: the line under the update button
+    // changes it, and a row here would read as a feature rather than as
+    // upkeep. Empty until either that line or the installed build settles it,
+    // and read as the released channel in the meantime.
+    updateChannel: {
+        type: OptionType.STRING,
+        description: "internal: which builds this copy follows, release or testing",
+        default: "",
+        hidden: true
+    },
 
     // Legacy single-provider fields, migrated on start and then left empty.
     apiKey: { type: OptionType.STRING, description: "internal: pre-migration API key", default: "", hidden: true },
     model: { type: OptionType.STRING, description: "internal: pre-migration model", default: "", hidden: true }
 }, {
-    geminiApiKey: { hidden() { return !keyInUse(this.store, "gemini"); } },
-    groqApiKey: { hidden() { return !keyInUse(this.store, "groq"); } },
-    anthropicApiKey: { hidden() { return !keyInUse(this.store, "anthropic"); } },
-    glmApiKey: { hidden() { return !keyInUse(this.store, "glm"); } },
-    openaiApiKey: { hidden() { return !keyInUse(this.store, "openai"); } },
-
-    baseUrl: { hidden() { return !keyInUse(this.store, "openai"); } },
-    thinkingLevel: { hidden() { return this.store.provider === "anthropic"; } }
+    // Nothing to look back over until the switch above is on.
+    learnPanel: { hidden() { return !this.store.aiLearn; } }
 });
 
 /** Keys and models are kept per provider, so switching does not lose them. */
@@ -348,7 +284,7 @@ export function migrateSettings() {
     if (old && !settings.store.geminiApiKey && !settings.store.groqApiKey && !settings.store.apiKey) {
         for (const key of [
             "provider", "apiKey", "model", "baseUrl", "sentLanguage", "receivedLanguage",
-            "thinkingLevel", "mode", "enabledChannels", "extraInstructions",
+            "mode", "enabledChannels", "extraInstructions",
             "geminiApiKey", "groqApiKey", "anthropicApiKey", "glmApiKey", "openaiApiKey",
             "geminiModel", "groqModel", "anthropicModel", "glmModel", "openaiModel"
         ]) {

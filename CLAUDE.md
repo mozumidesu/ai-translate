@@ -32,18 +32,20 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context, and pacing against the provider's rate limits. The biggest file and the one that matters most |
 | `core/host.ts` | The handful of things the core cannot know by itself: settings and writing them, recent messages, who the current user is, how to show a notice. A host is installed once at load; until then these answer empty rather than throwing |
-| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser) |
+| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser). The build robot writes the build's name and its channel into two constants here, which is the only way a browser copy can know what it is |
 | `core/net.ts` | The one thing that differs between hosts: how to make a single HTTP request (`fetch` or `GM_xmlhttpRequest`) |
 | `core/providers.ts` | Each provider's address and request shape, reading rate limits out of responses, and every retry rule |
 | `core/keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards |
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
+| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Settings written before the list existed are still read, which is what the browser build and the tests hand over |
 | `core/version.ts` | The version people see, and the only place it is written down |
+| `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These ten (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`, `log`, `version`) build on their own, with esbuild forbidding any import
+These twelve (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
+`languages`, `locales`, `log`, `version`, `learn`, `slots`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
@@ -59,12 +61,14 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `vencord-host.ts` | Answers `core/host.ts` using Vencord: its settings store, its message store, the current user, toasts. Reads settings directly from `Settings.plugins["AI Translate"]` rather than through `settings.ts`, because the host has to be ready before the settings page loads |
 | `native.ts` | The desktop end, in Electron's main process: provider requests (renderer requests are blocked by CORS) and installing updates |
 | `settings.ts` | The settings page and its migrations |
-| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours |
+| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours. Also which channel a copy follows, and adopting the installed build's own channel when nothing has been chosen |
 | `ui/modal.tsx` | The panel that opens on left-clicking the button |
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
-| `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
+| `ui/Providers.tsx` | The provider blocks: one to ask and up to four behind it, each with its provider, key, model and, for an OpenAI-compatible one, address. Drawn whole rather than as settings rows, because a row is named once for the whole plugin and that is why there could only ever be one key per provider |
+| `ui/ModelPicker.tsx` | The model dropdown, one per slot. Asks the provider when the key is finished rather than while it is typed, and the same answer says both which models the key can reach and whether the key was taken at all |
 | `ui/Logs.tsx` | The Logs button and the panel behind it: the log as text, with Copy, Save .txt and Clear |
-| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
+| `ui/LearnPanel.tsx` | The Corrections button under the AI Learn switch, and the panel behind it: what was written, what a native speaker would have written, and why. Hidden while AI Learn is off |
+| `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
 
 Everything the settings page and the panel are built from sits in `ui/`. It is
@@ -117,19 +121,41 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 145 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 182 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
-| `test/log.mjs` | 21 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
+| `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
+| `test/log.mjs` | 23 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
 | `test/tokens.mjs` | Where the other two get their token counts: the `tools` binary, found in `tools/target/` or named by `TOKENS=` |
 | `tools/` | The Rust side, a binary of its own. Not part of the plugin and not copied into Vencord |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does, publishing on `builds.zolatau.com` and making a GitHub release when the version has changed. **Keep**: it runs on Ubuntu inside Actions |
-| `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run |
+| `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run. Also opens one issue when the build starts failing and closes it when it builds again, so an outage is noticed rather than sitting red |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
 | `docs/` | The 15 translated READMEs and the banner |
+
+## Providers
+
+One slot is asked and the rest stand behind it, in their order. A slot is a
+provider, a key, a model and an address, and the key and model are kept per
+provider **inside the slot**, so switching a slot from one provider to another
+and back loses neither. The same provider may stand in two slots: two keys
+from two accounts are two quotas, which is why the rate limits are counted by
+the slot rather than by the provider's name. Counting them by name would call
+the second account spent along with the first.
+
+A red line under a key appears only when the provider has refused that key,
+401 or 403, and only once the field has been left. Nothing is said about an
+empty one, and nothing is said about a timeout, a rate limit or an outage,
+because none of those is the key's fault. That check is the same request the
+model list needs, so it costs one request, not two.
+
+Settings from before the list are still read: `provider`, `fallbackProvider`
+and the per-provider keys answer whenever no list has been written yet. That
+is what a copy that has never opened the page uses, and it is what the browser
+build and every test hand over, so none of them had to change.
 
 ## Prompt rules
 
@@ -171,14 +197,31 @@ When changing a rule:
 
 Outgoing and incoming use separate prompts: outgoing must preserve the writer's
 voice, incoming only has to be understood. A third request type, AI Explain,
-names the language and explains what was meant.
+names the language and explains what was meant. A fourth, AI Learn, asks how a
+native speaker would have written what the person wrote themselves; it is a
+tenth the size of the others, because none of the rules about carrying a
+writer's voice through a translation apply when nothing is being translated.
+
+AI Learn's answer has two parts: the corrected message, and one last line
+beginning `why:` that says what was wrong. That line is written in the
+language the person **reads**, not the one they are learning, because a
+learner who could follow the explanation in it would not have made the
+mistake. It is only ever read off the last line, since the message itself can
+run to several, and there is no such line when nothing changed.
+
+A correction nobody asked for stays silent when the message was already
+right: unasked, only a mistake is worth interrupting for. Asked for by hand,
+from the right-click menu, it always answers, "nothing to correct here"
+included. That is what tells "there was nothing wrong" apart from "it never
+ran", which otherwise look identical.
 
 ## Running things
 
 ```
-node test/prompts.mjs      # 145 checks; needs esbuild
-node test/log.mjs          # 21 checks on the log and on error notices; needs esbuild
+node test/prompts.mjs      # 182 checks; needs esbuild
+node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
+node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment
 node test/measure.mjs      # tokens and timing; also needs tools/ built
 node test/rules.mjs        # prompt lines by weight; the same
@@ -219,7 +262,7 @@ and doubles the class to outrank Vencord's.
 
 **Raising the version is part of moving `release`, not of a commit.** The
 number lives in `core/version.ts` and nowhere else: three numbers and a letter
-for the stage, `0.1.0a` today. The third number counts fixes, the second counts
+for the stage, `0.2.0a` today. The third number counts fixes, the second counts
 anything new and puts the third back to zero, nine is the ceiling
 for both, and `1.0.0` is where the letter goes away and the beta ends. The
 robot publishes a new build whenever Vencord changes too, and those are not new
@@ -238,7 +281,24 @@ version has changed: a build happens whenever Vencord moves, and those would
 otherwise fill the releases page hourly. The site is where the install command
 and the updater take their files from; the releases are where the versions are
 kept. `gh` is told the repository outright in those calls, because the workflow
-runs the script with no checkout and so has no git remote to infer it from.
+runs the script with no checkout and so has no git remote to infer it from. A
+testing build never makes one: its number is the one the last release carries,
+so the release would say nothing.
+
+`main` is also the **testing channel**. The same hourly run builds it into
+`/testing/` on that same site, so a change can be tried without `release`
+moving at all. `AIT_CHANNEL=testing` in front of either install command
+installs those builds; an installed copy says which channel it follows in a
+line under the update button in the settings, and switches back there. Nothing
+advertises it: not the plugin's page, not the README. The one place it is
+written down is the page the robot itself generates on `builds.zolatau.com`.
+So every push to `main` reaches whoever is on that channel within the hour.
+
+The whole site is replaced on every deploy, which is why the script carries
+over the files of whichever channel it did not rebuild. **If those cannot be
+fetched, nothing is published at all.** An hour longer on the build that is
+already out costs nobody anything; a channel that has lost its files breaks
+every copy that follows it.
 
 One thing not to tidy: `@namespace` in the userscript header still points at a
 GitLab address. Userscript managers identify a script by name and namespace

@@ -13,8 +13,9 @@ import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, useState } from "@webpack/common";
+import { Modal, openModal, useEffect, useState } from "@webpack/common";
 
+import { Bridge } from "../core/bridge";
 import { isRightToLeft, t } from "../core/locales";
 import { asText, clear, howMany } from "../core/log";
 import { VERSION } from "../core/version";
@@ -124,6 +125,23 @@ export function openLogsModal() {
 export function LogsPanel() {
     const kept = howMany();
 
+    // On a testing build the number says too little: it is the one the last
+    // release carries, while the code is whatever main held at the time. So
+    // the channel is named, and the build with it, which is the only thing
+    // that tells two testing copies apart. A released copy is identified by
+    // its number alone, and the line stays as short as it was.
+    const [stamp, setStamp] = useState("");
+
+    useEffect(() => {
+        Bridge.aiTranslateBuild()
+            .then(({ build, channel }) => {
+                if (channel === "testing") setStamp(build ? ` · testing · ${build}` : " · testing");
+            })
+            .catch(() => {
+                // Nothing to add to the line, which is no worse than before.
+            });
+    }, []);
+
     return (
         <section className={cl("logs")}>
             <Button className={cl("wide")} variant="secondary" onClick={openLogsModal}>
@@ -132,7 +150,7 @@ export function LogsPanel() {
             {/* The stage and the number, not a description: this is the one
                 place in the interface where a person can read which version
                 they are running. */}
-            <Paragraph className={cl("hint")} defaultColor={false}>AI Translate · {VERSION}</Paragraph>
+            <Paragraph className={cl("hint")} defaultColor={false}>AI Translate · {VERSION}{stamp}</Paragraph>
         </section>
     );
 }

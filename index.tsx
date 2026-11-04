@@ -29,7 +29,8 @@ import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, TranslationResult, wasCancelled } from "./core/translate";
+import { changedWords, keepCorrection, looksLikeOwnAttempt, Part, sameMessage, splitCorrection } from "./core/learn";
+import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -45,6 +46,14 @@ const TranslateIcon: IconComponent = ({ height = 20, width = 20, className }) =>
 const ExplainIcon: IconComponent = ({ height = 20, width = 20, className }) => (
     <svg viewBox="0 0 24 24" height={height} width={width} className={className}>
         <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 17h-2v-2h2v2Zm2.07-7.75-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26A2 2 0 1 0 10 9H8a4 4 0 1 1 8 0c0 .88-.36 1.68-.93 2.25Z" />
+    </svg>
+);
+
+/* Nothing was translated and nothing was explained, so neither of the two
+   above says what this is: a message that has been looked over. */
+const CorrectIcon: IconComponent = ({ height = 20, width = 20, className }) => (
+    <svg viewBox="0 0 24 24" height={height} width={width} className={className}>
+        <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9Z" />
     </svg>
 );
 
@@ -104,6 +113,31 @@ function rememberOriginal(original: string, translated: string) {
 }
 
 /**
+ * AI Learn: sent text -> how a native speaker would have written it, word by
+ * word with what changed marked, and why. Keyed by the text because the message
+ * has no id yet when the correction is asked for: it has only just been sent.
+ *
+ * No parts means there was nothing to correct, which is only ever kept for a
+ * correction somebody asked for by hand: unasked, a message that is already
+ * right says nothing at all.
+ */
+interface Fixed {
+    parts: Part[];
+    why: string;
+}
+
+const corrections = new Map<string, Fixed>();
+
+/** Told when a correction lands, since which message it belongs to is known by text. */
+const correctionListeners = new Set<() => void>();
+
+function rememberCorrection(sent: string, fixed: Fixed) {
+    if (corrections.size > 100) corrections.clear();
+    corrections.set(sent, fixed);
+    for (const tell of correctionListeners) tell();
+}
+
+/**
  * Discord's message box carries a quote on by itself: inside one, every new
  * line arrives with "> " already on it. The writer typed the marker once, so
  * the echo of what they wrote shows it once.
@@ -142,18 +176,30 @@ function TranslationAccessory({ message }: { message: Message; }) {
         return () => void TranslationSetters.delete(message.id);
     }, [message.id]);
 
+    // A correction arrives after the message is already on screen, and it is
+    // found by text rather than by id, so the accessory is told to look again.
+    const [, lookAgain] = useState(0);
+    useEffect(() => {
+        const tell = () => lookAgain(n => n + 1);
+        correctionListeners.add(tell);
+        return () => void correctionListeners.delete(tell);
+    }, []);
+
     const isOwn = message.author?.id === UserStore.getCurrentUser()?.id;
     const original = isOwn && settings.store.showOriginal
         ? sentOriginals.get(message.content)
         : undefined;
+    const corrected = isOwn ? corrections.get(message.content) : undefined;
 
-    if (!translation && !original) return null;
+    if (!translation && !original && !corrected) return null;
 
     return (
         <span className={cl("accessory")}>
             {translation?.explained
                 ? <ExplainIcon width={16} height={16} className={cl("accessory-icon")} />
-                : <TranslateIcon width={16} height={16} className={cl("accessory-icon")} />}
+                : !translation && corrected
+                    ? <CorrectIcon width={16} height={16} className={cl("accessory-icon")} />
+                    : <TranslateIcon width={16} height={16} className={cl("accessory-icon")} />}
             {translation
                 ? <>
                     {Parser.parse(translation.text)}
@@ -167,7 +213,19 @@ function TranslationAccessory({ message }: { message: Message; }) {
                         }}>{t("message.hide")}</button>
                     </span>
                 </>
-                : <>{t("message.youWrote")} {Parser.parse(asTyped(original))}</>}
+                : corrected
+                    ? corrected.parts.length
+                        ? <>
+                            {t("message.native")}{" "}
+                            {corrected.parts.map((part, at) => (
+                                <span key={at} className={part.changed ? cl("fixed") : undefined}>
+                                    {at ? " " : ""}{part.text}
+                                </span>
+                            ))}
+                            {!!corrected.why && <span className={cl("note")}>{corrected.why}</span>}
+                        </>
+                        : <>{t("message.fine")}</>
+                    : <>{t("message.youWrote")} {Parser.parse(asTyped(original!))}</>}
         </span>
     );
 }
@@ -268,11 +326,54 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
             />
         );
 
+    // Your own message only: a correction of somebody else's writing is not
+    // something to hand them, and this is the way to ask again for one that
+    // went by, or to ask at all when the message was too short to catch.
+    if (settings.store.aiLearn && message.author?.id === UserStore.getCurrentUser()?.id)
+        items.push(
+            <Menu.MenuItem
+                id="vc-ai-learn"
+                label={t("message.correct")}
+                icon={CorrectIcon}
+                leadingAccessory={{ type: "icon", icon: CorrectIcon }}
+                action={() => askForCorrection(message.channel_id, getMessageContent(message), true)}
+            />
+        );
+
     group.splice(group.findIndex(c => c?.props?.id === "copy-text") + 1, 0, ...items);
 };
 
 /** Channel and text of every message being translated on its way out. */
 const inFlight = new Set<string>();
+
+/**
+ * AI Learn: one request for how a native speaker would have written the
+ * message. Nothing waits on it, and a failure says nothing when nobody asked:
+ * a suggestion that arrives by itself must not interrupt a conversation with
+ * an error. The log keeps it either way.
+ *
+ * Asked for by hand, it always answers, "nothing to change" included. That is
+ * the whole difference between the two: silence is an answer only when the
+ * question was never put.
+ */
+async function askForCorrection(channelId: string, sent: string, asked = false) {
+    try {
+        const { text } = await aiTranslate("correct", sent, collectContext(channelId));
+        if (!text) return;
+
+        const { native, why } = splitCorrection(text);
+
+        if (sameMessage(sent, native)) {
+            if (asked) rememberCorrection(sent, { parts: [], why: "" });
+            return;
+        }
+
+        rememberCorrection(sent, { parts: changedWords(sent, native), why });
+        keepCorrection({ typed: sent, native, why, at: Date.now() });
+    } catch (e) {
+        if (asked) notify(e, "failure");
+    }
+}
 
 /**
  * Shared by sending and editing: translate in place, or hold the message back.
@@ -295,6 +396,21 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         // nothing to translate, and a nickname on its own is exactly what a
         // model mistakes for a word.
         if (isJustAName(original, channelId)) return;
+
+        // AI Learn: this is the writer having a go at the language themselves,
+        // not a message to translate. It goes as typed and the chat box waits
+        // on nothing; the correction catches up with it under the message.
+        // Script decides it here, for free, and where two languages share an
+        // alphabet it cannot, which is said plainly in core/learn.ts.
+        if (settings.store.aiLearn && looksLikeOwnAttempt(original, scriptShare(original, settings.store.sentLanguage))) {
+            // The writer's own \markers\ still have to come off, exactly as
+            // they would if this were being translated.
+            const kept = keepPieces(original, true);
+            message.content = (kept.pieces.length ? kept.restore(kept.masked) : original) ?? original;
+
+            void askForCorrection(channelId, message.content);
+            return;
+        }
 
         // A message can wait on a provider's budget with its text still in the
         // chat box; Enter pressed again meanwhile must not send it a second time.
@@ -342,7 +458,9 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
 export default definePlugin({
     name: "AI Translate",
     description: "Translate your outgoing (and incoming) Discord messages with an LLM, per chat, without wrecking your writing style.",
-    tags: ["Chat", "Utility", "Translate"],
+    // Vencord's tags are a closed list, and "Translate" is not on it: the
+    // plugin list filters by them, so an invented one filters nothing.
+    tags: ["Chat", "Utility"],
     authors: [{ name: "「OI」茂住", id: 1418804885066874880n }],
     settings,
 

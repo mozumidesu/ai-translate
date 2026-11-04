@@ -45,6 +45,14 @@ function desktop(): Partial<Desktop> {
 const BROWSER_BUILD = "web";
 
 /**
+ * Which channel that build came from, written into the line below by the same
+ * robot. Left as it stands, nobody published this copy. Typed as a string
+ * rather than left to its literal, because the robot's word goes there and the
+ * comparisons below would otherwise read as unreachable.
+ */
+const BROWSER_CHANNEL: string = "dev";
+
+/**
  * How that copy names itself in a support report, with the kind of browser
  * build it is in front, since the three are kept apart in the store and in the
  * userscript manager. The flags are Vencord's, and a build of our own will not
@@ -54,9 +62,11 @@ function browserBuild() {
     const userscript = typeof IS_USERSCRIPT !== "undefined" && IS_USERSCRIPT;
     const extension = typeof IS_EXTENSION !== "undefined" && IS_EXTENSION;
 
-    if (userscript) return `userscript ${BROWSER_BUILD}`;
-    if (extension) return `extension ${BROWSER_BUILD}`;
-    return BROWSER_BUILD;
+    const testing = BROWSER_CHANNEL === "testing" ? " testing" : "";
+
+    if (userscript) return `userscript ${BROWSER_BUILD}${testing}`;
+    if (extension) return `extension ${BROWSER_BUILD}${testing}`;
+    return `${BROWSER_BUILD}${testing}`;
 }
 
 /** Whether this copy is the desktop one, with a main process behind it. */
@@ -87,13 +97,29 @@ export const Bridge = {
      * built from source is kept current by whoever built it, so it answers the
      * same way that one does and offers nothing.
      */
-    checkAiTranslateUpdate() {
+    checkAiTranslateUpdate(channel?: string) {
         const native = desktop().checkAiTranslateUpdate;
-        return native ? native() : Promise.resolve({ state: "dev" as const, details: "" });
+        return native ? native(channel) : Promise.resolve({ state: "dev" as const, details: "" });
     },
 
-    installAiTranslateUpdate() {
+    installAiTranslateUpdate(channel?: string) {
         const native = desktop().installAiTranslateUpdate;
-        return native ? native() : Promise.resolve({ ok: false, details: "not an installed copy" });
+        return native ? native(channel) : Promise.resolve({ ok: false, details: "not an installed copy" });
+    },
+
+    /**
+     * What this copy is, for the one line in the interface that says so. A
+     * desktop copy reads it off the disk; a browser copy was stamped at build
+     * time, and a copy somebody built themselves has nothing to show.
+     */
+    aiTranslateBuild(): Promise<{ build: string; channel: string; }> {
+        const native = desktop().aiTranslateBuild;
+        if (native) return native();
+
+        const published = BROWSER_CHANNEL === "release" || BROWSER_CHANNEL === "testing";
+        return Promise.resolve({
+            build: published ? BROWSER_BUILD : "",
+            channel: published ? BROWSER_CHANNEL : ""
+        });
     }
 };
