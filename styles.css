@@ -347,7 +347,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 /* Doubled for the same reason as the list above, the other way round: a theme
    that styles every li must not put bullets on these. */
 .vc-aitrans-kept-list.vc-aitrans-kept-list {
-    margin: 8px 0 0;
+    margin: 8px 0 16px;
     padding: 0;
 }
 
@@ -381,6 +381,14 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     margin-top: 4px;
     color: var(--text-subtle);
     font-size: 0.75rem;
+}
+
+/* Both ends stated, and the class doubled, because the paragraph Vencord draws
+   brings spacing of its own: tight under the line above, clear of the button
+   below, which has no margin over it. */
+.vc-aitrans-kept-empty.vc-aitrans-kept-empty {
+    margin: 4px 0 16px;
+    color: var(--text-muted);
 }
 
 /* A fixed grey rather than a theme variable, so it shows in every theme. */

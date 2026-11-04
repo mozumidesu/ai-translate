@@ -48,7 +48,8 @@ const WAITS = Number(arg("waits", 3));
 /** What each provider is asked, and with how long a pause between requests. */
 const PROVIDERS = {
     groq: {
-        key: () => process.env.GROQ_API_KEY || process.env.GROQ_API_ADDITIONAL || process.env.GROQ_API_KEY_2,
+        key: () => process.env.GROQ_API_KEY || process.env.GROQ_API_KEY_ADDITIONAL
+            || process.env.GROQ_API_ADDITIONAL || process.env.GROQ_API_KEY_2,
         model: arg("model", "openai/gpt-oss-120b"),
         // 8000 tokens a minute on the free tier against ~3500 a request.
         pace: Number(arg("pace", 26))

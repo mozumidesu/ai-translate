@@ -455,10 +455,16 @@ const CORRECT = { name: "correct", text: await promptFor("correct", "i have went
 check("the correction names the language being learnt", CORRECT, "learning English has written this message in English");
 check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
 check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
+// Measured against Groq: "i'll be there in about ten minutes" came back as
+// "I'll", 2 runs out of 2, with a reason about capital letters.
+check("and neither is the way somebody types", CORRECT, "A message typed in lower case is not a message with a mistake in it");
 check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");
 // The reason is for the learner to read, so it goes in the language they read
 // rather than the one they are still learning.
-check("the reason comes in the language the person reads", CORRECT, 'one last line beginning "why:" saying in Russian');
+check("the reason comes in the language the person reads", CORRECT, 'one last line beginning "why:" and written in Russian');
+// "wrong verb form and number agreement" names the kind of mistake without
+// saying what to do instead, which teaches nobody anything.
+check("and it quotes the words rather than naming the fault", CORRECT, "Quote the words that were wrong and give the rule behind them");
 check("and a message with nothing wrong gets no reason", CORRECT, "When you changed nothing there is no such line");
 absent("none of the translation rules come with it", CORRECT, "Never add a dash");
 absent("and nor does the answer format", CORRECT, "square-bracketed ISO 639-1 code");

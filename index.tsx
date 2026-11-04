@@ -315,6 +315,17 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
         />
     ];
 
+    if (settings.store.explain)
+        items.push(
+            <Menu.MenuItem
+                id="vc-ai-explain"
+                label={t("message.explain")}
+                icon={ExplainIcon}
+                leadingAccessory={{ type: "icon", icon: ExplainIcon }}
+                action={() => explainMessage(message)}
+            />
+        );
+
     // Your own message only: a correction of somebody else's writing is not
     // something to hand them, and this is the way to ask again for one that
     // went by, or to ask at all when the message was too short to catch.
@@ -326,17 +337,6 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
                 icon={CorrectIcon}
                 leadingAccessory={{ type: "icon", icon: CorrectIcon }}
                 action={() => askForCorrection(message.channel_id, getMessageContent(message), true)}
-            />
-        );
-
-    if (settings.store.explain)
-        items.push(
-            <Menu.MenuItem
-                id="vc-ai-explain"
-                label={t("message.explain")}
-                icon={ExplainIcon}
-                leadingAccessory={{ type: "icon", icon: ExplainIcon }}
-                action={() => explainMessage(message)}
             />
         );
 

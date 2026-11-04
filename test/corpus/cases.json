@@ -310,7 +310,8 @@
       "cats",
       "are",
       "why:"
-    ]
+    ],
+    "group": "learn"
   },
   {
     "id": "nothing-wrong-is-left-alone",
@@ -323,11 +324,12 @@
     ],
     "mustNot": [
       "why:"
-    ]
+    ],
+    "group": "learn"
   },
   {
     "id": "style-is-not-a-mistake",
-    "why": "lower case and \"gonna\" came back as formal English, which is a different writer rather than a corrected one",
+    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one",
     "kind": "correct",
     "to": "English",
     "text": "ok im gonna head out now see ya tomorrow",
@@ -335,7 +337,9 @@
       "gonna"
     ],
     "mustNot": [
-      "i am going to"
-    ]
+      "i am going to",
+      "i'm"
+    ],
+    "group": "learn"
   }
 ]

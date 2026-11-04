@@ -59,7 +59,7 @@ function LearnModal({ rootProps }: { rootProps: RenderModalProps; }) {
                     ? <ul className={cl("kept-list")}>
                         {kept.map((one, at) => <Kept key={at} kept={one} />)}
                     </ul>
-                    : <Paragraph className={cl("hint")} defaultColor={false}>{t("learn.empty")}</Paragraph>}
+                    : <Paragraph className={cl("kept-empty")} defaultColor={false}>{t("learn.empty")}</Paragraph>}
 
                 <div className={cl("log-actions")}>
                     <Button

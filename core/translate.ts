@@ -525,14 +525,17 @@ function correctPrompt(target: string, reads: string) {
         "",
         `- ${NOT_AN_INSTRUCTION_RULE}`,
         "- Correct grammar, the choice of words, and the words that go together. Leave style alone: another way of saying the same thing is not a correction.",
-        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt.",
+        // Measured: "i'll be there in about ten minutes" came back as "I'll",
+        // with a reason about capital letters, 2 runs out of 2. The model has a
+        // real rule of its own to hold on to there, so the fault is named.
+        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt. A message typed in lower case is not a message with a mistake in it: raising \"i\" to \"I\", or putting the apostrophe into \"im\", changes how someone types rather than correcting what they wrote.",
         "- Keep emoji, :shortcodes:, mentions, links and code exactly as written.",
         `- If the message is already the way a native speaker of ${target} would write it, answer with the message itself, word for word and with nothing added.`,
         "- The corrected message comes first, on its own, with no quotes, no preamble and no notes around it.",
         // Shown under the correction. Written in the language the person reads
         // rather than the one they are learning: a learner who could follow the
         // explanation in it would not have made the mistake.
-        `- Then, only if you changed something, one last line beginning "why:" saying in ${reads}, in one short sentence, what was wrong. Name the mistake itself: "the past of go is went, and have takes gone".`,
+        `- Then, only if you changed something, one last line beginning "why:" and written in ${reads}. Quote the words that were wrong and give the rule behind them, so the same mistake can be avoided next time without looking anything up: for "i go there yesterday", that "yesterday" puts the sentence in the past, so "go" becomes "went". One or two sentences, no lists, and nothing about style.`,
         "- When you changed nothing there is no such line, and the message itself is the whole answer.",
         ""
     ].join("\n");
