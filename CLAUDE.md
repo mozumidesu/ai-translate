@@ -84,7 +84,7 @@ over from the older name `AiTranslate`.
 ### The browser version — no Vencord at all
 
 `web/` holds a standalone build: `intercept.ts` catches outgoing messages,
-`panel.ts` is its own settings panel, `storage.ts` its own store, `user.ts` and
+`panel.ts` is its own settings panel, provider slots and all, `storage.ts` its own store, `user.ts` and
 `toast.ts` fill in for the host, `host.ts` wires them together, `build.mjs`
 builds it. `meta.js` is the userscript header. `web/dist/` is build output and
 is gitignored. See `web-support-plan.md` if it is in the session.
@@ -134,6 +134,7 @@ printed before, line for line.
 | `build/github.sh` | What the build robot does, publishing on `builds.zolatau.com` and making a GitHub release when the version has changed. **Keep**: it runs on Ubuntu inside Actions |
 | `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run. Also opens one issue when the build starts failing and closes it when it builds again, so an outage is noticed rather than sitting red |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
+| `CHANGELOG.md` | What changed in each version, under Added, Changed and Fixed. The robot puts the section whose heading matches the version into the release on GitHub; a version with no section falls back to the subjects of its commits, which is what the releases before the file have |
 | `docs/` | The 15 translated READMEs and the banner |
 
 ## Providers

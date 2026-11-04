@@ -22,6 +22,7 @@ const KEY = "aiTranslateSettings";
 
 export const DEFAULTS: Config = {
     locale: "auto",
+    providerSlots: "",
     provider: "groq",
     geminiApiKey: "",
     groqApiKey: "",
