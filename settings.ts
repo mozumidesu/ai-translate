@@ -204,16 +204,19 @@ export const settings = definePluginSettings({
         }
     },
 
+    // Off by default: it puts an item in the right-click menu of every
+    // message, which is a thing to choose rather than to arrive with.
     explain: {
         type: OptionType.BOOLEAN,
         get displayName() { return t("explain.name"); },
         get description() { return t("explain.desc"); },
-        default: true
+        default: false
     },
 
-    // Off by default: it makes a request for a message that would otherwise
-    // have made none, and most people are not learning the language they
-    // translate into.
+    // Off by default: most people are not learning the language they translate
+    // into, and while it is on, anything written in that language's alphabet is
+    // corrected rather than translated. Not for the cost: such a message makes
+    // a request either way, and this one's prompt is the smaller of the two.
     aiLearn: {
         type: OptionType.BOOLEAN,
         get displayName() { return t("learn.name"); },
