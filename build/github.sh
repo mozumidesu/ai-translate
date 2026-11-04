@@ -595,15 +595,24 @@ elif [ -z "$version" ]; then
 elif gh release view --repo "$GITHUB_REPOSITORY" "v$version" >/dev/null 2>&1; then
     echo "Version v$version is already released; only the build is new."
 else
-    # What changed since the release before this one. GitHub's own generator
-    # lists pull requests, and this repository is pushed to directly, so it
-    # leaves nothing but a link to the comparison. The subjects of the commits
-    # themselves are the changelog, minus the one that only raised the number.
+    # What changed, in the words a person would use, out of the section of
+    # CHANGELOG.md whose heading is this version. Commit subjects are written
+    # for whoever reads the history, not for whoever installs the plugin, and
+    # nothing in them says which were features and which were repairs.
+    changes=$(awk -v want="## $version" '
+        $0 == want { on = 1; next }
+        on && /^## / { exit }
+        on { print }
+    ' "$release_clone/CHANGELOG.md" 2>/dev/null | sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}' || true)
+
+    # A version with no section of its own falls back to the subjects, which is
+    # what every release before the file had. GitHub's own generator lists pull
+    # requests, and this repository is pushed to directly, so it would leave
+    # nothing but a link to the comparison.
     previous=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 \
         --json tagName --jq '.[0].tagName' 2>/dev/null || true)
 
-    changes=""
-    if [ -n "$previous" ]; then
+    if [ -z "$changes" ] && [ -n "$previous" ]; then
         changes=$(gh api "repos/$GITHUB_REPOSITORY/compare/$previous...$release_plugin" \
             --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null |
             grep -v "^v\?$version\$" | sed 's/^/* /' || true)
