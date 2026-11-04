@@ -37,7 +37,6 @@ export const DEFAULTS: Config = {
     fallbackProvider: "none",
     sentLanguage: "English",
     receivedLanguage: "English",
-    thinkingLevel: "low",
     mode: "perChannel",
     enabledChannels: "",
     onError: "hold",

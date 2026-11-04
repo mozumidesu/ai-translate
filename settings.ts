@@ -131,19 +131,6 @@ export const settings = definePluginSettings({
         default: ""
     },
 
-    thinkingLevel: {
-        type: OptionType.SELECT,
-        get displayName() { return t("thinking.name"); },
-        get description() { return t("thinking.desc"); },
-        default: "low",
-        get options() {
-            return [
-                { label: t("thinking.low"), value: "low", default: true },
-                { label: t("thinking.high"), value: "high" }
-            ];
-        }
-    },
-
     fallbackProvider: {
         type: OptionType.SELECT,
         get displayName() { return t("fallback.name"); },
@@ -373,8 +360,7 @@ export const settings = definePluginSettings({
 
     baseUrl: { hidden() { return !keyInUse(this.store, "openai"); } },
     // Nothing to look back over until the switch above is on.
-    learnPanel: { hidden() { return !this.store.aiLearn; } },
-    thinkingLevel: { hidden() { return this.store.provider === "anthropic"; } }
+    learnPanel: { hidden() { return !this.store.aiLearn; } }
 });
 
 /** Keys and models are kept per provider, so switching does not lose them. */
@@ -384,7 +370,7 @@ export function migrateSettings() {
     if (old && !settings.store.geminiApiKey && !settings.store.groqApiKey && !settings.store.apiKey) {
         for (const key of [
             "provider", "apiKey", "model", "baseUrl", "sentLanguage", "receivedLanguage",
-            "thinkingLevel", "mode", "enabledChannels", "extraInstructions",
+            "mode", "enabledChannels", "extraInstructions",
             "geminiApiKey", "groqApiKey", "anthropicApiKey", "glmApiKey", "openaiApiKey",
             "geminiModel", "groqModel", "anthropicModel", "glmModel", "openaiModel"
         ]) {

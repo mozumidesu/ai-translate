@@ -67,11 +67,6 @@ const FIELDS: Field[] = [
         options: () => LANGUAGES.map(l => ({ value: l.value, label: l.label }))
     },
     {
-        kind: "select", name: "thinkingLevel",
-        label: () => t("thinking.name"), hint: () => t("thinking.desc"),
-        options: () => [{ value: "low", label: t("thinking.low") }, { value: "high", label: t("thinking.high") }]
-    },
-    {
         kind: "select", name: "mode",
         label: () => t("mode.name"), hint: () => t("mode.desc"),
         options: () => [{ value: "perChannel", label: t("mode.perChannel") }, { value: "always", label: t("mode.always") }]

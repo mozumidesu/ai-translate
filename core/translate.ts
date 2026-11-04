@@ -709,6 +709,13 @@ function restoreLinePrefixes(original: string, translated: string) {
 
 export type Kind = "sent" | "received" | "explain" | "correct";
 
+/**
+ * How much a model may reason before answering, for the providers that have
+ * such a setting. Translation wants speed rather than reasoning, and the
+ * answer was the same for everyone, so it stopped being a question to ask.
+ */
+const THINKING = "low";
+
 /** Only a single word can be swapped out safely afterwards; a phrase cannot. */
 const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
 
@@ -1357,7 +1364,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     if (kept?.pieces.length && isNotWorthTranslating(kept.bare(text)))
         return { text: kept.restore(text) ?? typed };
 
-    const { provider, baseUrl, thinkingLevel, fallbackProvider } = config();
+    const { provider, baseUrl, fallbackProvider } = config();
     const apiKey = currentApiKey();
     const model = currentModel();
     const providerName = providerLabel();
@@ -1373,7 +1380,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // cached answer from before the change would be served.
     const { extraInstructions, formality } = config();
     const cacheKey = [
-        kind, provider, model, target, thinkingLevel, extraInstructions,
+        kind, provider, model, target, extraInstructions,
         formality, config().gender, config().glossary, context, mine, typed
     ].join("|");
     const hit = cache.get(cacheKey);
@@ -1412,7 +1419,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const started = Date.now();
 
         const { status, data, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
-            provider: id, apiKey: key, model: chosen, baseUrl, thinkingLevel, system, text, roomy
+            provider: id, apiKey: key, model: chosen, baseUrl, thinkingLevel: THINKING, system, text, roomy
         }));
 
         noteBudget(id, budget);
