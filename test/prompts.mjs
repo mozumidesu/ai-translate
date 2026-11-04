@@ -43,7 +43,7 @@ await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
             + `export { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`
-            + `export { changedWords, looksLikeOwnAttempt, sameMessage } from "./core/learn";\n`,
+            + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -77,7 +77,7 @@ globalThis.GM_xmlhttpRequest = options => {
 };
 
 const { useHost, aiTranslate, collectContext, isJustAName,
-    changedWords, looksLikeOwnAttempt, sameMessage } = await import(join(out, "core.mjs"));
+    changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } = await import(join(out, "core.mjs"));
 
 /** What the chat above shows, for the tests that need someone in it. */
 let history = [];
@@ -456,6 +456,10 @@ check("the correction names the language being learnt", CORRECT, "learning Engli
 check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
 check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
 check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");
+// The reason is for the learner to read, so it goes in the language they read
+// rather than the one they are still learning.
+check("the reason comes in the language the person reads", CORRECT, 'one last line beginning "why:" saying in Russian');
+check("and a message with nothing wrong gets no reason", CORRECT, "When you changed nothing there is no such line");
 absent("none of the translation rules come with it", CORRECT, "Never add a dash");
 absent("and nor does the answer format", CORRECT, "square-bracketed ISO 639-1 code");
 
@@ -482,6 +486,21 @@ learn("an added word is marked where it was added",
 learn("and a message that only lost a word has nothing marked",
     changedWords("i did go to the store", "i went to the store").map(p => (p.changed ? "*" : "") + p.text),
     ["i", "*went", "to", "the", "store"]);
+
+// The reason arrives as one more line, and a message can have lines of its
+// own, so only the last one is ever read as the reason.
+learn("an answer with no reason is all message",
+    splitCorrection("I went there yesterday"),
+    { native: "I went there yesterday", why: "" });
+learn("the last line is the reason when it says so",
+    splitCorrection("I went there yesterday\nwhy: the past of go is went"),
+    { native: "I went there yesterday", why: "the past of go is went" });
+learn("a message of several lines keeps every one of them",
+    splitCorrection("the first line\nthe second line"),
+    { native: "the first line\nthe second line", why: "" });
+learn("and a line that only looks like one is not the reason",
+    splitCorrection("why: this is the message itself\nand this is its second line"),
+    { native: "why: this is the message itself\nand this is its second line", why: "" });
 
 learn("the same message is the same message", sameMessage("See you tomorrow!", "See you tomorrow!"), true);
 learn("and punctuation alone is not a correction", sameMessage("see you tomorrow", "See you tomorrow!"), true);

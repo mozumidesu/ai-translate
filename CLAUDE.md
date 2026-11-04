@@ -40,7 +40,7 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
 | `core/version.ts` | The version people see, and the only place it is written down |
-| `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, and what a correction changed, word by word |
+| `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
 These eleven (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
@@ -65,6 +65,7 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
 | `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
 | `ui/Logs.tsx` | The Logs button and the panel behind it: the log as text, with Copy, Save .txt and Clear |
+| `ui/LearnPanel.tsx` | The Corrections button under the AI Learn switch, and the panel behind it: what was written, what a native speaker would have written, and why. Hidden while AI Learn is off |
 | `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
 
@@ -118,7 +119,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 169 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 175 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
@@ -178,10 +179,23 @@ native speaker would have written what the person wrote themselves; it is a
 tenth the size of the others, because none of the rules about carrying a
 writer's voice through a translation apply when nothing is being translated.
 
+AI Learn's answer has two parts: the corrected message, and one last line
+beginning `why:` that says what was wrong. That line is written in the
+language the person **reads**, not the one they are learning, because a
+learner who could follow the explanation in it would not have made the
+mistake. It is only ever read off the last line, since the message itself can
+run to several, and there is no such line when nothing changed.
+
+A correction nobody asked for stays silent when the message was already
+right: unasked, only a mistake is worth interrupting for. Asked for by hand,
+from the right-click menu, it always answers, "nothing to correct here"
+included. That is what tells "there was nothing wrong" apart from "it never
+ran", which otherwise look identical.
+
 ## Running things
 
 ```
-node test/prompts.mjs      # 169 checks; needs esbuild
+node test/prompts.mjs      # 175 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout

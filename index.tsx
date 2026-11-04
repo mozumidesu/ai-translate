@@ -29,7 +29,7 @@ import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
-import { changedWords, looksLikeOwnAttempt, Part, sameMessage } from "./core/learn";
+import { changedWords, keepCorrection, looksLikeOwnAttempt, Part, sameMessage, splitCorrection } from "./core/learn";
 import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
@@ -46,6 +46,14 @@ const TranslateIcon: IconComponent = ({ height = 20, width = 20, className }) =>
 const ExplainIcon: IconComponent = ({ height = 20, width = 20, className }) => (
     <svg viewBox="0 0 24 24" height={height} width={width} className={className}>
         <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 17h-2v-2h2v2Zm2.07-7.75-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26A2 2 0 1 0 10 9H8a4 4 0 1 1 8 0c0 .88-.36 1.68-.93 2.25Z" />
+    </svg>
+);
+
+/* Nothing was translated and nothing was explained, so neither of the two
+   above says what this is: a message that has been looked over. */
+const CorrectIcon: IconComponent = ({ height = 20, width = 20, className }) => (
+    <svg viewBox="0 0 24 24" height={height} width={width} className={className}>
+        <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9Z" />
     </svg>
 );
 
@@ -106,17 +114,26 @@ function rememberOriginal(original: string, translated: string) {
 
 /**
  * AI Learn: sent text -> how a native speaker would have written it, word by
- * word with what changed marked. Keyed by the text because the message has no
- * id yet when the correction is asked for: it has only just been sent.
+ * word with what changed marked, and why. Keyed by the text because the message
+ * has no id yet when the correction is asked for: it has only just been sent.
+ *
+ * No parts means there was nothing to correct, which is only ever kept for a
+ * correction somebody asked for by hand: unasked, a message that is already
+ * right says nothing at all.
  */
-const corrections = new Map<string, Part[]>();
+interface Fixed {
+    parts: Part[];
+    why: string;
+}
+
+const corrections = new Map<string, Fixed>();
 
 /** Told when a correction lands, since which message it belongs to is known by text. */
 const correctionListeners = new Set<() => void>();
 
-function rememberCorrection(sent: string, parts: Part[]) {
+function rememberCorrection(sent: string, fixed: Fixed) {
     if (corrections.size > 100) corrections.clear();
-    corrections.set(sent, parts);
+    corrections.set(sent, fixed);
     for (const tell of correctionListeners) tell();
 }
 
@@ -180,7 +197,9 @@ function TranslationAccessory({ message }: { message: Message; }) {
         <span className={cl("accessory")}>
             {translation?.explained
                 ? <ExplainIcon width={16} height={16} className={cl("accessory-icon")} />
-                : <TranslateIcon width={16} height={16} className={cl("accessory-icon")} />}
+                : !translation && corrected
+                    ? <CorrectIcon width={16} height={16} className={cl("accessory-icon")} />
+                    : <TranslateIcon width={16} height={16} className={cl("accessory-icon")} />}
             {translation
                 ? <>
                     {Parser.parse(translation.text)}
@@ -195,14 +214,17 @@ function TranslationAccessory({ message }: { message: Message; }) {
                     </span>
                 </>
                 : corrected
-                    ? <>
-                        {t("message.native")}{" "}
-                        {corrected.map((part, at) => (
-                            <span key={at} className={part.changed ? cl("fixed") : undefined}>
-                                {at ? " " : ""}{part.text}
-                            </span>
-                        ))}
-                    </>
+                    ? corrected.parts.length
+                        ? <>
+                            {t("message.native")}{" "}
+                            {corrected.parts.map((part, at) => (
+                                <span key={at} className={part.changed ? cl("fixed") : undefined}>
+                                    {at ? " " : ""}{part.text}
+                                </span>
+                            ))}
+                            {!!corrected.why && <span className={cl("note")}>{corrected.why}</span>}
+                        </>
+                        : <>{t("message.fine")}</>
                     : <>{t("message.youWrote")} {Parser.parse(asTyped(original!))}</>}
         </span>
     );
@@ -293,6 +315,20 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
         />
     ];
 
+    // Your own message only: a correction of somebody else's writing is not
+    // something to hand them, and this is the way to ask again for one that
+    // went by, or to ask at all when the message was too short to catch.
+    if (settings.store.aiLearn && message.author?.id === UserStore.getCurrentUser()?.id)
+        items.push(
+            <Menu.MenuItem
+                id="vc-ai-learn"
+                label={t("message.correct")}
+                icon={CorrectIcon}
+                leadingAccessory={{ type: "icon", icon: CorrectIcon }}
+                action={() => askForCorrection(message.channel_id, getMessageContent(message), true)}
+            />
+        );
+
     if (settings.store.explain)
         items.push(
             <Menu.MenuItem
@@ -311,17 +347,31 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
 const inFlight = new Set<string>();
 
 /**
- * AI Learn: one request, made after the message has already gone, for how a
- * native speaker would have written it. Nothing waits on this, and a failure
- * says nothing: a suggestion nobody asked for must not interrupt a
- * conversation with an error. The log keeps it either way.
+ * AI Learn: one request for how a native speaker would have written the
+ * message. Nothing waits on it, and a failure says nothing when nobody asked:
+ * a suggestion that arrives by itself must not interrupt a conversation with
+ * an error. The log keeps it either way.
+ *
+ * Asked for by hand, it always answers, "nothing to change" included. That is
+ * the whole difference between the two: silence is an answer only when the
+ * question was never put.
  */
-async function askForCorrection(channelId: string, sent: string) {
+async function askForCorrection(channelId: string, sent: string, asked = false) {
     try {
         const { text } = await aiTranslate("correct", sent, collectContext(channelId));
-        if (text && !sameMessage(sent, text)) rememberCorrection(sent, changedWords(sent, text));
-    } catch {
-        // Nothing to say and nowhere to say it.
+        if (!text) return;
+
+        const { native, why } = splitCorrection(text);
+
+        if (sameMessage(sent, native)) {
+            if (asked) rememberCorrection(sent, { parts: [], why: "" });
+            return;
+        }
+
+        rememberCorrection(sent, { parts: changedWords(sent, native), why });
+        keepCorrection({ typed: sent, native, why, at: Date.now() });
+    } catch (e) {
+        if (asked) notify(e, "failure");
     }
 }
 

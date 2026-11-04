@@ -2,12 +2,14 @@
  * AI Translate — AI Learn, the part that needs no Discord.
  *
  * Deciding whether a message is the writer's own attempt at the language they
- * are learning, and working out what a correction actually changed. Both are
- * done here rather than asked of a model: the first costs nothing and the
- * second has one right answer.
+ * are learning, working out what a correction actually changed, and keeping
+ * the corrections that have been made. The first two are done here rather than
+ * asked of a model: one costs nothing and the other has one right answer.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+
+import { config, set } from "./host";
 
 /** Below this many words a correction is pedantry: "ok", "thanks", "lol". */
 const ENOUGH_WORDS = 4;
@@ -29,6 +31,57 @@ export const wordsOf = (text: string) => text.match(WORDS) ?? [];
  */
 export function looksLikeOwnAttempt(typed: string, share: number) {
     return share >= 0.97 && wordsOf(typed).length >= ENOUGH_WORDS;
+}
+
+/**
+ * The model answers with the corrected message, and one last line saying what
+ * was wrong when it changed anything. The marker is needed because a message
+ * can run to several lines of its own, so position alone cannot tell them
+ * apart; it is only ever read off the last line.
+ */
+const WHY = /^\s*why\s*:\s*/i;
+
+export function splitCorrection(answer: string) {
+    const lines = answer.split("\n");
+    const last = lines[lines.length - 1] ?? "";
+
+    if (lines.length > 1 && WHY.test(last))
+        return { native: lines.slice(0, -1).join("\n").trimEnd(), why: last.replace(WHY, "").trim() };
+
+    return { native: answer, why: "" };
+}
+
+/** A correction worth keeping: what was written, what it should have been. */
+export interface Correction {
+    typed: string;
+    native: string;
+    why: string;
+    at: number;
+}
+
+/**
+ * How many are kept. Enough to look back over a few days of writing, small
+ * enough that the settings file stays a settings file.
+ */
+const KEPT = 50;
+
+export function keptCorrections(): Correction[] {
+    try {
+        const kept = JSON.parse(String(config().learnHistory || "[]"));
+        return Array.isArray(kept) ? kept.filter(c => c?.typed && c?.native) : [];
+    } catch {
+        // Written by a newer version, or by hand: better empty than thrown.
+        return [];
+    }
+}
+
+/** Keeps a correction, newest first. The same mistake twice is kept twice. */
+export function keepCorrection(entry: Correction) {
+    set("learnHistory", JSON.stringify([entry, ...keptCorrections()].slice(0, KEPT)));
+}
+
+export function forgetCorrections() {
+    set("learnHistory", "");
 }
 
 export interface Part {

@@ -342,6 +342,47 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     margin-top: 2px;
 }
 
+/* ── the corrections AI Learn has kept ── */
+
+/* Doubled for the same reason as the list above, the other way round: a theme
+   that styles every li must not put bullets on these. */
+.vc-aitrans-kept-list.vc-aitrans-kept-list {
+    margin: 8px 0 0;
+    padding: 0;
+}
+
+.vc-aitrans-kept-list.vc-aitrans-kept-list > li {
+    display: block;
+    list-style: none;
+}
+
+.vc-aitrans-kept {
+    padding: 10px 0;
+    border-top: 1px solid var(--background-secondary-alt);
+}
+
+.vc-aitrans-kept-typed {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.vc-aitrans-kept-native {
+    margin-top: 2px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-aitrans-kept-why {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
+.vc-aitrans-kept-when {
+    margin-top: 4px;
+    color: var(--text-subtle);
+    font-size: 0.75rem;
+}
+
 /* A fixed grey rather than a theme variable, so it shows in every theme. */
 .vc-aitrans-example {
     padding: 1px 5px;

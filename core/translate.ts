@@ -519,7 +519,7 @@ function outgoingPrompt(target: string, has: Involved) {
  * of the translation prompt: none of the rules about preserving a writer's
  * voice through a translation apply when nothing is being translated.
  */
-function correctPrompt(target: string) {
+function correctPrompt(target: string, reads: string) {
     return [
         `Someone learning ${target} has written this message in ${target} themselves. Give the version a native speaker of ${target} would have written, and nothing else.`,
         "",
@@ -528,7 +528,12 @@ function correctPrompt(target: string) {
         "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt.",
         "- Keep emoji, :shortcodes:, mentions, links and code exactly as written.",
         `- If the message is already the way a native speaker of ${target} would write it, answer with the message itself, word for word and with nothing added.`,
-        "- Never explain, never comment, never add quotes or notes. The corrected message and nothing besides.",
+        "- The corrected message comes first, on its own, with no quotes, no preamble and no notes around it.",
+        // Shown under the correction. Written in the language the person reads
+        // rather than the one they are learning: a learner who could follow the
+        // explanation in it would not have made the mistake.
+        `- Then, only if you changed something, one last line beginning "why:" saying in ${reads}, in one short sentence, what was wrong. Name the mistake itself: "the past of go is went, and have takes gone".`,
+        "- When you changed nothing there is no such line, and the message itself is the whole answer.",
         ""
     ].join("\n");
 }
@@ -1375,7 +1380,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const basePrompt = (kind === "sent"
         ? outgoingPrompt(target, has)
         : kind === "explain" ? explainPrompt(target)
-            : kind === "correct" ? correctPrompt(target) : incomingPrompt(target, mine, has))
+            : kind === "correct" ? correctPrompt(target, config().receivedLanguage) : incomingPrompt(target, mine, has))
         + messageRules(kind, text, has)
         + (lines > 1 && kind !== "explain" && kind !== "correct"
             ? `\n\nThe text is written on ${lines} separate lines. Your answer must be on ${lines}`

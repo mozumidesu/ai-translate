@@ -149,7 +149,7 @@ function settingsFor(kase, provider) {
         [`${provider}ApiKey`]: PROVIDERS[provider].key(),
         [`${provider}Model`]: model,
         baseUrl: "",
-        sentLanguage: kase.kind === "sent" ? kase.to : "English",
+        sentLanguage: kase.kind === "sent" || kase.kind === "correct" ? kase.to : "English",
         receivedLanguage: kase.kind === "sent" ? "Russian" : kase.to,
         thinkingLevel: "low",
         mode: "always",

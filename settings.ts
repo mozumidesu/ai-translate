@@ -17,6 +17,7 @@ import { OptionType } from "@utils/types";
 
 import { FallbackNotice } from "./ui/FallbackNotice";
 import { KeepHelp } from "./ui/KeepHelp";
+import { LearnPanel } from "./ui/LearnPanel";
 import { LOCALES, t } from "./core/locales";
 import { LogsPanel } from "./ui/Logs";
 import { ModelPicker } from "./ui/ModelPicker";
@@ -223,6 +224,16 @@ export const settings = definePluginSettings({
         get description() { return t("learn.desc"); },
         default: false
     },
+    learnPanel: {
+        type: OptionType.COMPONENT,
+        component: LearnPanel
+    },
+    learnHistory: {
+        type: OptionType.STRING,
+        description: "internal: the corrections kept, newest first, as JSON",
+        default: "",
+        hidden: true
+    },
 
     // --- how the translation reads ---
 
@@ -361,6 +372,8 @@ export const settings = definePluginSettings({
     openaiApiKey: { hidden() { return !keyInUse(this.store, "openai"); } },
 
     baseUrl: { hidden() { return !keyInUse(this.store, "openai"); } },
+    // Nothing to look back over until the switch above is on.
+    learnPanel: { hidden() { return !this.store.aiLearn; } },
     thinkingLevel: { hidden() { return this.store.provider === "anthropic"; } }
 });
 
