@@ -28,6 +28,17 @@ import { ModelPicker, Verdict } from "./ModelPicker";
 
 const cl = classNameFactory("vc-aitrans-");
 
+/** Shown beside the key, so a pasted one can be read back before it is used. */
+const EyeIcon = ({ off }: { off: boolean; }) => (
+    <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true">
+        <path
+            fill="currentColor"
+            d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7Zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
+        />
+        {off && <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M4 4 20 20" />}
+    </svg>
+);
+
 /** "Groq (recommended)" is advice for the first choice, not a name. */
 const bareLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
 
@@ -36,6 +47,8 @@ export function Providers() {
     /** Bumped when a key or an address is finished, to ask the provider again. */
     const [revisions, setRevisions] = useState<Record<string, number>>({});
     const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({});
+    /** Which keys are being read back. Hidden again as soon as the page closes. */
+    const [shown, setShown] = useState<Record<string, boolean>>({});
 
     const save = (next: Slot[]) => {
         writeSlots(next);
@@ -63,7 +76,9 @@ export function Providers() {
                 return (
                     <div key={slot.id} className={cl("slot")}>
                         <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>
-                            {first ? t("provider.name") : t("fallback.numbered", { number: at })}
+                            {first ? t("provider.name")
+                                : slots.length > 2 ? t("fallback.numbered", { number: at })
+                                    : t("fallback.name")}
                         </Heading>
 
                         <SearchableSelect
@@ -88,14 +103,22 @@ export function Providers() {
 
                                 {/* The provider is asked when the field is left, not while it
                                     is being filled: one request for a key however it arrives. */}
-                                <div onBlur={() => bump(slot.id)}>
+                                <div className={cl("key-row")} onBlur={() => bump(slot.id)}>
                                     <TextInput
-                                        type="password"
+                                        type={shown[slot.id] ? "text" : "password"}
                                         value={keyOf(slot)}
                                         placeholder={t("apiKey.desc")}
                                         onChange={(value: string) => change(at, s =>
                                             ({ ...s, keys: { ...s.keys, [s.provider]: value } }))}
                                     />
+                                    <Button
+                                        size="small"
+                                        variant="secondary"
+                                        aria-label={t(shown[slot.id] ? "apiKey.hide" : "apiKey.show")}
+                                        onClick={() => setShown(was => ({ ...was, [slot.id]: !was[slot.id] }))}
+                                    >
+                                        <EyeIcon off={!!shown[slot.id]} />
+                                    </Button>
                                 </div>
 
                                 {verdicts[slot.id] === "bad" && (
@@ -132,29 +155,36 @@ export function Providers() {
                             </>
                         )}
 
-                        {!first && (
-                            <Button
-                                className={cl("slot-remove")}
-                                size="small"
-                                variant="secondary"
-                                onClick={() => save(slots.filter((_, i) => i !== at))}
-                            >
-                                {t("fallback.remove")}
-                            </Button>
+                        {(!first || slots.length < MOST_SLOTS) && (
+                            <div className={cl("slot-actions")}>
+                                {!first && (
+                                    <Button
+                                        size="small"
+                                        variant="secondary"
+                                        aria-label={t("fallback.remove")}
+                                        onClick={() => save(slots.filter((_, i) => i !== at))}
+                                    >
+                                        &minus;
+                                    </Button>
+                                )}
+
+                                {/* Beside the one it follows, on the last slot only: there is
+                                    one list to add to, not one per slot. */}
+                                {at === slots.length - 1 && slots.length < MOST_SLOTS && (
+                                    <Button
+                                        size="small"
+                                        variant="secondary"
+                                        aria-label={t("fallback.add")}
+                                        onClick={() => save([...slots, emptySlot(NONE)])}
+                                    >
+                                        +
+                                    </Button>
+                                )}
+                            </div>
                         )}
                     </div>
                 );
             })}
-
-            {slots.length < MOST_SLOTS && (
-                <Button
-                    size="small"
-                    variant="secondary"
-                    onClick={() => save([...slots, emptySlot(NONE)])}
-                >
-                    {t("fallback.add")}
-                </Button>
-            )}
         </section>
     );
 }

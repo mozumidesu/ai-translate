@@ -65,13 +65,20 @@ function asSlot(raw: any): Slot | null {
 /** What a copy from before the list looks like, read as a list of one or two. */
 function fromOldSettings(): Slot[] {
     const c = config() as any;
-    const made = (provider: string): Slot => ({
-        id: provider,
-        provider,
-        keys: { [provider]: String(c[`${provider}ApiKey`] ?? "") },
-        models: { [provider]: String(c[`${provider}Model`] ?? "") },
-        baseUrls: { [provider]: String(c.baseUrl ?? "") }
-    });
+    const made = (provider: string): Slot => {
+        const key = String(c[`${provider}ApiKey`] ?? "");
+
+        return {
+            id: provider,
+            provider,
+            keys: { [provider]: key },
+            // The model these carried was a default rather than a choice, and
+            // with no key it was never checked against anything. Showing it
+            // would say the provider is set up when nothing has been asked.
+            models: { [provider]: key ? String(c[`${provider}Model`] ?? "") : "" },
+            baseUrls: { [provider]: String(c.baseUrl ?? "") }
+        };
+    };
 
     const first = PROVIDERS.includes(c.provider) ? c.provider : PROVIDERS[0];
     const slots = [made(first)];

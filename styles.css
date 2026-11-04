@@ -152,7 +152,7 @@
 }
 
 .vc-aitrans-hint.vc-aitrans-hint {
-    margin-top: 6px;
+    margin-top: 5px;
     color: var(--text-muted);
 }
 
@@ -301,7 +301,7 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
 /* Logs belongs with the update button above it, closer than Vencord's own
    gap between settings would leave the two. */
 .vc-aitrans-logs {
-    margin-top: -8px;
+    margin-top: -9px;
 }
 
 .vc-aitrans-hint.vc-aitrans-hint-bad {
@@ -356,8 +356,29 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     margin-top: 16px;
 }
 
-.vc-aitrans-slot-remove {
-    margin-top: 12px;
+/* The same gap the model's buttons keep, so a row of buttons is a row of
+   buttons wherever it stands. */
+.vc-aitrans-slot-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* Square, because the sign in it is one character wide. */
+.vc-aitrans-slot-actions button {
+    min-width: 32px;
+}
+
+/* The key, and the eye that shows it, on one line. */
+.vc-aitrans-key-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.vc-aitrans-key-row > :first-child {
+    flex: 1;
+    min-width: 0;
 }
 
 /* ── the corrections AI Learn has kept ── */

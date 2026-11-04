@@ -26,6 +26,8 @@ const en: Strings = {
 
     "apiKey.name": "API key",
     "apiKey.desc": "Your key for the provider selected above",
+    "apiKey.show": "Show the key",
+    "apiKey.hide": "Hide the key",
 
     "model.name": "Model",
     "model.desc": "Check the provider's current model list and pick a small, fast one: translation needs speed, not reasoning power",
@@ -227,6 +229,8 @@ const ru: Strings = {
 
     "apiKey.name": "Ключ API",
     "apiKey.desc": "Ваш ключ для выбранного выше провайдера",
+    "apiKey.show": "Показать ключ",
+    "apiKey.hide": "Скрыть ключ",
 
     "model.name": "Модель",
     "model.desc": "Посмотрите актуальный список моделей провайдера и выберите небольшую и быструю: переводу нужна скорость, а не глубина рассуждений",
@@ -428,6 +432,8 @@ const uk: Strings = {
 
     "apiKey.name": "Ключ API",
     "apiKey.desc": "Ваш ключ для обраного вище провайдера",
+    "apiKey.show": "Показати ключ",
+    "apiKey.hide": "Сховати ключ",
 
     "model.name": "Модель",
     "model.desc": "Подивіться актуальний перелік моделей провайдера й оберіть невелику та швидку: перекладу потрібна швидкість, а не глибина міркувань",
@@ -629,6 +635,8 @@ const ro: Strings = {
 
     "apiKey.name": "Cheie API",
     "apiKey.desc": "Cheia ta pentru furnizorul ales mai sus",
+    "apiKey.show": "Arată cheia",
+    "apiKey.hide": "Ascunde cheia",
 
     "model.name": "Model",
     "model.desc": "Verifică lista actuală de modele a furnizorului și alege unul mic și rapid: traducerea are nevoie de viteză, nu de putere de raționament",
@@ -828,6 +836,8 @@ const de: Strings = {
     "provider.openai": "Jede OpenAI-kompatible API",
     "apiKey.name": "API-Schlüssel",
     "apiKey.desc": "Dein Schlüssel für den oben gewählten Anbieter",
+    "apiKey.show": "Schlüssel anzeigen",
+    "apiKey.hide": "Schlüssel verbergen",
     "model.name": "Modell",
     "model.desc": "Sieh dir die aktuelle Modellliste des Anbieters an und nimm ein kleines, schnelles Modell: Übersetzen braucht Tempo, keine Denkleistung",
     "baseUrl.name": "API-Adresse",
@@ -1014,6 +1024,8 @@ const es: Strings = {
     "provider.openai": "Cualquier API compatible con OpenAI",
     "apiKey.name": "Clave de API",
     "apiKey.desc": "Tu clave para el proveedor elegido arriba",
+    "apiKey.show": "Mostrar la clave",
+    "apiKey.hide": "Ocultar la clave",
     "model.name": "Modelo",
     "model.desc": "Consulta la lista actual de modelos del proveedor y elige uno pequeño y rápido: traducir necesita velocidad, no capacidad de razonamiento",
     "baseUrl.name": "Dirección de la API",
@@ -1200,6 +1212,8 @@ const fr: Strings = {
     "provider.openai": "Toute API compatible OpenAI",
     "apiKey.name": "Clé API",
     "apiKey.desc": "Votre clé pour le fournisseur choisi ci-dessus",
+    "apiKey.show": "Afficher la clé",
+    "apiKey.hide": "Masquer la clé",
     "model.name": "Modèle",
     "model.desc": "Consultez la liste actuelle des modèles du fournisseur et prenez-en un petit et rapide : la traduction demande de la vitesse, pas de la puissance de raisonnement",
     "baseUrl.name": "Adresse de l'API",
@@ -1386,6 +1400,8 @@ const pt: Strings = {
     "provider.openai": "Qualquer API compatível com OpenAI",
     "apiKey.name": "Chave de API",
     "apiKey.desc": "Sua chave para o provedor escolhido acima",
+    "apiKey.show": "Mostrar a chave",
+    "apiKey.hide": "Ocultar a chave",
     "model.name": "Modelo",
     "model.desc": "Veja a lista atual de modelos do provedor e escolha um pequeno e rápido: traduzir precisa de velocidade, não de capacidade de raciocínio",
     "baseUrl.name": "Endereço da API",
@@ -1572,6 +1588,8 @@ const ja: Strings = {
     "provider.openai": "OpenAI 互換の API",
     "apiKey.name": "API キー",
     "apiKey.desc": "上で選んだプロバイダーのキー",
+    "apiKey.show": "キーを表示",
+    "apiKey.hide": "キーを隠す",
     "model.name": "モデル",
     "model.desc": "プロバイダーの最新モデル一覧を確認し、小さくて速いものを選んでください。翻訳に必要なのは速さで、推論力ではありません",
     "baseUrl.name": "API アドレス",
@@ -1758,6 +1776,8 @@ const zh: Strings = {
     "provider.openai": "任何兼容 OpenAI 的 API",
     "apiKey.name": "API 密钥",
     "apiKey.desc": "上方所选服务商的密钥",
+    "apiKey.show": "显示密钥",
+    "apiKey.hide": "隐藏密钥",
     "model.name": "模型",
     "model.desc": "查看服务商当前的模型列表，挑一个小而快的：翻译需要的是速度，不是推理能力",
     "baseUrl.name": "API 地址",
@@ -1944,6 +1964,8 @@ const th: Strings = {
     "provider.openai": "API ใดก็ได้ที่เข้ากันได้กับ OpenAI",
     "apiKey.name": "คีย์ API",
     "apiKey.desc": "คีย์ของคุณสำหรับผู้ให้บริการที่เลือกไว้ด้านบน",
+    "apiKey.show": "แสดงคีย์",
+    "apiKey.hide": "ซ่อนคีย์",
     "model.name": "โมเดล",
     "model.desc": "ดูรายการโมเดลล่าสุดของผู้ให้บริการ แล้วเลือกตัวที่เล็กและเร็ว การแปลต้องการความเร็ว ไม่ใช่ความสามารถในการให้เหตุผล",
     "model.refresh": "รีเฟรชรายการ",
@@ -2130,6 +2152,8 @@ const vi: Strings = {
     "provider.openai": "Bất kỳ API nào tương thích OpenAI",
     "apiKey.name": "Khoá API",
     "apiKey.desc": "Khoá của bạn cho nhà cung cấp đã chọn ở trên",
+    "apiKey.show": "Hiện khoá",
+    "apiKey.hide": "Ẩn khoá",
     "model.name": "Mô hình",
     "model.desc": "Xem danh sách mô hình hiện có của nhà cung cấp và chọn một mô hình nhỏ, nhanh: dịch cần tốc độ chứ không cần khả năng suy luận",
     "model.refresh": "Tải lại danh sách",
@@ -2316,6 +2340,8 @@ const tr: Strings = {
     "provider.openai": "OpenAI uyumlu herhangi bir API",
     "apiKey.name": "API anahtarı",
     "apiKey.desc": "Yukarıda seçilen sağlayıcı için anahtarınız",
+    "apiKey.show": "Anahtarı göster",
+    "apiKey.hide": "Anahtarı gizle",
     "model.name": "Model",
     "model.desc": "Sağlayıcının güncel model listesine bakıp küçük ve hızlı bir model seçin: çeviri hız ister, akıl yürütme gücü değil",
     "model.refresh": "Listeyi yenile",
@@ -2504,6 +2530,8 @@ const id: Strings = {
 
     "apiKey.name": "Kunci API",
     "apiKey.desc": "Kunci Anda untuk penyedia yang dipilih di atas",
+    "apiKey.show": "Tampilkan kunci",
+    "apiKey.hide": "Sembunyikan kunci",
 
     "model.name": "Model",
     "model.desc": "Periksa daftar model terbaru dari penyedia dan pilih yang kecil dan cepat: terjemahan butuh kecepatan, bukan kemampuan bernalar",
@@ -2705,6 +2733,8 @@ const ar: Strings = {
 
     "apiKey.name": "مفتاح API",
     "apiKey.desc": "مفتاحك للمزوّد المحدد أعلاه",
+    "apiKey.show": "إظهار المفتاح",
+    "apiKey.hide": "إخفاء المفتاح",
 
     "model.name": "النموذج",
     "model.desc": "راجع قائمة النماذج الحالية لدى المزوّد واختر نموذجًا سريعًا، فالترجمة تحتاج إلى السرعة لا إلى قدرة الاستدلال",
@@ -2906,6 +2936,8 @@ const ko: Strings = {
 
     "apiKey.name": "API 키",
     "apiKey.desc": "위에서 선택한 제공자의 키",
+    "apiKey.show": "키 보이기",
+    "apiKey.hide": "키 숨기기",
 
     "model.name": "모델",
     "model.desc": "제공자의 최신 모델 목록에서 작고 빠른 모델을 고르세요. 번역에는 추론 능력보다 속도가 중요합니다",
