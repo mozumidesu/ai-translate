@@ -342,6 +342,24 @@ textarea.vc-aitrans-input.vc-aitrans-textarea {
     margin-top: 2px;
 }
 
+/* ── the providers, one block each ── */
+
+/* Vencord spaces one setting from the next; inside one setting the slots have
+   to space themselves, or five of them read as one wall. */
+.vc-aitrans-slot + .vc-aitrans-slot {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--background-secondary-alt);
+}
+
+.vc-aitrans-slot-model {
+    margin-top: 16px;
+}
+
+.vc-aitrans-slot-remove {
+    margin-top: 12px;
+}
+
 /* ── the corrections AI Learn has kept ── */
 
 /* Doubled for the same reason as the list above, the other way round: a theme

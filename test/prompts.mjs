@@ -43,7 +43,8 @@ await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
             + `export { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`
-            + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`,
+            + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
+            + `export { isReady, keyOf, modelOf, readSlots } from "./core/slots";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -77,7 +78,8 @@ globalThis.GM_xmlhttpRequest = options => {
 };
 
 const { useHost, aiTranslate, collectContext, isJustAName,
-    changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } = await import(join(out, "core.mjs"));
+    changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
+    isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
 
 /** What the chat above shows, for the tests that need someone in it. */
 let history = [];
@@ -508,6 +510,48 @@ learn("a message of several lines keeps every one of them",
 learn("and a line that only looks like one is not the reason",
     splitCorrection("why: this is the message itself\nand this is its second line"),
     { native: "why: this is the message itself\nand this is its second line", why: "" });
+
+// --- the providers, in order
+
+const shaped = () => readSlots().map(s => [s.provider, keyOf(s), modelOf(s), isReady(s)]);
+
+// A copy that has never opened the new page has no list, and everything still
+// has to work from what it does have.
+learn("settings from before the list read as the provider and an empty backup",
+    shaped(), [["groq", "k", "m", true], ["none", "", "", false]]);
+
+settings.fallbackProvider = "gemini";
+settings.geminiApiKey = "g";
+settings.geminiModel = "n";
+learn("and a backup that was set up reads as a second slot",
+    shaped(), [["groq", "k", "m", true], ["gemini", "g", "n", true]]);
+
+// Two keys from two accounts are two quotas, which is the whole reason the
+// same provider may stand in two slots.
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "groq", keys: { groq: "first" }, models: { groq: "m" } },
+    { id: "two", provider: "groq", keys: { groq: "second" }, models: { groq: "m" } }
+]);
+learn("a written list wins over the fields it replaced",
+    shaped(), [["groq", "first", "m", true], ["groq", "second", "m", true]]);
+
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "groq", keys: { groq: "k" }, models: { groq: "m" } },
+    { id: "two", provider: "gemini", keys: { gemini: "g" }, models: {} },
+    { id: "three", provider: "glm", keys: {}, models: { glm: "m" } }
+]);
+learn("and a slot missing either half is not ready to be asked",
+    shaped().map(s => s[3]), [true, false, false]);
+
+// A key kept per provider inside the slot: switching away and back loses none.
+settings.providerSlots = JSON.stringify([
+    { id: "one", provider: "gemini", keys: { groq: "k", gemini: "g" }, models: { groq: "m", gemini: "n" } }
+]);
+learn("a slot keeps a key for every provider it has been set to",
+    shaped(), [["gemini", "g", "n", true]]);
+
+settings.providerSlots = "";
+settings.fallbackProvider = "none";
 
 learn("the same message is the same message", sameMessage("See you tomorrow!", "See you tomorrow!"), true);
 learn("and punctuation alone is not a correction", sameMessage("see you tomorrow", "See you tomorrow!"), true);

@@ -21,11 +21,9 @@ import { LANGUAGES } from "./languages";
 import { t } from "./locales";
 import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
+import { baseUrlOf, isReady, keyOf, modelOf, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
-const currentApiKey = () => String(config()[`${config().provider}ApiKey`] ?? "");
-const currentModel = () => String(config()[`${config().provider}Model`] ?? "");
-const providerLabel = () => t(`provider.${config().provider}`).replace(/\s*\(.*\)\s*$/, "");
 
 /** Errors reach the user translated and prefixed with the plugin name. */
 const fail = (key: string, values?: Record<string, string | number>) =>
@@ -1256,8 +1254,8 @@ function humanWait(ms: number) {
  */
 const dayBlocks = new Map<string, number>();
 
-const modelOf = (id: string) => String((config() as any)[`${id}Model`] ?? "");
-const dayBlockedFor = (id: string) => Math.max(0, (dayBlocks.get(`${id}|${modelOf(id)}`) ?? 0) - Date.now());
+const dayBlockedFor = (account: string, model: string) =>
+    Math.max(0, (dayBlocks.get(`${account}|${model}`) ?? 0) - Date.now());
 
 /** Prompt tokens the provider served from its cache, or nothing when it does not say. */
 function cachedTokens(data: string) {
@@ -1283,8 +1281,8 @@ function refund(id: string, tokens: number) {
 }
 
 /** Until `cost` tokens are free: 0 if they are or nobody knows, Infinity if they never will be. */
-function waitFor(id: string, cost: number) {
-    if (dayBlockedFor(id) > 0) return Infinity;
+function waitFor(id: string, model: string, cost: number) {
+    if (dayBlockedFor(id, model) > 0) return Infinity;
 
     const budget = budgets.get(id);
     if (!budget) return 0;
@@ -1364,10 +1362,12 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     if (kept?.pieces.length && isNotWorthTranslating(kept.bare(text)))
         return { text: kept.restore(text) ?? typed };
 
-    const { provider, baseUrl, fallbackProvider } = config();
-    const apiKey = currentApiKey();
-    const model = currentModel();
-    const providerName = providerLabel();
+    // The first is the one asked; the rest are behind it, in their own order.
+    const slots = readSlots();
+    const first = slots[0];
+    const apiKey = keyOf(first);
+    const model = modelOf(first);
+    const providerName = bareLabel(first.provider);
 
     if (!apiKey) throw fail("error.noKey", { provider: providerName });
     if (!model) throw fail("error.noModel", { provider: providerName });
@@ -1380,7 +1380,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // cached answer from before the change would be served.
     const { extraInstructions, formality } = config();
     const cacheKey = [
-        kind, provider, model, target, extraInstructions,
+        kind, first.provider, model, target, extraInstructions,
         formality, config().gender, config().glossary, context, mine, typed
     ].join("|");
     const hit = cache.get(cacheKey);
@@ -1401,25 +1401,24 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         + (kept?.note() ?? "")
         + context;
 
-    const isSetUp = (id: string) =>
-        !!(config() as any)[`${id}ApiKey`] && !!(config() as any)[`${id}Model`];
-    const backup = fallbackProvider !== "none" && fallbackProvider !== provider && isSetUp(fallbackProvider)
-        ? fallbackProvider
-        : null;
+    // A backup with no key or no model would only fail slower than not asking.
+    const backups = slots.slice(1).filter(isReady);
 
-    /** One request to one provider. Returns the raw answer, errors included. */
-    const callProvider = async (id: string, system: string, roomy = false) => {
+    /** One request to one slot. Returns the raw answer, errors included. */
+    const callProvider = async (slot: Slot, system: string, roomy = false) => {
         if (signal?.aborted) throw new Error(CANCELLED);
 
-        const key = (config() as any)[`${id}ApiKey`] ?? "";
-        const chosen = (config() as any)[`${id}Model`] ?? "";
+        const id = slot.id;
+        const key = keyOf(slot);
+        const chosen = modelOf(slot);
         const chars = system.length + text.length;
 
         reserve(id, estimateTokens(`${id}|${kind}`, chars));
         const started = Date.now();
 
         const { status, data, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
-            provider: id, apiKey: key, model: chosen, baseUrl, thinkingLevel: THINKING, system, text, roomy
+            provider: slot.provider, apiKey: key, model: chosen, baseUrl: baseUrlOf(slot),
+            thinkingLevel: THINKING, system, text, roomy
         }));
 
         noteBudget(id, budget);
@@ -1430,7 +1429,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             billed = promptTokens(data);
             if (billed) billedPerChar.set(`${id}|${kind}`, billed / chars);
             cached = cachedTokens(data);
-            if (id === "groq") refund(id, cached ?? 0);
+            if (slot.provider === "groq") refund(id, cached ?? 0);
         }
 
         if (status === 429) {
@@ -1453,11 +1452,11 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         record(
             status === 200 ? "info" : "error",
             kind,
-            `${id} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
+            `${slot.provider} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
             status === 200 ? undefined : data
         );
 
-        return { id, model: chosen, status, data, retryMs };
+        return { slot: id, provider: slot.provider, model: chosen, status, data, retryMs };
     };
 
     // However many requests a message takes, it is held back for half a
@@ -1482,65 +1481,81 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const ask = async (system: string, roomy = false, why = ""): Promise<TranslationResult & { inTarget?: boolean; }> => {
         if (why) record("info", kind, `asking again: ${why}`);
 
-        const cost = (id: string) => estimateTokens(`${id}|${kind}`, system.length + text.length);
+        const cost = (slot: Slot) => estimateTokens(`${slot.id}|${kind}`, system.length + text.length);
 
-        // The backup goes first only when it can start at once and would be
-        // done before the main provider, its wait included.
-        const backupSooner = (wait: number) =>
-            backup !== null && waitFor(backup, cost(backup)) === 0
-            && (waited + wait > MAX_WAIT_MS || expectedMs(backup, text.length) < wait + expectedMs(provider, text.length));
+        // Each backup is asked at most once a message, however many ways the
+        // first one can fail.
+        const tried = new Set<string>();
+
+        /** The next backup that has not been asked yet, until one answers. */
+        const askBackups = async () => {
+            for (const slot of backups) {
+                if (tried.has(slot.id)) continue;
+                tried.add(slot.id);
+
+                const second = await callProvider(slot, system, roomy);
+                if (second.status === 200) return second;
+            }
+
+            return undefined;
+        };
+
+        // A backup goes first only when it can start at once and would be done
+        // before the first slot, its wait included.
+        const soonerBackup = (wait: number) => backups.find(slot =>
+            !tried.has(slot.id)
+            && waitFor(slot.id, modelOf(slot), cost(slot)) === 0
+            && (waited + wait > MAX_WAIT_MS
+                || expectedMs(slot.id, text.length) < wait + expectedMs(first.id, text.length)));
 
         let answer: Awaited<ReturnType<typeof callProvider>> | undefined;
-        let triedBackup = false;
 
         // Known to be short of tokens for this one: hand it over at once, or
         // wait for the budget, whichever ends sooner.
-        const wait = waitFor(provider, cost(provider));
-        if (wait > 0 && backupSooner(wait)) {
-            triedBackup = true;
-            const second = await callProvider(backup!, system, roomy);
+        const wait = waitFor(first.id, model, cost(first));
+        const sooner = wait > 0 ? soonerBackup(wait) : undefined;
+        if (sooner) {
+            tried.add(sooner.id);
+            const second = await callProvider(sooner, system, roomy);
             if (second.status === 200) answer = second;
         }
 
-        // Used up for the day: the backup if there is one, and otherwise the
+        // Used up for the day: the backups if there are any, and otherwise the
         // answer the provider would give, without asking it for it again.
-        const blocked = dayBlockedFor(provider);
+        const blocked = dayBlockedFor(first.id, model);
         if (!answer && blocked > 0) {
-            if (backup && !triedBackup) {
-                triedBackup = true;
-                const second = await callProvider(backup, system, roomy);
-                if (second.status === 200) answer = second;
-            }
+            answer = await askBackups();
             if (!answer) throw fail("error.dailyLimit", { provider: providerName, model, wait: humanWait(blocked) });
         }
 
         if (!answer) {
-            await waitOut(provider, waitFor(provider, cost(provider)));
-            answer = await callProvider(provider, system, roomy);
+            await waitOut(first.provider, waitFor(first.id, model, cost(first)));
+            answer = await callProvider(first, system, roomy);
 
             // Refused for its budget after all: the estimate was off, or nothing
             // was known yet. The refusal says how long; the same choice again.
             // A daily limit is not waited out: the day block makes that wait
             // endless, and the backup takes over or the error says so.
             if (answer.status === 429) {
-                const again = Math.max(readLimit(answer.data, answer.retryMs).waitMs ?? 0, waitFor(provider, cost(provider)));
-                if (!backupSooner(again) && await waitOut(provider, again))
-                    answer = await callProvider(provider, system, roomy);
+                const again = Math.max(readLimit(answer.data, answer.retryMs).waitMs ?? 0, waitFor(first.id, model, cost(first)));
+                if (!soonerBackup(again) && await waitOut(first.provider, again))
+                    answer = await callProvider(first, system, roomy);
             }
 
             // A provider can refuse for reasons that have nothing to do with the
             // user — an overload, a rate limit, its bot protection misfiring on a
             // VPN address. If a second provider is set up, it takes over quietly.
-            if (WORTH_A_SECOND_PROVIDER(answer.status) && backup && !triedBackup) {
-                const second = await callProvider(backup, system, roomy);
-                if (second.status === 200) answer = second;
+            if (WORTH_A_SECOND_PROVIDER(answer.status)) {
+                const second = await askBackups();
+                if (second) answer = second;
             }
         }
 
-        if (answer.id !== provider) notify(t("message.switchedProvider", { provider: bareLabel(answer.id) }), "message");
+        if (answer.slot !== first.id)
+            notify(t("message.switchedProvider", { provider: bareLabel(answer.provider) }), "message");
 
-        const { status, data, model: usedModel, id: usedProvider } = answer;
-        const name = usedProvider === provider ? providerName : bareLabel(usedProvider);
+        const { status, data, model: usedModel, provider: usedProvider } = answer;
+        const name = answer.slot === first.id ? providerName : bareLabel(usedProvider);
 
         if (status === -1) throw fail("error.network", { details: data });
         if (status === 401) throw fail("error.badKey", { provider: name, status });

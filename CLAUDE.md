@@ -39,12 +39,13 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
+| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Settings written before the list existed are still read, which is what the browser build and the tests hand over |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These eleven (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`, `log`, `version`, `learn`) build on their own, with esbuild forbidding any import
+These twelve (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
+`languages`, `locales`, `log`, `version`, `learn`, `slots`) build on their own, with esbuild forbidding any import
 from outside this folder. That is what makes the browser version possible, and
 it is also what lets the tests run the real core without Discord.
 
@@ -63,10 +64,11 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours. Also which channel a copy follows, and adopting the installed build's own channel when nothing has been chosen |
 | `ui/modal.tsx` | The panel that opens on left-clicking the button |
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
-| `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
+| `ui/Providers.tsx` | The provider blocks: one to ask and up to four behind it, each with its provider, key, model and, for an OpenAI-compatible one, address. Drawn whole rather than as settings rows, because a row is named once for the whole plugin and that is why there could only ever be one key per provider |
+| `ui/ModelPicker.tsx` | The model dropdown, one per slot. Asks the provider when the key is finished rather than while it is typed, and the same answer says both which models the key can reach and whether the key was taken at all |
 | `ui/Logs.tsx` | The Logs button and the panel behind it: the log as text, with Copy, Save .txt and Clear |
 | `ui/LearnPanel.tsx` | The Corrections button under the AI Learn switch, and the panel behind it: what was written, what a native speaker would have written, and why. Hidden while AI Learn is off |
-| `ui/FallbackNotice.tsx`, `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
+| `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
 
 Everything the settings page and the panel are built from sits in `ui/`. It is
@@ -119,7 +121,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 177 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 182 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
@@ -133,6 +135,27 @@ printed before, line for line.
 | `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run. Also opens one issue when the build starts failing and closes it when it builds again, so an outage is noticed rather than sitting red |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request. `build.yml` builds what was released; this watches where the mistake was made |
 | `docs/` | The 15 translated READMEs and the banner |
+
+## Providers
+
+One slot is asked and the rest stand behind it, in their order. A slot is a
+provider, a key, a model and an address, and the key and model are kept per
+provider **inside the slot**, so switching a slot from one provider to another
+and back loses neither. The same provider may stand in two slots: two keys
+from two accounts are two quotas, which is why the rate limits are counted by
+the slot rather than by the provider's name. Counting them by name would call
+the second account spent along with the first.
+
+A red line under a key appears only when the provider has refused that key,
+401 or 403, and only once the field has been left. Nothing is said about an
+empty one, and nothing is said about a timeout, a rate limit or an outage,
+because none of those is the key's fault. That check is the same request the
+model list needs, so it costs one request, not two.
+
+Settings from before the list are still read: `provider`, `fallbackProvider`
+and the per-provider keys answer whenever no list has been written yet. That
+is what a copy that has never opened the page uses, and it is what the browser
+build and every test hand over, so none of them had to change.
 
 ## Prompt rules
 
@@ -195,7 +218,7 @@ ran", which otherwise look identical.
 ## Running things
 
 ```
-node test/prompts.mjs      # 177 checks; needs esbuild
+node test/prompts.mjs      # 182 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout

@@ -1,17 +1,18 @@
 /*
- * AI Translate — the model chooser.
+ * AI Translate — the model chooser, one per provider slot.
  *
  * Providers retire models without warning, so the list comes from the provider
- * itself and the suggested one is starred rather than typed from memory. The
- * list belongs to the provider and its key: change either and it is fetched
- * again, and the model chosen for one provider stays with that provider.
+ * itself and the suggested one is starred rather than typed from memory.
  *
- * Reads the settings store directly; importing settings.ts would be circular.
+ * The same request answers two questions, which is why it is made here and
+ * not twice: which models this key can reach, and whether the provider takes
+ * the key at all. It is made when the key is finished rather than while it is
+ * being typed, so a pasted key costs one request and a typed one costs one
+ * request, not one per letter.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Settings, useSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
@@ -21,15 +22,7 @@ import { SearchableSelect, TextInput, useEffect, useState } from "@webpack/commo
 import { Bridge } from "../core/bridge";
 import { t } from "../core/locales";
 import { FREE_MODELS } from "../core/providers";
-
-const PROVIDERS = ["gemini", "groq", "anthropic", "glm", "openai"];
-
-/** Everything that decides which list is shown and which model is chosen. */
-const WATCHED = [
-    "plugins.AI Translate.provider",
-    "plugins.AI Translate.baseUrl",
-    ...PROVIDERS.flatMap(p => [`plugins.AI Translate.${p}ApiKey`, `plugins.AI Translate.${p}Model`])
-] as any[];
+import { baseUrlOf, keyOf, modelOf, Slot } from "../core/slots";
 
 /** Preferred models per provider, best first. Missing ones fall through. */
 const PREFERRED: Record<string, string[]> = {
@@ -61,29 +54,27 @@ export function suggestModel(provider: string, listed: string[]) {
     return models.find(m => FAST_HINT.test(m)) ?? models[0] ?? "";
 }
 
-function store() {
-    return (Settings.plugins as any)["AI Translate"];
-}
-
 type State = "noKey" | "loading" | "list" | "known" | "badKey" | "failed";
+
+/** What the provider said about the key, for whoever drew the field above. */
+export type Verdict = "unknown" | "ok" | "bad";
 
 /** Only the newest request may change what is on screen. */
 let request = 0;
 
-export function ModelPicker() {
-    // Redraw when the provider, its key or its model changes.
-    useSettings(WATCHED);
-
-    const s = store();
-    const provider: string = s.provider ?? "groq";
-    const modelKey = `${provider}Model`;
-    const apiKey: string = s[`${provider}ApiKey`] ?? "";
-    const baseUrl: string = s.baseUrl ?? "";
-    // Straight from the settings: switching provider switches the model with it.
-    const current: string = s[modelKey] ?? "";
+export function ModelPicker({ slot, revision, onChoose, onVerdict }: {
+    slot: Slot;
+    /** Bumped when the key or the address is finished, to ask again. */
+    revision: number;
+    onChoose(model: string): void;
+    onVerdict(verdict: Verdict): void;
+}) {
+    const apiKey = keyOf(slot);
+    const baseUrl = baseUrlOf(slot);
+    const current = modelOf(slot);
 
     const [models, setModels] = useState<string[]>([]);
-    const [state, setState] = useState<State>("loading");
+    const [state, setState] = useState<State>(apiKey ? "loading" : "noKey");
     const [byHand, setByHand] = useState(false);
 
     async function load() {
@@ -91,6 +82,7 @@ export function ModelPicker() {
 
         if (!apiKey) {
             setModels([]);
+            onVerdict("unknown");
             return setState("noKey");
         }
 
@@ -100,43 +92,45 @@ export function ModelPicker() {
         let found: string[] = [];
 
         try {
-            const answer = await Bridge.listAiModels(JSON.stringify({ provider, apiKey, baseUrl }));
+            const answer = await Bridge.listAiModels(JSON.stringify({ provider: slot.provider, apiKey, baseUrl }));
             status = answer.status;
-            if (status === 200) found = withUnlisted(provider, answer.models);
+            if (status === 200) found = withUnlisted(slot.provider, answer.models);
         } catch {
             // An answer that never arrives is a failure like any other.
         }
 
-        // The provider or the key changed while this was in the air.
+        // The slot or the key changed while this was in the air.
         if (mine !== request) return;
+
+        // Only a refusal of the key itself is the key's fault. A timeout, a
+        // rate limit or an outage say nothing about it, and a red line under
+        // a key that is perfectly good is worse than no line at all.
+        onVerdict(status === 200 ? "ok" : status === 401 || status === 403 ? "bad" : "unknown");
 
         if (found.length) {
             setModels(found);
             setState("list");
 
             // Nothing chosen yet, or the chosen one no longer exists.
-            if (!current || !found.includes(current)) s[modelKey] = suggestModel(provider, found);
+            if (!current || !found.includes(current)) onChoose(suggestModel(slot.provider, found));
             return;
         }
 
-        const known = FREE_MODELS[provider] ?? [];
+        const known = FREE_MODELS[slot.provider] ?? [];
         setModels(known);
         setState(known.length ? "known" : status === 401 || status === 403 ? "badKey" : "failed");
     }
 
-    // A key arrives pasted or typed letter by letter; a short wait keeps that
-    // from becoming one request per keystroke.
     useEffect(() => {
         setModels([]);
         setByHand(false);
         setState(apiKey ? "loading" : "noKey");
-        if (!apiKey) return;
+        if (!apiKey) return onVerdict("unknown");
 
-        const timer = setTimeout(load, 500);
-        return () => clearTimeout(timer);
-    }, [provider, apiKey, baseUrl]);
+        void load();
+    }, [slot.id, slot.provider, revision]);
 
-    const recommended = suggestModel(provider, models);
+    const recommended = suggestModel(slot.provider, models);
     const options = models.map(m => ({
         value: m,
         label: m === recommended ? `${m} ★` : m
@@ -148,16 +142,12 @@ export function ModelPicker() {
     // The starred one belongs at the top, the rest keep their order.
     options.sort((a, b) => (a.value === recommended ? -1 : b.value === recommended ? 1 : 0));
 
-    const choose = (value: string) => { s[modelKey] = value; };
-
     const note = state === "noKey" ? "model.needKey"
         : state === "known" ? "model.builtin"
             : state === "badKey" ? "model.failedKey"
                 : state === "failed" ? "model.failed"
                     : "model.desc";
 
-    // Vencord already spaces one setting from the next; a margin of its own
-    // would double the gap under this one.
     return (
         <section>
             <Heading className={`${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>{t("model.name")}</Heading>
@@ -166,7 +156,7 @@ export function ModelPicker() {
                 ? <TextInput
                     value={current}
                     placeholder={t("model.pick")}
-                    onChange={choose}
+                    onChange={onChoose}
                 />
                 : <SearchableSelect
                     options={options}
@@ -174,7 +164,7 @@ export function ModelPicker() {
                     placeholder={state === "loading" ? t("model.loading") : t("model.pick")}
                     maxVisibleItems={8}
                     closeOnSelect={true}
-                    onChange={choose}
+                    onChange={onChoose}
                 />}
 
             <Paragraph className="vc-aitrans-quiet" defaultColor={false}>{t(note)}</Paragraph>
