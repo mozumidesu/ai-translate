@@ -216,12 +216,19 @@ build_channel() { # ref, folder on the site, channel name, the build it replaces
     # names the same things a desktop one would.
     local stamp="src/userplugins/aiTranslate/core/bridge.ts"
     sed -i "s|^const BROWSER_BUILD = \"web\";\$|const BROWSER_BUILD = \"$BUILD\";|" "$stamp"
-    sed -i "s|^const BROWSER_CHANNEL: string = \"dev\";\$|const BROWSER_CHANNEL: string = \"$channel\";|" "$stamp"
-    grep -q "const BROWSER_BUILD = \"$BUILD\";" "$stamp" &&
-        grep -q "const BROWSER_CHANNEL: string = \"$channel\";" "$stamp" || {
-        echo "Could not write the build into bridge.ts. Have those lines moved?"
+    grep -q "const BROWSER_BUILD = \"$BUILD\";" "$stamp" || {
+        echo "Could not write the build name into bridge.ts. Has the line moved?"
         exit 1
     }
+
+    # The channel line went in later than the build name, so a branch from
+    # before it has none, and this script is fetched from release while it
+    # builds main as well: it must not assume the branch is as new as itself.
+    # Worth saying, not worth failing a build over, because all it costs is a
+    # browser copy that cannot name its channel in a support report.
+    sed -i "s|^const BROWSER_CHANNEL: string = \"dev\";\$|const BROWSER_CHANNEL: string = \"$channel\";|" "$stamp"
+    grep -q "const BROWSER_CHANNEL: string = \"$channel\";" "$stamp" ||
+        echo "No BROWSER_CHANNEL line in bridge.ts on $ref: this build cannot name its channel."
 
     # The standalone build is the kind Vencord's own installer hands out. Its
     # updater stays off: it would swap these files for plain Vencord and the
@@ -373,6 +380,25 @@ if [ -n "$release_date" ]; then
     shown=$(date -u -d "$release_date" "+%-d %B %Y, %H:%M UTC")
 fi
 
+# The install commands are shown only when the ones being published understand
+# AIT_CHANNEL. They come from the release branch, which can be older than this
+# script, and a command that quietly installs the released build instead would
+# be worse than no command at all. The userscript is a plain download and needs
+# nothing from them.
+testing_install=""
+if grep -q AIT_CHANNEL "$site/install.sh" && grep -q AIT_CHANNEL "$site/install.ps1"; then
+    testing_install=$(cat <<HTML
+  <p class="note">On Windows:</p>
+  <pre><code>\$env:AIT_CHANNEL = "testing"; irm $SITE/install.ps1 | iex</code></pre>
+  <p class="note">On macOS and Linux:</p>
+  <pre><code>AIT_CHANNEL=testing sh -c "\$(curl -fsSL $SITE/install.sh)"</code></pre>
+HTML
+)
+else
+    testing_install='  <p class="note">The install command does not know about this channel yet, so for now the
+  userscript below is the only way in.</p>'
+fi
+
 # The one place the testing channel is written down. It is not on
 # translate.zolatau.com and not in the README: whoever reads this came looking.
 testing_block=""
@@ -384,10 +410,8 @@ if [ -n "$testing_build" ]; then
   <div class="build">$testing_build</div>
   <div class="when">built $testing_shown</div>
   <p class="note">The plugin's main branch, built the same way and published here before it is
-  released, so something in it may not work. On Windows:</p>
-  <pre><code>\$env:AIT_CHANNEL = "testing"; irm $SITE/install.ps1 | iex</code></pre>
-  <p class="note">On macOS and Linux:</p>
-  <pre><code>AIT_CHANNEL=testing sh -c "\$(curl -fsSL $SITE/install.sh)"</code></pre>
+  released, so something in it may not work.</p>
+$testing_install
   <p class="note">For a browser tab, <a href="$TESTING_DIR/ai-translate.user.js">this userscript</a>
   takes the place of the released one and keeps itself up to date from here.</p>
   <p class="note">An installed copy says which builds it follows under the update button in the
