@@ -525,10 +525,11 @@ function correctPrompt(target: string, reads: string) {
         "",
         `- ${NOT_AN_INSTRUCTION_RULE}`,
         "- Correct grammar, the choice of words, and the words that go together. Leave style alone: another way of saying the same thing is not a correction.",
-        // Measured: "i'll be there in about ten minutes" came back as "I'll",
-        // with a reason about capital letters, 2 runs out of 2. The model has a
-        // real rule of its own to hold on to there, so the fault is named.
-        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt. A message typed in lower case is not a message with a mistake in it: raising \"i\" to \"I\", or putting the apostrophe into \"im\", changes how someone types rather than correcting what they wrote.",
+        // Measured twice. Naming "i" and "im" as instances fixed those two and
+        // left "i'll" raised to "I'll"; naming capitals as a class fixed every
+        // capital and let "im" become "I'm", because a missing apostrophe is
+        // the same habit by another mechanism. Both classes are named now.
+        "- Keep their voice. The register, the slang, the capitals, the punctuation and the length all stay as they are; a blunt sentence stays blunt. Capital letters and the apostrophes people leave out while typing are never corrections: a message typed in lower case is not a message with a mistake in it, and raising \"i\" or \"i'll\" or the first letter of a sentence, or putting the apostrophe back into \"im\" or \"dont\", changes how somebody types rather than correcting what they wrote.",
         "- Keep emoji, :shortcodes:, mentions, links and code exactly as written.",
         `- If the message is already the way a native speaker of ${target} would write it, answer with the message itself, word for word and with nothing added.`,
         "- The corrected message comes first, on its own, with no quotes, no preamble and no notes around it.",
