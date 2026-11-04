@@ -13,6 +13,13 @@
 # build is kept and the one before it, which is all an installed copy ever
 # asks for; it is only ever told the newest one's name.
 #
+# Two channels go out side by side from that one Worker: the released one at
+# the root, built from the "release" branch, and a testing one under /testing/,
+# built from "main". A run rebuilds whichever of the two has moved and brings
+# the other one's files over as they are, because the deploy replaces the whole
+# site. If they cannot be brought over, nothing is published at all: a channel
+# must never disappear from under the copies that follow it.
+#
 # The workflow, .github/workflows/build.yml in this same repository, only
 # fetches this file from the release branch and runs it, so everything about
 # the build is changed here.
@@ -29,6 +36,13 @@ DOMAIN="builds.zolatau.com"
 
 # What Discord loads, as Vencord's own updater names them.
 FILES=(patcher.js preload.js renderer.js renderer.css)
+
+# A channel is a branch of the plugin and a folder on the site. The released
+# one has no folder of its own: it sits at the root, where every installed copy
+# and both install commands already look.
+RELEASE_REF="release"
+TESTING_REF="main"
+TESTING_DIR="testing"
 
 : "${GITHUB_REPOSITORY:?run this from GitHub Actions}"
 : "${GH_TOKEN:?the workflow passes GH_TOKEN}"
@@ -48,94 +62,46 @@ export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
 gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/enable" >/dev/null 2>&1 ||
     echo "Could not ask GitHub to keep the hourly schedule on."
 
-# What is on the site now, which is also what installed copies are being told
-# to download. Nothing means nothing is published yet, and the build below
-# becomes the first.
-live=$(curl -fsS --retry 3 --max-time 30 "$SITE/build.json" |
-    sed -n 's/.*"build" *: *"\([^"]*\)".*/\1/p' || true)
+# What each channel is handing out now, which is also what the copies that
+# follow it are being told to download. Nothing means nothing is published
+# there yet, and what this run builds becomes the first.
+published() { # folder on the site, "" for the root
+    local path="build.json"
+    [ -n "$1" ] && path="$1/build.json"
+
+    curl -fsS --retry 3 --max-time 30 "$SITE/$path" |
+        sed -n 's/.*"build" *: *"\([^"]*\)".*/\1/p' || true
+}
+
+live_release=$(published "")
+live_testing=$(published "$TESTING_DIR")
 
 # A build is named after what went into it: Vencord's commit, then the plugin's.
 vencord=$(git ls-remote "$VENCORD_REPO" refs/heads/main | cut -c1-7)
-plugin=$(git ls-remote "$PLUGIN_REPO" refs/heads/release | cut -c1-7)
+head_release=$(git ls-remote "$PLUGIN_REPO" "refs/heads/$RELEASE_REF" | cut -c1-7)
+head_testing=$(git ls-remote "$PLUGIN_REPO" "refs/heads/$TESTING_REF" | cut -c1-7)
 
-if [ -z "$vencord" ] || [ -z "$plugin" ]; then
-    echo "Could not reach Vencord or the plugin's release branch."
+if [ -z "$vencord" ] || [ -z "$head_release" ] || [ -z "$head_testing" ]; then
+    echo "Could not reach Vencord or the plugin's branches."
     exit 1
 fi
 
-if [ "$vencord-$plugin" = "$live" ]; then
-    echo "Build $live is already out. Nothing to do."
+if [ "$vencord-$head_release" = "$live_release" ] &&
+    [ "$vencord-$head_testing" = "$live_testing" ]; then
+    echo "Both channels are already out. Nothing to do."
     exit 0
 fi
 
 work=$(mktemp -d)
-git clone --quiet --depth 1 "$VENCORD_REPO" "$work/vencord"
-git clone --quiet --depth 1 --branch release "$PLUGIN_REPO" "$work/vencord/src/userplugins/aiTranslate"
-
-# Either may have moved since the check above; the name follows what was cloned.
-vencord_full=$(git -C "$work/vencord" rev-parse HEAD)
-plugin_full=$(git -C "$work/vencord/src/userplugins/aiTranslate" rev-parse HEAD)
-build="${vencord_full:0:7}-${plugin_full:0:7}"
-
-if [ "$build" = "$live" ]; then
-    echo "Build $build is already out. Nothing to do."
-    exit 0
-fi
-
-cd "$work/vencord"
-
-# The runner's own Node.js does the build. Should it ever fall behind what
-# Vencord asks for, say so plainly rather than fail somewhere deep inside.
-have=$(node -p 'process.versions.node.split(".")[0]')
-need=$(node -p '(String(require("./package.json").engines?.node ?? "").match(/\d+/) ?? [0])[0]')
-echo "Using Node.js $(node --version)."
-if [ "$have" -lt "$need" ]; then
-    echo "Vencord needs Node.js $need or newer, and this runner has $have."
-    exit 1
-fi
-
-# The pnpm version Vencord asks for, so its lockfile is read the way it was written.
-pnpm="$(node -p 'require("./package.json").packageManager || "pnpm"')"
-pnpm="${pnpm%%+*}"
-npx --yes "$pnpm" install --frozen-lockfile
-
-# A copy running in a browser has no build.json on a disk to read, so the name
-# of this build is written into the plugin here, where it is known. A support
-# report from the browser then names the same build a desktop one would.
-stamp="src/userplugins/aiTranslate/core/bridge.ts"
-sed -i "s|^const BROWSER_BUILD = \"web\";\$|const BROWSER_BUILD = \"$build\";|" "$stamp"
-grep -q "const BROWSER_BUILD = \"$build\";" "$stamp" || {
-    echo "Could not write the build name into bridge.ts. Has the line moved?"
-    exit 1
-}
-
-# The standalone build is the kind Vencord's own installer hands out. Its
-# updater stays off: it would swap these files for plain Vencord and the
-# plugin would be gone. The plugin updates the whole build itself.
-npx --yes "$pnpm" build --standalone --disable-updater
-
-# The same thing for Discord in a browser tab: Vencord's own userscript build,
-# with the plugin inside. --skip-extension leaves out the two packed browser
-# extensions, which are not handed out yet.
-npx --yes "$pnpm" buildWeb --standalone --skip-extension
-
-# --- what the site hands out ---
-
-cd dist
-
 site="$work/site"
-mkdir -p "$site/$build"
-cp "${FILES[@]}" "$site/$build/"
+mkdir -p "$site"
 
-# The userscript gets a name of its own, an address to update itself from and
-# a note saying what it is. Two files come out: the script, and the metadata
-# on its own, which is what a userscript manager reads when it checks for a
-# new version, so a daily check costs a few hundred bytes instead of a
-# megabyte.
 cat > "$work/header.mjs" <<'JS'
 import { readFileSync, writeFileSync } from "fs";
 
-const [source, script, metadata, build, vencord, plugin, site] = process.argv.slice(2);
+// "site" is this channel's own address, which the script updates itself from;
+// "root" is where the files both channels share are, the icon among them.
+const [source, script, metadata, build, vencord, plugin, site, root, channel] = process.argv.slice(2);
 
 const SET = {
     "@name": "AI Translate",
@@ -146,7 +112,7 @@ const SET = {
     "@supportURL": "https://github.com/mozumidesu/ai-translate/issues",
     "@updateURL": `${site}/ai-translate.meta.js`,
     "@downloadURL": `${site}/ai-translate.user.js`,
-    "@icon": `${site}/favicon.svg`
+    "@icon": `${root}/favicon.svg`
 };
 
 const OPEN = "// ==UserScript==";
@@ -190,12 +156,18 @@ const note = [
     "",
     "// Vencord with the AI Translate plugin built into it, made by the build robot",
     "// on GitHub. This is a modified Vencord, not Vencord itself.",
+    ...channel === "testing" ? [
+        "//",
+        "// A testing build: the plugin's main branch, published before it is released,",
+        "// so something in it may not work."
+    ] : [],
     "//",
     `//   build     ${build}`,
+    `//   channel   ${channel}`,
     `//   Vencord   https://github.com/Vendicated/Vencord/tree/${vencord}`,
     `//   plugin    https://github.com/mozumidesu/ai-translate/tree/${plugin}`,
     "//",
-    `// GPL-3.0-or-later, the same as both. Licence text: ${site}/LICENSE.txt`,
+    `// GPL-3.0-or-later, the same as both. Licence text: ${root}/LICENSE.txt`,
     ""
 ].join("\n");
 
@@ -203,47 +175,231 @@ writeFileSync(metadata, header + note);
 writeFileSync(script, header + note + text.slice(at + CLOSE.length));
 JS
 
-node "$work/header.mjs" Vencord.user.js \
-    "$site/ai-translate.user.js" "$site/ai-translate.meta.js" \
-    "$build" "$vencord_full" "$plugin_full" "$SITE"
+# Builds one channel: Vencord with the plugin at the given ref, laid out in the
+# site under the given folder, which is empty for the released channel at the
+# root. What was built comes back in BUILD, VENCORD_FULL and PLUGIN_FULL.
+build_channel() { # ref, folder on the site, channel name, the build it replaces
+    local ref=$1 dir=$2 channel=$3 was=$4
+    local root="$work/$channel"
 
-made=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-printf '{"build":"%s","vencord":"%s","plugin":"%s","date":"%s"}\n' \
-    "$build" "$vencord_full" "$plugin_full" "$made" > "$site/build.json"
+    git clone --quiet --depth 1 "$VENCORD_REPO" "$root/vencord"
+    git clone --quiet --depth 1 --branch "$ref" "$PLUGIN_REPO" "$root/vencord/src/userplugins/aiTranslate"
+
+    # Either may have moved since the check above; the name follows what was cloned.
+    VENCORD_FULL=$(git -C "$root/vencord" rev-parse HEAD)
+    PLUGIN_FULL=$(git -C "$root/vencord/src/userplugins/aiTranslate" rev-parse HEAD)
+    BUILD="${VENCORD_FULL:0:7}-${PLUGIN_FULL:0:7}"
+
+    echo "Building the $channel channel as $BUILD."
+    cd "$root/vencord"
+
+    # The runner's own Node.js does the build. Should it ever fall behind what
+    # Vencord asks for, say so plainly rather than fail somewhere deep inside.
+    local have need
+    have=$(node -p 'process.versions.node.split(".")[0]')
+    need=$(node -p '(String(require("./package.json").engines?.node ?? "").match(/\d+/) ?? [0])[0]')
+    echo "Using Node.js $(node --version)."
+    if [ "$have" -lt "$need" ]; then
+        echo "Vencord needs Node.js $need or newer, and this runner has $have."
+        exit 1
+    fi
+
+    # The pnpm version Vencord asks for, so its lockfile is read the way it was written.
+    local pnpm
+    pnpm="$(node -p 'require("./package.json").packageManager || "pnpm"')"
+    pnpm="${pnpm%%+*}"
+    npx --yes "$pnpm" install --frozen-lockfile
+
+    # A copy running in a browser has no build.json on a disk to read, so the
+    # name of this build and the channel it came from are written into the
+    # plugin here, where both are known. A support report from the browser then
+    # names the same things a desktop one would.
+    local stamp="src/userplugins/aiTranslate/core/bridge.ts"
+    sed -i "s|^const BROWSER_BUILD = \"web\";\$|const BROWSER_BUILD = \"$BUILD\";|" "$stamp"
+    sed -i "s|^const BROWSER_CHANNEL: string = \"dev\";\$|const BROWSER_CHANNEL: string = \"$channel\";|" "$stamp"
+    grep -q "const BROWSER_BUILD = \"$BUILD\";" "$stamp" &&
+        grep -q "const BROWSER_CHANNEL: string = \"$channel\";" "$stamp" || {
+        echo "Could not write the build into bridge.ts. Have those lines moved?"
+        exit 1
+    }
+
+    # The standalone build is the kind Vencord's own installer hands out. Its
+    # updater stays off: it would swap these files for plain Vencord and the
+    # plugin would be gone. The plugin updates the whole build itself.
+    npx --yes "$pnpm" build --standalone --disable-updater
+
+    # The same thing for Discord in a browser tab: Vencord's own userscript
+    # build, with the plugin inside. --skip-extension leaves out the two packed
+    # browser extensions, which are not handed out yet.
+    npx --yes "$pnpm" buildWeb --standalone --skip-extension
+
+    # --- what the site hands out ---
+
+    local out="$site" base="$SITE"
+    if [ -n "$dir" ]; then
+        out="$site/$dir"
+        base="$SITE/$dir"
+    fi
+
+    mkdir -p "$out/$BUILD"
+    (cd dist && cp "${FILES[@]}" "$out/$BUILD/")
+
+    # The userscript gets a name of its own, its own channel's address to
+    # update itself from and a note saying what it is. Two files come out: the
+    # script, and the metadata on its own, which is what a userscript manager
+    # reads when it checks for a new version, so a daily check costs a few
+    # hundred bytes instead of a megabyte.
+    node "$work/header.mjs" dist/Vencord.user.js \
+        "$out/ai-translate.user.js" "$out/ai-translate.meta.js" \
+        "$BUILD" "$VENCORD_FULL" "$PLUGIN_FULL" "$base" "$SITE" "$channel"
+
+    local made
+    made=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    printf '{"build":"%s","channel":"%s","vencord":"%s","plugin":"%s","date":"%s"}\n' \
+        "$BUILD" "$channel" "$VENCORD_FULL" "$PLUGIN_FULL" "$made" > "$out/build.json"
+
+    # A download that began a moment ago still has somewhere to finish: the
+    # build that was on the site stays beside the new one. Whole, or not at all.
+    if [ -n "$was" ] && [ "$was" != "$BUILD" ]; then
+        mkdir -p "$out/$was"
+        for name in "${FILES[@]}"; do
+            curl -fsSL --retry 3 --max-time 300 -o "$out/$was/$name" "$base/$was/$name" || true
+            [ -s "$out/$was/$name" ] || { rm -rf "${out:?}/${was:?}"; break; }
+        done
+    fi
+}
+
+# The deploy replaces the whole site, so a channel that was not rebuilt has to
+# be brought over as it is. A file that cannot be fetched stops the run before
+# anything is published: better an hour on the build that is already out than a
+# channel that has lost its files.
+carry() { # path on the site
+    local path=$1
+    mkdir -p "$site/$(dirname "$path")"
+    curl -fsSL --retry 3 --max-time 300 -o "$site/$path" "$SITE/$path" || {
+        echo "Could not fetch $SITE/$path, which is live now. Publishing nothing."
+        exit 1
+    }
+    [ -s "$site/$path" ] || {
+        echo "$SITE/$path came back empty. Publishing nothing."
+        exit 1
+    }
+}
+
+carry_channel() { # folder on the site, the build it is handing out
+    local dir=$1 was=$2 prefix=""
+    [ -n "$dir" ] && prefix="$dir/"
+
+    if [ -z "$was" ]; then
+        echo "Nothing is published in the ${dir:-released} channel yet."
+        return 0
+    fi
+
+    echo "Keeping the ${dir:-released} channel on $was."
+    carry "${prefix}build.json"
+    carry "${prefix}ai-translate.user.js"
+    carry "${prefix}ai-translate.meta.js"
+    for name in "${FILES[@]}"; do carry "${prefix}$was/$name"; done
+}
+
+release_built=""
+testing_built=""
+
+if [ "$vencord-$head_release" != "$live_release" ]; then
+    build_channel "$RELEASE_REF" "" release "$live_release"
+    release_built=1
+    release_vencord=$VENCORD_FULL
+    release_plugin=$PLUGIN_FULL
+    release_clone="$work/release/vencord/src/userplugins/aiTranslate"
+else
+    carry_channel "" "$live_release"
+fi
+
+if [ "$vencord-$head_testing" != "$live_testing" ]; then
+    build_channel "$TESTING_REF" "$TESTING_DIR" testing "$live_testing"
+    testing_built=1
+else
+    carry_channel "$TESTING_DIR" "$live_testing"
+fi
+
+# The licence travels with the files it covers, and the install commands point
+# here rather than at a repository on somebody else's site: an address of our
+# own cannot be renamed out from under it, and nobody else can ever claim it.
+# All three come from the release branch, so what people install is what was
+# released; when nothing was released this run they are brought over.
+if [ -n "$release_built" ]; then
+    cp "$release_clone/LICENSE" "$site/LICENSE.txt"
+    cp "$release_clone/install/install.ps1" "$site/install.ps1"
+    cp "$release_clone/install/install.sh" "$site/install.sh"
+else
+    carry LICENSE.txt
+    carry install.ps1
+    carry install.sh
+fi
 
 # Copies installed before the rename still ask for the old name. The line
 # below can go once nobody is running one of those any more.
-cp "$site/build.json" "$site/ait-build.json"
-
-# The licence travels with the files it covers.
-cp "$work/vencord/src/userplugins/aiTranslate/LICENSE" "$site/LICENSE.txt"
-
-# The install command points here rather than at a repository on somebody
-# else's site: an address of our own cannot be renamed out from under it, and
-# nobody else can ever claim it. These come from the release branch, like
-# everything else in this build, so what people install is what was released.
-cp "$work/vencord/src/userplugins/aiTranslate/install/install.ps1" "$site/install.ps1"
-cp "$work/vencord/src/userplugins/aiTranslate/install/install.sh" "$site/install.sh"
-
-# A download that began a moment ago still has somewhere to finish: the build
-# that was on the site stays beside the new one. Whole, or not at all.
-if [ -n "$live" ]; then
-    mkdir -p "$site/$live"
-    for name in "${FILES[@]}"; do
-        curl -fsSL --retry 3 --max-time 300 -o "$site/$live/$name" "$SITE/$live/$name" || true
-        [ -s "$site/$live/$name" ] || { rm -rf "$site/$live"; break; }
-    done
+if [ -f "$site/build.json" ]; then
+    cp "$site/build.json" "$site/ait-build.json"
 fi
+
+# Whether a channel was rebuilt or brought over, what it is handing out is
+# written in its own build.json, and that is where the page below reads it.
+field() { # file under the site, key
+    [ -f "$site/$1" ] || return 0
+    sed -n "s/.*\"$2\" *: *\"\([^\"]*\)\".*/\1/p" "$site/$1"
+}
+
+release_build=$(field build.json build)
+release_date=$(field build.json date)
+release_vencord_full=$(field build.json vencord)
+release_plugin_full=$(field build.json plugin)
+
+testing_build=$(field "$TESTING_DIR/build.json" build)
+testing_date=$(field "$TESTING_DIR/build.json" date)
+testing_vencord_full=$(field "$TESTING_DIR/build.json" vencord)
+testing_plugin_full=$(field "$TESTING_DIR/build.json" plugin)
 
 # The page a person sees. It names the exact source every file here was built
 # from, which is what the licence asks of whoever hands out the files.
 list=""
 for name in "${FILES[@]}"; do
     list="$list
-  <li><a href=\"$build/$name\">$name</a></li>"
+  <li><a href=\"$release_build/$name\">$name</a></li>"
 done
 
-shown=$(date -u -d "$made" "+%-d %B %Y, %H:%M UTC")
+shown=""
+if [ -n "$release_date" ]; then
+    shown=$(date -u -d "$release_date" "+%-d %B %Y, %H:%M UTC")
+fi
+
+# The one place the testing channel is written down. It is not on
+# translate.zolatau.com and not in the README: whoever reads this came looking.
+testing_block=""
+if [ -n "$testing_build" ]; then
+    testing_shown=$(date -u -d "$testing_date" "+%-d %B %Y, %H:%M UTC")
+    testing_block=$(cat <<HTML
+<h2>Testing builds</h2>
+<div class="card">
+  <div class="build">$testing_build</div>
+  <div class="when">built $testing_shown</div>
+  <p class="note">The plugin's main branch, built the same way and published here before it is
+  released, so something in it may not work. On Windows:</p>
+  <pre><code>\$env:AIT_CHANNEL = "testing"; irm $SITE/install.ps1 | iex</code></pre>
+  <p class="note">On macOS and Linux:</p>
+  <pre><code>AIT_CHANNEL=testing sh -c "\$(curl -fsSL $SITE/install.sh)"</code></pre>
+  <p class="note">For a browser tab, <a href="$TESTING_DIR/ai-translate.user.js">this userscript</a>
+  takes the place of the released one and keeps itself up to date from here.</p>
+  <p class="note">An installed copy says which builds it follows under the update button in the
+  plugin's settings, and switches back there. Its version line names the channel too.</p>
+  <p class="note">Built from Vencord
+  <a href="https://github.com/Vendicated/Vencord/tree/$testing_vencord_full"><code>${testing_vencord_full:0:7}</code></a>
+  and AI Translate
+  <a href="https://github.com/mozumidesu/ai-translate/tree/$testing_plugin_full"><code>${testing_plugin_full:0:7}</code></a>.</p>
+</div>
+HTML
+)
+fi
 
 # The plugin's own mark: the page wears it, and so does the browser tab.
 MARK='<svg class="mark" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B274FF"/><stop offset=".45" stop-color="#8B2BFF"/><stop offset="1" stop-color="#6E00D6"/></linearGradient></defs><rect x="4" y="4" width="112" height="112" rx="30" fill="url(#g)"/><svg x="29" y="29" width="62" height="62" viewBox="0 96 960 960"><path fill="#FFFFFF" d="m475 976 181-480h82l186 480h-87l-41-126H604l-47 126h-82Zm151-196h142l-70-194h-2l-70 194Zm-466 76-55-55 204-204q-38-44-67.5-88.5T190 416h87q17 33 37.5 62.5T361 539q45-47 75-97.5T487 336H40v-80h280v-80h80v80h280v80H567q-22 69-58.5 135.5T419 598l98 99-30 81-127-122-200 200Z"/></svg></svg>'
@@ -300,6 +456,8 @@ cat > "$site/index.html" <<HTML
   .files li::before { content: "↓"; color: var(--ink-3); margin-right: .55rem; }
   .src li { color: var(--ink-3); }
   .bare { margin: 0; padding: 0; border: 0; }
+  pre { margin: .6rem 0 0; padding: .7rem .9rem; overflow-x: auto; background: rgba(0, 0, 0, .25); border: 1px solid var(--line); border-radius: 12px; }
+  pre code { color: var(--ink); }
   .note { margin: 1.1rem 0 0; font-size: .93rem; }
   .note + .note { margin-top: .6rem; }
   footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--ink-3); font-size: .87rem; }
@@ -320,7 +478,7 @@ hand.</p>
 
 <h2>Newest build</h2>
 <div class="card">
-  <div class="build">$build</div>
+  <div class="build">$release_build</div>
   <div class="when">built $shown</div>
   <ul class="files">$list
     <li><a href="build.json">build.json</a></li>
@@ -339,10 +497,12 @@ hand.</p>
   under Firefox it is the only one that can do this at all.</p>
 </div>
 
+$testing_block
+
 <h2>Built from</h2>
 <ul class="src">
-  <li>Vencord <a href="https://github.com/Vendicated/Vencord/tree/$vencord_full"><code>${vencord_full:0:7}</code></a></li>
-  <li>AI Translate <a href="https://github.com/mozumidesu/ai-translate/tree/$plugin_full"><code>${plugin_full:0:7}</code></a></li>
+  <li>Vencord <a href="https://github.com/Vendicated/Vencord/tree/$release_vencord_full"><code>${release_vencord_full:0:7}</code></a></li>
+  <li>AI Translate <a href="https://github.com/mozumidesu/ai-translate/tree/$release_plugin_full"><code>${release_plugin_full:0:7}</code></a></li>
   <li>The build steps <a href="https://github.com/mozumidesu/ai-translate/blob/release/build/github.sh"><code>build/github.sh</code></a></li>
 </ul>
 
@@ -350,7 +510,6 @@ hand.</p>
 The complete source these files were built from is linked above.</footer>
 </main>
 HTML
-
 # --- publishing ---
 
 # Hands out the files and nothing else. The /builds/ prefix is understood too,
@@ -384,19 +543,30 @@ JSON
 cd "$work"
 npx --yes wrangler deploy
 
-echo "Published build $build on $SITE/."
+echo "Published $release_build on $SITE/."
+if [ -n "$testing_build" ]; then
+    echo "The testing channel is on $testing_build."
+fi
 
 # --- a release on GitHub, for the version rather than for the build ---
 #
 # The site hands out the newest build and keeps one before it; GitHub keeps the
 # versions. These are not the same thing: a build happens whenever Vencord
 # moves, and that is not a new version of this plugin, so a release is made
-# only when the plugin's own number has changed. Everything here is allowed to
-# fail without undoing a build that is already published.
-version=$(sed -n 's/^export const VERSION = "\(.*\)";$/\1/p' \
-    "$work/vencord/src/userplugins/aiTranslate/core/version.ts")
+# only when the plugin's own number has changed. The testing channel never makes
+# one at all: its number is the one the last release carries. Everything here
+# is allowed to fail without undoing a build that is already published.
 
-if [ -z "$version" ]; then
+# Nothing was released this run, so there is no new number to tag either.
+version=""
+if [ -n "$release_built" ]; then
+    version=$(sed -n 's/^export const VERSION = "\(.*\)";$/\1/p' \
+        "$release_clone/core/version.ts")
+fi
+
+if [ -z "$release_built" ]; then
+    echo "The released channel did not move, so no release is made."
+elif [ -z "$version" ]; then
     echo "Could not read the version out of core/version.ts. Has the line moved?"
 elif gh release view --repo "$GITHUB_REPOSITORY" "v$version" >/dev/null 2>&1; then
     echo "Version v$version is already released; only the build is new."
@@ -410,7 +580,7 @@ else
 
     changes=""
     if [ -n "$previous" ]; then
-        changes=$(gh api "repos/$GITHUB_REPOSITORY/compare/$previous...$plugin_full" \
+        changes=$(gh api "repos/$GITHUB_REPOSITORY/compare/$previous...$release_plugin" \
             --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null |
             grep -v "^v\?$version\$" | sed 's/^/* /' || true)
         [ -n "$changes" ] && changes=$(printf '## Changes since %s\n\n%s' "$previous" "$changes")
@@ -420,14 +590,14 @@ else
     # without releases answers nothing above; GitHub's own link covers both.
     if [ -z "$changes" ]; then
         changes=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
-            -f tag_name="v$version" -f target_commitish="$plugin_full" --jq .body 2>/dev/null || true)
+            -f tag_name="v$version" -f target_commitish="$release_plugin" --jq .body 2>/dev/null || true)
     fi
 
     cat > "$work/notes.md" <<NOTES
-Built as \`$build\` and published on $SITE.
+Built as \`$release_build\` and published on $SITE.
 
-* Vencord [\`${vencord_full:0:7}\`](https://github.com/Vendicated/Vencord/tree/$vencord_full)
-* AI Translate [\`${plugin_full:0:7}\`](https://github.com/$GITHUB_REPOSITORY/tree/$plugin_full)
+* Vencord [\`${release_vencord:0:7}\`](https://github.com/Vendicated/Vencord/tree/$release_vencord)
+* AI Translate [\`${release_plugin:0:7}\`](https://github.com/$GITHUB_REPOSITORY/tree/$release_plugin)
 
 The files below are the same ones the site hands out. The one-command install
 and the plugin's own updater take them from $SITE rather than from here, so
@@ -448,13 +618,13 @@ NOTES
     # checkout anywhere, so gh has no git remote to work the repository out of.
     if gh release create "v$version" $early \
         --repo "$GITHUB_REPOSITORY" \
-        --target "$plugin_full" \
+        --target "$release_plugin" \
         --title "v$version" \
         --notes-file "$work/notes.md" \
-        "$site/$build/patcher.js" \
-        "$site/$build/preload.js" \
-        "$site/$build/renderer.js" \
-        "$site/$build/renderer.css" \
+        "$site/$release_build/patcher.js" \
+        "$site/$release_build/preload.js" \
+        "$site/$release_build/renderer.js" \
+        "$site/$release_build/renderer.css" \
         "$site/ai-translate.user.js" \
         "$site/ai-translate.meta.js"; then
         echo "Released v$version."
@@ -473,11 +643,12 @@ if ! git clone --quiet --depth 1 --branch robot "$remote" "$note" 2>/dev/null; t
     git init --quiet --initial-branch=robot "$note"
     git -C "$note" remote add origin "$remote"
 fi
-echo "$build" > "$note/latest.txt"
-git -C "$note" add latest.txt
+echo "$release_build" > "$note/latest.txt"
+printf '%s\n' "$testing_build" > "$note/testing.txt"
+git -C "$note" add latest.txt testing.txt
 git -C "$note" \
     -c user.name="github-actions[bot]" \
     -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-    commit --quiet -m "Build $build"
+    commit --quiet --allow-empty -m "Build $release_build, testing ${testing_build:-none}"
 git -C "$note" push --quiet origin HEAD:refs/heads/robot ||
-    echo "Could not note build $build on the robot branch."
+    echo "Could not note build $release_build on the robot branch."

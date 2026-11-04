@@ -16,6 +16,14 @@ set -u
 AIT_HOME="${AIT_HOME:-$HOME/.aiTranslate}"
 DIST="$AIT_HOME/dist"
 BUILDS="https://builds.zolatau.com"
+
+# Released builds are handed out at the root, testing builds from a folder of
+# their own. AIT_CHANNEL=testing installs those: the plugin's main branch,
+# built the same way but not released. The plugin's own settings then say which
+# builds a copy follows and switch it back.
+if [ "${AIT_CHANNEL:-}" = "testing" ]; then
+    BUILDS="$BUILDS/testing"
+fi
 VENCORD_INSTALLER="https://github.com/Vencord/Installer/releases/latest/download"
 
 # What Discord loads, named as Vencord's own updater names them.

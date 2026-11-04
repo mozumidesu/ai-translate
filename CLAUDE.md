@@ -32,7 +32,7 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context, and pacing against the provider's rate limits. The biggest file and the one that matters most |
 | `core/host.ts` | The handful of things the core cannot know by itself: settings and writing them, recent messages, who the current user is, how to show a notice. A host is installed once at load; until then these answer empty rather than throwing |
-| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser) |
+| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser). The build robot writes the build's name and its channel into two constants here, which is the only way a browser copy can know what it is |
 | `core/net.ts` | The one thing that differs between hosts: how to make a single HTTP request (`fetch` or `GM_xmlhttpRequest`) |
 | `core/providers.ts` | Each provider's address and request shape, reading rate limits out of responses, and every retry rule |
 | `core/keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards |
@@ -60,7 +60,7 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `vencord-host.ts` | Answers `core/host.ts` using Vencord: its settings store, its message store, the current user, toasts. Reads settings directly from `Settings.plugins["AI Translate"]` rather than through `settings.ts`, because the host has to be ready before the settings page loads |
 | `native.ts` | The desktop end, in Electron's main process: provider requests (renderer requests are blocked by CORS) and installing updates |
 | `settings.ts` | The settings page and its migrations |
-| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours |
+| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours. Also which channel a copy follows, and adopting the installed build's own channel when nothing has been chosen |
 | `ui/modal.tsx` | The panel that opens on left-clicking the button |
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
 | `ui/ModelPicker.tsx` | The model dropdown. Subscribes to the provider and to every key, because the list belongs to a provider-and-key pair |
@@ -244,7 +244,24 @@ version has changed: a build happens whenever Vencord moves, and those would
 otherwise fill the releases page hourly. The site is where the install command
 and the updater take their files from; the releases are where the versions are
 kept. `gh` is told the repository outright in those calls, because the workflow
-runs the script with no checkout and so has no git remote to infer it from.
+runs the script with no checkout and so has no git remote to infer it from. A
+testing build never makes one: its number is the one the last release carries,
+so the release would say nothing.
+
+`main` is also the **testing channel**. The same hourly run builds it into
+`/testing/` on that same site, so a change can be tried without `release`
+moving at all. `AIT_CHANNEL=testing` in front of either install command
+installs those builds; an installed copy says which channel it follows in a
+line under the update button in the settings, and switches back there. Nothing
+advertises it: not the plugin's page, not the README. The one place it is
+written down is the page the robot itself generates on `builds.zolatau.com`.
+So every push to `main` reaches whoever is on that channel within the hour.
+
+The whole site is replaced on every deploy, which is why the script carries
+over the files of whichever channel it did not rebuild. **If those cannot be
+fetched, nothing is published at all.** An hour longer on the build that is
+already out costs nobody anything; a channel that has lost its files breaks
+every copy that follows it.
 
 One thing not to tidy: `@namespace` in the userscript header still points at a
 GitLab address. Userscript managers identify a script by name and namespace

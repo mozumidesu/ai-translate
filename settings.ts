@@ -336,6 +336,16 @@ export const settings = definePluginSettings({
         default: 0,
         hidden: true
     },
+    // Deliberately not a setting of its own: the line under the update button
+    // changes it, and a row here would read as a feature rather than as
+    // upkeep. Empty until either that line or the installed build settles it,
+    // and read as the released channel in the meantime.
+    updateChannel: {
+        type: OptionType.STRING,
+        description: "internal: which builds this copy follows, release or testing",
+        default: "",
+        hidden: true
+    },
 
     // Legacy single-provider fields, migrated on start and then left empty.
     apiKey: { type: OptionType.STRING, description: "internal: pre-migration API key", default: "", hidden: true },

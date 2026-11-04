@@ -12,7 +12,7 @@ import { useState } from "@webpack/common";
 
 import { onDesktop } from "../core/bridge";
 import { t } from "../core/locales";
-import { checkForUpdate, installUpdate, UpdateState } from "../updater";
+import { Channel, channel, checkForUpdate, installUpdate, setChannel, UpdateState } from "../updater";
 
 const cl = classNameFactory("vc-aitrans-");
 
@@ -32,6 +32,7 @@ const NOTE: Record<Phase, string | null> = {
 
 export function UpdatePanel() {
     const [phase, setPhase] = useState<Phase>("idle");
+    const [on, setOn] = useState<Channel>(channel());
 
     // In a browser the copy is kept current by the userscript manager or by
     // the extension store, and this button would have nothing it could do.
@@ -55,6 +56,14 @@ export function UpdatePanel() {
         }
     };
 
+    // Only where the next update comes from. The copy that is running is left
+    // alone until the button above is pressed, or the next check comes round.
+    const switchTo = (next: Channel) => {
+        setChannel(next);
+        setOn(next);
+        setPhase("idle");
+    };
+
     const busy = phase === "checking" || phase === "installing";
 
     const label = phase === "done" ? t("update.restart")
@@ -72,6 +81,13 @@ export function UpdatePanel() {
                     {t(NOTE[phase]!)}
                 </Paragraph>
             )}
+            {/* Quiet on purpose: upkeep, not a feature. */}
+            <Paragraph className={cl("hint")} defaultColor={false}>
+                {t(on === "testing" ? "update.fromTesting" : "update.fromRelease")}{" "}
+                <button className={cl("switch")} onClick={() => switchTo(on === "testing" ? "release" : "testing")}>
+                    {t(on === "testing" ? "update.toRelease" : "update.toTesting")}
+                </button>
+            </Paragraph>
         </section>
     );
 }

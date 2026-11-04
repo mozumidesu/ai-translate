@@ -17,6 +17,12 @@
     $AitHome = if ($env:AIT_HOME) { $env:AIT_HOME } else { Join-Path $env:LOCALAPPDATA "aiTranslate" }
     $Dist = Join-Path $AitHome "dist"
     $Builds = "https://builds.zolatau.com"
+
+    # Released builds are handed out at the root, testing builds from a folder
+    # of their own. $env:AIT_CHANNEL = "testing" installs those: the plugin's
+    # main branch, built the same way but not released. The plugin's own
+    # settings then say which builds a copy follows and switch it back.
+    if ($env:AIT_CHANNEL -eq "testing") { $Builds = "$Builds/testing" }
     $VencordInstaller = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstallerCli.exe"
 
     # What Discord loads, named as Vencord's own updater names them.

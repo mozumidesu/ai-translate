@@ -17,13 +17,18 @@
     opacity: 0.8;
 }
 
-.vc-aitrans-dismiss {
+/* A word inside a line of text that does something: the notice's dismiss, and
+   the channel switch under the update button. A button, so the keyboard
+   reaches it, with everything a button looks like taken off again. */
+.vc-aitrans-dismiss,
+.vc-aitrans-switch {
     all: unset;
     cursor: pointer;
     color: var(--text-link);
 }
 
-.vc-aitrans-dismiss:is(:hover, :focus) {
+.vc-aitrans-dismiss:is(:hover, :focus),
+.vc-aitrans-switch:is(:hover, :focus) {
     text-decoration: underline;
 }
 
