@@ -847,6 +847,14 @@ function settleGender(text: string, target: string) {
         gender === "male" ? stem : stem + ending.replace(/^-/, ""));
 }
 
+/**
+ * A hyphen no keyboard has, U+2010 or the non-breaking U+2011, inside a word:
+ * "какая-то" written with U+2011 looks the same and is not found by searching
+ * for it. Only between two letters or digits, so a dash anybody typed is never
+ * touched.
+ */
+const KEYBOARDLESS_HYPHEN = /([\p{L}\p{M}\p{N}])[\u2010\u2011](?=[\p{L}\p{N}])/gu;
+
 function postProcess(original: string, translated: string, target: string, kind: Kind) {
     let t = translated.trim();
     const source = original.trim();
@@ -854,6 +862,10 @@ function postProcess(original: string, translated: string, target: string, kind:
     // models like wrapping their answer in quotes
     const origQuoted = /^["'«“]/.test(source);
     if (!origQuoted && t.length > 1 && /^["'«“]/.test(t) && /["'»”]$/.test(t)) t = t.slice(1, -1).trim();
+
+    // Every kind, a correction above all: "какой-то" given back with U+2011
+    // reads to AI Learn as two words changed in a message that had no mistake.
+    if (!/[\u2010\u2011]/.test(source)) t = t.replace(KEYBOARDLESS_HYPHEN, "$1-");
 
     // An explanation is not a version of the message, so none of the rules
     // below — punctuation, capitals, line markers — have anything to say about it.

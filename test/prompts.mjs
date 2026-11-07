@@ -330,6 +330,35 @@ await behaves(
     "it is a long-distance thing - really"
 );
 
+// gpt-oss writes "какая-то" with U+2011, which looks the same and is not found
+// by searching for it. The keyboard's own hyphen goes in its place.
+await behaves(
+    "a hyphen no keyboard has becomes the one it does",
+    translated("received", "who is that? some kind of queen?", "[en] кто это? какая\u2011то королева?"),
+    "кто это? какая-то королева?"
+);
+await behaves(
+    "in a message going out too",
+    translated("sent", "это известный факт", "[ru] it is a well\u2010known fact"),
+    "it is a well-known fact"
+);
+// Only inside a word: a dash the writer typed, long or short, stays theirs.
+await behaves(
+    "while the long dash the writer typed stays as it was",
+    translated("sent", "это важно \u2014 долгосрочный план", "[ru] it matters \u2014 a long\u2011term plan"),
+    "it matters \u2014 a long-term plan"
+);
+await behaves(
+    "and so does the short one",
+    translated("sent", "это важно \u2013 долгосрочно", "[ru] it matters \u2013 long\u2011term"),
+    "it matters \u2013 long-term"
+);
+await behaves(
+    "and a hyphen the writer typed that way is theirs to keep",
+    translated("sent", "по\u2011моему, это известный факт", "[ru] in my view, it is a well\u2011known fact"),
+    "in my view, it is a well\u2011known fact"
+);
+
 // --- names
 
 settings.glossary = "Yumechka, rights = permissions";
@@ -510,6 +539,13 @@ learn("a message of several lines keeps every one of them",
 learn("and a line that only looks like one is not the reason",
     splitCorrection("why: this is the message itself\nand this is its second line"),
     { native: "why: this is the message itself\nand this is its second line", why: "" });
+
+// "well-known" written with U+2011 is two words to the comparison, so a message
+// with nothing wrong in it came back as a correction of the one word it had right.
+learn("a hyphen no keyboard has is no correction",
+    sameMessage("it is a well-known place", splitCorrection(
+        await translated("correct", "it is a well-known place", "it is a well\u2011known place")).native),
+    true);
 
 // --- the providers, in order
 
