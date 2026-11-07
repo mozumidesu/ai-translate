@@ -377,5 +377,77 @@
     ],
     "unchanged": true,
     "group": "learn"
+  },
+  {
+    "id": "who-you-called-is-dative",
+    "why": "\"Who did you call yesterday? Your mom?\" came back as \"Кого ты звонил вчера?\" 9 runs out of 10: звонить takes the dative, \"Кому ты звонил?\". With the cases beside it this asks whether that is one verb, or every verb that takes a direct object in English and the dative in Russian",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who did you call yesterday?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "call-me-is-dative",
+    "why": "the same verb with no question word in front of it, to tell the verb's fault from the question's. \"Набери меня\" would be right too and fails this, so read a failure before counting it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Call me tomorrow.",
+    "must": [
+      "мне"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "help-is-dative",
+    "why": "another verb of the same kind: помочь takes the dative, \"помочь брату\", never \"помочь брата\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Can you help my brother with the move?",
+    "must": [
+      "брату"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "belief-is-dative",
+    "why": "верить takes the dative too: \"Ты ему веришь?\", never \"Ты его веришь?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Do you believe him?",
+    "must": [
+      "ему"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "a-greeting-is-dative",
+    "why": "передать привет takes the dative: \"Передай маме привет\", never \"маму\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Tell your mom I said hi.",
+    "must": [
+      "маме"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "seeing-stays-accusative",
+    "why": "the other side of the dative cases: видеть takes the accusative, \"сестру\", so a rule about the dative read too widely would show up here as \"сестре\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Did you see my sister yesterday?",
+    "must": [
+      "сестру"
+    ],
+    "mustNot": [],
+    "group": "dative"
   }
 ]
