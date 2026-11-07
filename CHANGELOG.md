@@ -16,6 +16,10 @@ when `release` moves.
   searching a chat for "какая-то" missed it, and AI Learn took it for a
   correction of a word that was already right. A dash you typed yourself,
   long or short, stays as you typed it.
+- **A letter from the other alphabet inside a word is put right.** A Russian
+  word with one Latin letter that looks the same, or the other way round, is
+  not found by searching for it. A Latin name with a Russian ending, as in
+  "в Discordе", stays as it is.
 - **AI Learn no longer takes typography for a correction.** A model giving
   back "i’ll" for your "i'll", or "мʼята" for your "м'ята", has given back the
   same word, and nothing is shown for it.

@@ -133,7 +133,7 @@ printed before, line for line.
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 195 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
+| `test/prompts.mjs` | 200 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Each run is a request of its own: the plugin's cache of answers is emptied before every one. Until 7 November it was not, so a count older than that, in a comment or a commit message, is one answer counted several times. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
@@ -233,7 +233,7 @@ ran", which otherwise look identical.
 ## Running things
 
 ```
-node test/prompts.mjs      # 195 checks; needs esbuild
+node test/prompts.mjs      # 200 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout

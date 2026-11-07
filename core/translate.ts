@@ -872,6 +872,40 @@ function settleGender(text: string, target: string) {
  */
 const KEYBOARDLESS_HYPHEN = /([\p{L}\p{M}\p{N}])[\u2010\u2011](?=[\p{L}\p{N}])/gu;
 
+/**
+ * Letters of one alphabet with an exact twin in the other. "мамe" with a Latin
+ * e is not found by searching for "маме", and to AI Learn it is another word.
+ */
+const INTO_CYRILLIC: Record<string, string> = {
+    a: "\u0430", c: "\u0441", e: "\u0435", i: "\u0456", o: "\u043e", p: "\u0440", x: "\u0445", y: "\u0443",
+    A: "\u0410", B: "\u0412", C: "\u0421", E: "\u0415", H: "\u041d", I: "\u0406", K: "\u041a", M: "\u041c",
+    O: "\u041e", P: "\u0420", T: "\u0422", X: "\u0425", Y: "\u0423"
+};
+const INTO_LATIN: Record<string, string> = Object.fromEntries(
+    Object.entries(INTO_CYRILLIC).map(([latin, cyrillic]) => [cyrillic, latin]));
+
+const inTwoAlphabets = (word: string) => /\p{Script=Latin}/u.test(word) && /\p{Script=Cyrillic}/u.test(word);
+
+/**
+ * A stray twin goes over only into the alphabet the answer is written in, and
+ * only in a word mostly written in it, so "в Discordе" keeps its Russian ending.
+ */
+function oneAlphabet(text: string, target: string) {
+    const script = expectedScript(target);
+    const cyrillic = script.test("\u0430");
+    if (!cyrillic && !script.test("a")) return text;
+
+    const twins = cyrillic ? INTO_CYRILLIC : INTO_LATIN;
+    const stray = cyrillic ? /\p{Script=Latin}/gu : /\p{Script=Cyrillic}/gu;
+
+    return text.replace(/[\p{L}\p{M}]+/gu, word => {
+        const strays = word.match(stray) ?? [];
+        const own = [...word].filter(letter => script.test(letter)).length;
+        if (!strays.length || own <= strays.length || !strays.every(letter => letter in twins)) return word;
+        return word.replace(stray, letter => twins[letter]);
+    });
+}
+
 function postProcess(original: string, translated: string, target: string, kind: Kind) {
     let t = translated.trim();
     const source = original.trim();
@@ -883,6 +917,10 @@ function postProcess(original: string, translated: string, target: string, kind:
     // Every kind, a correction above all: "какой-то" given back with U+2011
     // reads to AI Learn as two words changed in a message that had no mistake.
     if (!/[\u2010\u2011]/.test(source)) t = t.replace(KEYBOARDLESS_HYPHEN, "$1-");
+
+    // The same with a letter from the other alphabet, unless the writer mixed
+    // two alphabets in a word themselves.
+    if (!(source.match(/[\p{L}\p{M}]+/gu) ?? []).some(inTwoAlphabets)) t = oneAlphabet(t, target);
 
     // An explanation is not a version of the message, so none of the rules
     // below — punctuation, capitals, line markers — have anything to say about it.

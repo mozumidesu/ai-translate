@@ -364,6 +364,31 @@ await behaves(
     "in my view, it is a well\u2011known fact"
 );
 
+// gpt-oss once wrote "маме" with a Latin e: the same to the eye, another word
+// to a search. A letter with a twin in the answer's own alphabet goes over.
+await behaves(
+    "a Latin letter inside a Russian word becomes the Russian one",
+    translated("received", "and your mom?", "[en] а мам\u0065?"),
+    "а мам\u0435?"
+);
+await behaves(
+    "and a Russian letter inside an English word the English one",
+    translated("sent", "привет всем", "[ru] h\u0435llo everyone"),
+    "hello everyone"
+);
+// Only into the answer's alphabet and only in a word mostly written in it:
+// a Latin name with a Russian ending is how chat writes it.
+await behaves(
+    "while a Latin name with a Russian ending keeps it",
+    translated("received", "saw it on discord", "[en] видел в Discord\u0435"),
+    "видел в Discord\u0435"
+);
+await behaves(
+    "and a word the writer typed in two alphabets is theirs",
+    translated("sent", "го в Steam\u0435", "[ru] let's go to Steam\u0435"),
+    "let's go to Steam\u0435"
+);
+
 // --- names
 
 settings.glossary = "Yumechka, rights = permissions";
@@ -561,6 +586,12 @@ learn("nor a hyphen that never went through the answer's tidying", sameMessage("
 learn("while a word that did change is still the one marked",
     changedWords("i'll went there", "i\u2019ll go there").map(p => (p.changed ? "*" : "") + p.text),
     ["i\u2019ll", "*go", "there"]);
+
+// The same stray letter in a correction is the model's, not the learner's.
+settings.sentLanguage = "Russian";
+learn("a letter from the other alphabet is no correction", sameMessage("я звонил маме вчера вечером", splitCorrection(
+    await translated("correct", "я звонил маме вчера вечером", "я звонил мам\u0065 вчера вечером")).native), true);
+settings.sentLanguage = "English";
 
 // --- the providers, in order
 
