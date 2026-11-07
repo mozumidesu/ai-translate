@@ -195,12 +195,12 @@ When changing a rule:
   the rice and the meal, so the model had a defensible reading of its own to
   hold on to, and a finished English answer was not enough to move it; naming
   the fault, in whatever language is being written, was, though not every
-  time: 3 runs out of 3 into English, 2 out of 3 into Russian. Seventeen of the
-  forty rules hand over an English answer in the same way, and eight of them
-  were then measured the other way round, `--group=reverse`: all eight held, 3
-  runs out of 3. So this is not a fault the whole rule set has. It appears
-  where the rule is arguing against a reading the model can justify, not
-  merely against a habit.
+  time: 3 runs out of 3 into English, 5 out of 10 into Russian, and two other
+  wordings tried for Russian did no better. Seventeen of the forty rules hand
+  over an English answer in the same way, and eight of them were then measured
+  the other way round, `--group=reverse`: all eight held, 3 runs out of 3. So
+  this is not a fault the whole rule set has. It appears where the rule is
+  arguing against a reading the model can justify, not merely against a habit.
 - Rules that apply to one language, or to something a message may not contain,
   are only sent when they can matter — see the gating in `core/translate.ts`. A
   rule
