@@ -80,7 +80,7 @@ vede niciodată cheia nimănui.
 | Google Gemini | da |
 | Z.ai GLM | da, și merge acolo unde celelalte două sunt blocate |
 | Anthropic Claude | nu |
-| Orice API compatibil cu OpenAI | depinde de furnizor |
+| Oricare compatibil cu OpenAI | depinde de furnizor |
 
 Poți pune un al doilea furnizor ca rezervă. Când primul e aglomerat, a rămas
 fără cotă sau refuză cererea, traducerea trece prin celălalt fără să te

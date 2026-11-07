@@ -15,7 +15,8 @@ import { config, set } from "../core/host";
 import { LANGUAGES } from "../core/languages";
 import { LOCALES, t } from "../core/locales";
 import {
-    baseUrlOf, emptySlot, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, readSlots, Slot, writeSlots
+    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
+    readSlots, Slot, writeSlots
 } from "../core/slots";
 import { addStyle, ui } from "./toast";
 
@@ -333,7 +334,7 @@ function slotList() {
             const choose = document.createElement("select");
             const options = [
                 ...(first ? [] : [{ value: NONE, label: t("fallback.none") }]),
-                ...PROVIDERS.map(id => ({ value: id, label: t(`provider.${id}`) }))
+                ...PROVIDERS.map(id => ({ value: id, label: providerLabel(id, first) }))
             ];
 
             for (const option of options) {
@@ -349,7 +350,7 @@ function slotList() {
 
             if (slot.provider !== NONE) {
                 const keyLabel = document.createElement("label");
-                keyLabel.textContent = `${t("apiKey.name")} — ${t(`provider.${slot.provider}`).replace(/\s*\(.*\)\s*$/, "")}`;
+                keyLabel.textContent = keyHeading(slot.provider);
                 block.append(keyLabel);
 
                 const row = document.createElement("div");
@@ -421,7 +422,7 @@ function slotList() {
             const buttons = document.createElement("div");
             buttons.className = "signs";
 
-            if (!first) {
+            if (canRemove(slots.length, at)) {
                 const less = document.createElement("button");
                 less.type = "button";
                 less.className = "sign";
@@ -465,9 +466,7 @@ async function offerModels(slot: Slot, list: HTMLDataListElement, said: HTMLElem
         }));
 
         if (status === 401 || status === 403) {
-            said.textContent = t("apiKey.bad", {
-                provider: t(`provider.${slot.provider}`).replace(/\s*\(.*\)\s*$/, "")
-            });
+            said.textContent = t("apiKey.bad", { provider: providerName(slot.provider) });
             return;
         }
 

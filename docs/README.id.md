@@ -79,7 +79,7 @@ sendiri dan tidak pernah melihat kunci milik orang lain.
 | Google Gemini | ada |
 | Z.ai GLM | ada, dan bisa dipakai di tempat dua yang lain diblokir |
 | Anthropic Claude | tidak |
-| API apa pun yang kompatibel dengan OpenAI | tergantung penyedianya |
+| Penyedia apa pun yang kompatibel dengan OpenAI | tergantung penyedianya |
 
 Penyedia kedua bisa ditunjuk sebagai cadangan. Kalau yang pertama sedang penuh,
 kuotanya habis, atau menolak permintaan, terjemahan lewat yang satunya tanpa

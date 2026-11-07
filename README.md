@@ -80,7 +80,7 @@ its own and never sees anyone else's key.
 | Google Gemini | yes |
 | Z.ai GLM | yes, and reachable where the other two are blocked |
 | Anthropic Claude | no |
-| Any OpenAI-compatible API | depends on the provider |
+| Any OpenAI-compatible | depends on the provider |
 
 A second provider can be named as a backup. When the first one is overloaded,
 out of quota or refuses the request, the translation goes through the other one

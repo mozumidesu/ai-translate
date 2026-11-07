@@ -84,7 +84,7 @@ pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
 | Google Gemini | oui |
 | Z.ai GLM | oui, et accessible là où les deux autres sont bloqués |
 | Anthropic Claude | non |
-| Toute API compatible OpenAI | selon le fournisseur |
+| Tout fournisseur compatible OpenAI | selon le fournisseur |
 
 Un deuxième fournisseur peut être désigné comme secours. Quand le premier est
 saturé, à court de quota ou refuse la requête, la traduction passe par l'autre

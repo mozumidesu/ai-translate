@@ -21,7 +21,7 @@ import { LANGUAGES } from "./languages";
 import { t } from "./locales";
 import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
-import { baseUrlOf, isReady, keyOf, modelOf, readSlots, Slot } from "./slots";
+import { baseUrlOf, isReady, keyOf, modelOf, providerName, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
 
@@ -1227,8 +1227,6 @@ const WORTH_A_SECOND_PROVIDER = (status: number) =>
 // message to the backup if that would be done sooner. Providers that say
 // nothing are simply asked, as before.
 
-const bareLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
-
 /** Thrown where a wait was given up on: nothing failed, so nothing is reported. */
 export const CANCELLED = "ai-translate: cancelled";
 
@@ -1443,10 +1441,10 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const first = slots[0];
     const apiKey = keyOf(first);
     const model = modelOf(first);
-    const providerName = bareLabel(first.provider);
+    const firstName = providerName(first.provider);
 
-    if (!apiKey) throw fail("error.noKey", { provider: providerName });
-    if (!model) throw fail("error.noModel", { provider: providerName });
+    if (!apiKey) throw fail("error.noKey", { provider: firstName });
+    if (!model) throw fail("error.noModel", { provider: firstName });
 
     // An explanation is read, not sent, so it comes in the reading language.
     // A correction is written in the language the person is writing in, which
@@ -1544,7 +1542,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         if (!(ms > 0) || waited + ms > MAX_WAIT_MS) return false;
 
         waited += ms;
-        notify(t("message.waiting", { provider: bareLabel(id), seconds: Math.ceil(ms / 1000) }), "message");
+        notify(t("message.waiting", { provider: providerName(id), seconds: Math.ceil(ms / 1000) }), "message");
         await sleep(ms, signal);
         return true;
     };
@@ -1601,7 +1599,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         const blocked = dayBlockedFor(first.id, model);
         if (!answer && blocked > 0) {
             answer = await askBackups();
-            if (!answer) throw fail("error.dailyLimit", { provider: providerName, model, wait: humanWait(blocked) });
+            if (!answer) throw fail("error.dailyLimit", { provider: firstName, model, wait: humanWait(blocked) });
         }
 
         if (!answer) {
@@ -1628,10 +1626,10 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         }
 
         if (answer.slot !== first.id)
-            notify(t("message.switchedProvider", { provider: bareLabel(answer.provider) }), "message");
+            notify(t("message.switchedProvider", { provider: providerName(answer.provider) }), "message");
 
         const { status, data, model: usedModel, provider: usedProvider } = answer;
-        const name = answer.slot === first.id ? providerName : bareLabel(usedProvider);
+        const name = answer.slot === first.id ? firstName : providerName(usedProvider);
 
         if (status === -1) throw fail("error.network", { details: data });
         if (status === 401) throw fail("error.badKey", { provider: name, status });

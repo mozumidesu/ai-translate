@@ -17,14 +17,42 @@
  */
 
 import { config, set } from "./host";
+import { t } from "./locales";
 
 export const PROVIDERS = ["groq", "gemini", "glm", "anthropic", "openai"];
 
 /** A backup slot that is there but not in use. Only a backup may be one. */
 export const NONE = "none";
 
+/** "Groq (recommended)" is advice for the first choice, not part of the name. */
+const withoutAdvice = (label: string) => label.replace(/\s*\(.*\)\s*$/, "");
+
+/** How a provider reads in the list. A backup leaves the advice out. */
+export const providerLabel = (id: string, first = false) =>
+    first ? t(`provider.${id}`) : withoutAdvice(t(`provider.${id}`));
+
+/**
+ * What a provider is called inside a sentence: "No API key set for Groq". The
+ * generic one is not named by its label, which begins with "Any", but by what
+ * it speaks, the way the others are named by who they are.
+ */
+export const providerName = (id: string) =>
+    id === "openai" ? "OpenAI-compatible" : withoutAdvice(t(`provider.${id}`));
+
+/** The line over a slot's key: "API key — Groq", "API key — any OpenAI-compatible". */
+export const keyHeading = (id: string) =>
+    `${t("apiKey.name")} — ${id === "openai" ? t("provider.openaiInline") : providerName(id)}`;
+
 /** One to ask and four behind it. Past that a message would wait all day. */
 export const MOST_SLOTS = 5;
+
+/**
+ * Whether the backup at `at` of `count` slots may be taken away. The one backup
+ * the page always shows is switched off by choosing None, not removed: a minus
+ * there would only take the whole block away, and with it the way to ask for a
+ * backup. From two backups on, the extra ones are the ones to remove.
+ */
+export const canRemove = (count: number, at: number) => at > 0 && count > 2;
 
 export interface Slot {
     /** Stable across reordering, because the rate limits are counted by it. */

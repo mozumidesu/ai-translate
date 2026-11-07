@@ -22,7 +22,8 @@ import { SearchableSelect, TextInput, useState } from "@webpack/common";
 
 import { t } from "../core/locales";
 import {
-    baseUrlOf, emptySlot, keyOf, MOST_SLOTS, NONE, PROVIDERS, readSlots, Slot, writeSlots
+    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
+    readSlots, Slot, writeSlots
 } from "../core/slots";
 import { ModelPicker, Verdict } from "./ModelPicker";
 
@@ -38,9 +39,6 @@ const EyeIcon = ({ off }: { off: boolean; }) => (
         {off && <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M4 4 20 20" />}
     </svg>
 );
-
-/** "Groq (recommended)" is advice for the first choice, not a name. */
-const bareLabel = (id: string) => t(`provider.${id}`).replace(/\s*\(.*\)\s*$/, "");
 
 export function Providers() {
     const [slots, setSlots] = useState(readSlots);
@@ -67,7 +65,7 @@ export function Providers() {
     /** The slot's own two buttons, which stand at the end of the row of them. */
     const actions = (at: number) => (
         <>
-            {at > 0 && (
+            {canRemove(slots.length, at) && (
                 <Button
                     className={cl("slot-sign")}
                     size="small"
@@ -101,7 +99,7 @@ export function Providers() {
                 const first = at === 0;
                 const options = [
                     ...(first ? [] : [{ value: NONE, label: t("fallback.none") }]),
-                    ...PROVIDERS.map(id => ({ value: id, label: first ? t(`provider.${id}`) : bareLabel(id) }))
+                    ...PROVIDERS.map(id => ({ value: id, label: providerLabel(id, first) }))
                 ];
 
                 return (
@@ -129,7 +127,7 @@ export function Providers() {
                         {slot.provider !== NONE && (
                             <>
                                 <Heading className={`${Margins.top16} ${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>
-                                    {`${t("apiKey.name")} — ${bareLabel(slot.provider)}`}
+                                    {keyHeading(slot.provider)}
                                 </Heading>
 
                                 {/* The provider is asked when the field is left, not while it
@@ -154,7 +152,7 @@ export function Providers() {
 
                                 {verdicts[slot.id] === "bad" && (
                                     <Paragraph className={cl("warning")} defaultColor={false}>
-                                        {t("apiKey.bad", { provider: bareLabel(slot.provider) })}
+                                        {t("apiKey.bad", { provider: providerName(slot.provider) })}
                                     </Paragraph>
                                 )}
 

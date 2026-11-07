@@ -80,7 +80,7 @@ nunca vê a chave de ninguém.
 | Google Gemini | sim |
 | Z.ai GLM | sim, e funciona onde os outros dois estão bloqueados |
 | Anthropic Claude | não |
-| Qualquer API compatível com OpenAI | depende do provedor |
+| Qualquer provedor compatível com OpenAI | depende do provedor |
 
 Dá para indicar um segundo provedor como reserva. Quando o primeiro está
 sobrecarregado, sem cota ou recusa o pedido, a tradução passa pelo outro sem te
