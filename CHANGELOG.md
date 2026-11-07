@@ -3,7 +3,19 @@
 What changed in each version, in the words a person would use. The build robot
 takes the section whose heading matches the version being released and puts it
 in the release on GitHub; with no section it falls back to the subjects of the
-commits, which is what the releases before this file have.
+commits, which is what the releases before this file have. What is on `main`
+and not yet released waits under Unreleased, which takes the version's name
+when `release` moves.
+
+## Unreleased
+
+### Fixed
+
+- **A hyphen inside a word is the one on your keyboard.** Some models wrote
+  "какая-то" with a hyphen that looks the same and is another character, so
+  searching a chat for "какая-то" missed it, and AI Learn took it for a
+  correction of a word that was already right. A dash you typed yourself,
+  long or short, stays as you typed it.
 
 ## 0.2.0a
 

@@ -322,14 +322,12 @@
     "must": [
       "ten minutes"
     ],
-    "mustNot": [
-      "why:"
-    ],
+    "unchanged": true,
     "group": "learn"
   },
   {
     "id": "style-is-not-a-mistake",
-    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one. Later a comma came back after \"now\", with a reason for it: nothing here is a mistake, so any reason at all means something was changed",
+    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one. A comma after \"now\" comes back about half the time too, but the plugin compares words alone and drops that answer unseen; naming commas in the rule to stop it brought \"I'm\" back 9 runs out of 10",
     "kind": "correct",
     "to": "English",
     "text": "ok im gonna head out now see ya tomorrow",
@@ -338,9 +336,9 @@
     ],
     "mustNot": [
       "i am going to",
-      "i'm",
-      "why:"
+      "i'm"
     ],
+    "unchanged": true,
     "group": "learn"
   }
 ]
