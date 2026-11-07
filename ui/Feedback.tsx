@@ -14,11 +14,12 @@ import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, Tooltip, useEffect, useState, UserStore } from "@webpack/common";
+import { Modal, openModal, Tooltip, useEffect, useLayoutEffect, useRef, useState, UserStore } from "@webpack/common";
 
 import { Bridge } from "../core/bridge";
 import { VERSION } from "../core/version";
 import { currentLocale, isRightToLeft, t } from "../core/locales";
+import { localizeHeadings } from "./ModalHeadings";
 
 const cl = classNameFactory("vc-aitrans-");
 
@@ -435,8 +436,16 @@ function LinkButton({ label, onClick, children }: { label: string; onClick: () =
 const LIFT_PX = 45;
 
 export function SettingsHeader() {
+    const row = useRef<HTMLDivElement>(null);
+
+    // Vencord draws "Authors" above this row and "Settings" below it, in the
+    // same pass and in English. This is the one part of the window that is the
+    // plugin's own and is drawn again whenever the language changes, so it is
+    // where they are put into the plugin's language, before the first paint.
+    useLayoutEffect(() => localizeHeadings(row.current));
+
     return (
-        <div className={cl("header-links")} style={{ marginTop: -LIFT_PX }}>
+        <div ref={row} className={cl("header-links")} style={{ marginTop: -LIFT_PX }}>
             <LinkButton
                 label={t("feedback.project")}
                 onClick={() => VencordNative.native.openExternal(PROJECT_PAGE)}
