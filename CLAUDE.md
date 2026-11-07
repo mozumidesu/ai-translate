@@ -39,7 +39,7 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
-| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Settings written before the list existed are still read, which is what the browser build and the tests hand over |
+| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Settings written before the list existed are still read, which is what the standalone `web/` build and the tests hand over |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
@@ -81,13 +81,25 @@ so it is reached as `VencordNative.pluginHelpers["AI Translate"]`. Renaming the
 plugin resets saved settings; `migrateSettings` in `settings.ts` carries them
 over from the older name `AiTranslate`.
 
-### The browser version — no Vencord at all
+### The browser: two builds, and only one of them ships
 
-`web/` holds a standalone build: `intercept.ts` catches outgoing messages,
-`panel.ts` is its own settings panel, provider slots and all, `storage.ts` its own store, `user.ts` and
-`toast.ts` fill in for the host, `host.ts` wires them together, `build.mjs`
-builds it. `meta.js` is the userscript header. `web/dist/` is build output and
-is gitignored. See `web-support-plan.md` if it is in the session.
+**What people run in a browser is not `web/`.** The robot builds the userscript
+with Vencord's own `pnpm buildWeb` and publishes it as `ai-translate.user.js`:
+that is Vencord with the whole plugin inside, `index.tsx`, the settings page and
+AI Learn included, so a browser copy has everything a desktop one has, drawn by
+Vencord's own settings page. Nothing about it needs separate care.
+
+`web/` is something else: a standalone build with no Vencord at all, which
+nothing publishes. `build/github.sh` never runs `web/build.mjs`, and neither do
+the installers. `intercept.ts` catches outgoing messages, `panel.ts` is its own
+settings panel, provider slots and all, `storage.ts` its own store, `user.ts`
+and `toast.ts` fill in for the host, `host.ts` wires them together, `build.mjs`
+builds it. `meta.js` is its userscript header. `web/dist/` is build output and
+is gitignored. It has no AI Learn, which nobody notices because nobody runs it.
+
+Saying "the browser" without saying which of the two is how a whole day went
+into a panel no user sees: the shipped userscript already had the provider list
+from the moment the desktop did.
 
 ### The Rust side
 
@@ -125,7 +137,7 @@ printed before, line for line.
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
-| `test/defaults.mjs` | 33 checks that `web/storage.ts` still agrees with `settings.ts`. The browser build writes its defaults out by hand, because importing the settings page would drag Vencord into the one build whose point is not having any, and nothing else notices when the two drift: a setting missing there is simply undefined, which reads as off. It caught AI Explain staying on in the browser after it was switched off on the page. A setting the browser does without has to be named in `DESKTOP_ONLY`, with the reason |
+| `test/defaults.mjs` | 33 checks that `web/storage.ts` still agrees with `settings.ts`. The browser build writes its defaults out by hand, because importing the settings page would drag Vencord into the one build whose point is not having any, and nothing else notices when the two drift: a setting missing there is simply undefined, which reads as off. It caught AI Explain staying on in `web/` after it was switched off on the page. That build ships to nobody, but the check costs nothing and keeps it honest should it ever ship. A setting the browser does without has to be named in `DESKTOP_ONLY`, with the reason |
 | `test/log.mjs` | 23 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
 | `test/rules.mjs` | The assembled prompt line by line, heaviest first |
@@ -156,8 +168,8 @@ model list needs, so it costs one request, not two.
 
 Settings from before the list are still read: `provider`, `fallbackProvider`
 and the per-provider keys answer whenever no list has been written yet. That
-is what a copy that has never opened the page uses, and it is what the browser
-build and every test hand over, so none of them had to change.
+is what a copy that has never opened the page uses, and it is what the
+standalone `web/` build and every test hand over, so none of them had to change.
 
 ## Prompt rules
 
