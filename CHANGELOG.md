@@ -9,6 +9,33 @@ when `release` moves.
 
 ## Unreleased
 
+### Added
+
+- **A browser copy can say whether it is the newest.** Check for updates, at the
+  foot of the settings, is there in the userscript too. Your userscript manager
+  still updates it by itself, on its own schedule; the button asks at once, and
+  when there is something newer it opens the new script in the manager, which
+  offers to install it. Nothing is asked by itself: the plugin looks only when
+  the button is pressed, so the manager has no new address to ask about at a
+  moment nobody chose.
+- **"Authors" and "Settings", at the top of the plugin's window, are in the
+  plugin's language.** Vencord writes both in English for every plugin and has
+  no way to translate them, so the plugin changes the two words after they are
+  drawn, and only in its own window.
+
+### Changed
+
+- **The generic provider is "Any OpenAI-compatible"**, without "API", in all
+  sixteen languages. Its key is headed "API key — any OpenAI-compatible" rather
+  than repeating the name of the option, and an error message calls it
+  "OpenAI-compatible", which reads in a sentence where a label that starts with
+  "Any" did not.
+- **Logs has a name in every language**: on the button, on the window it opens,
+  and in the error that sends you there.
+- **The one backup has no minus.** It is switched off by choosing None, as it
+  always could be, whereas the minus took the whole block away and with it the
+  place to ask for a backup. From a second backup on, the minus is there.
+
 ### Fixed
 
 - **A hyphen inside a word is the one on your keyboard.** Some models wrote
@@ -26,6 +53,11 @@ when `release` moves.
 - **A short question between two sentences keeps its own case** in Russian,
   Ukrainian and Belarusian: "Who's depicted there? Some kind of queen?" comes
   out as "Какая-то королева?", not in the case a verb beside it would give.
+- **What you wrote, under a sent message, kept every backslash.** Discord drops
+  a backslash in front of a mark, or of a letter outside A to Z, so
+  `\WoW\, ещё вечер` was shown as `\WoW, ещё вечер`, the closing backslash
+  gone, though it had been sent right. Both are shown now, and so are the marks
+  after them: an escaped star is not drawn as italics.
 
 ## 0.2.0a
 

@@ -20,7 +20,8 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
   whole folder: personal scripts, the feedback relay's source, publishing
   addresses. A cloud session cannot see it at all, which is intended.
 - **Every user-visible string exists in 16 languages** in `core/locales.ts`. Adding
-  or changing one means changing all 16, not only English.
+  or changing one means changing all 16, not only English. `test/interface.mjs`
+  fails when a language lacks a string English has, or has one English does not.
 - **The README exists in 16 languages too**: `README.md` plus
   `docs/README.<code>.md`. Same rule.
 
@@ -32,22 +33,24 @@ This folder is the plugin itself. In a working Vencord checkout it sits at
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context, and pacing against the provider's rate limits. The biggest file and the one that matters most |
 | `core/host.ts` | The handful of things the core cannot know by itself: settings and writing them, recent messages, who the current user is, how to show a notice. A host is installed once at load; until then these answer empty rather than throwing |
-| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser). The build robot writes the build's name and its channel into two constants here, which is the only way a browser copy can know what it is |
+| `core/bridge.ts` | Decides where a request goes: to Electron's main process over Vencord's bridge, or straight from here when there is no bridge (browser). In a browser it also answers whether the userscript is the newest, and hands the new one to the userscript manager. The build robot writes the build's name and its channel into two constants here, which is the only way a browser copy can know what it is |
+| `core/builds.ts` | Where the build robot publishes: the address, the two channels, the link to a channel's userscript, and what a channel is handing out now. `native.ts` fetches a desktop copy's files from it, and a browser copy asks it whether it is the newest |
 | `core/net.ts` | The one thing that differs between hosts: how to make a single HTTP request (`fetch` or `GM_xmlhttpRequest`) |
 | `core/providers.ts` | Each provider's address and request shape, reading rate limits out of responses, and every retry rule |
-| `core/keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards |
+| `core/keep.ts` | The parts of a message that must not be translated: `\fragments\`, code in backticks, emoticons containing slashes, and the user's own never-translate words. Replaces them with placeholders and puts them back afterwards. Also `literalBackslashes`, which keeps Discord's markdown from eating the backslashes in the echo of what was typed |
 | `core/languages.ts` | The language list used by the dropdowns |
 | `core/locales.ts` | Interface text in 16 languages. Large, mostly data |
 | `core/chats.ts` | Which chats have auto-translation on. One rule for every host |
-| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Settings written before the list existed are still read, which is what the standalone `web/` build and the tests hand over |
+| `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Also what a provider is called: in the list, in a sentence and over its key, which for the generic one are three different things. Settings written before the list existed are still read, which is what the standalone `web/` build and the tests hand over |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
 
-These twelve (`translate`, `host`, `bridge`, `net`, `providers`, `keep`,
-`languages`, `locales`, `log`, `version`, `learn`, `slots`) build on their own, with esbuild forbidding any import
-from outside this folder. That is what makes the browser version possible, and
-it is also what lets the tests run the real core without Discord.
+These thirteen (`translate`, `host`, `bridge`, `builds`, `net`, `providers`,
+`keep`, `languages`, `locales`, `log`, `version`, `learn`, `slots`) build on
+their own, with esbuild forbidding any import from outside this folder. That
+is what makes the browser version possible, and it is also what lets the tests
+run the real core without Discord.
 
 The folder is the boundary made visible: nothing in `core/` imports anything
 above it, and that is worth keeping true. `web/` has a `host.ts` of its own, so
@@ -61,14 +64,15 @@ inside `web/` a bare `./host` is that one and the core's is `../core/host`.
 | `vencord-host.ts` | Answers `core/host.ts` using Vencord: its settings store, its message store, the current user, toasts. Reads settings directly from `Settings.plugins["AI Translate"]` rather than through `settings.ts`, because the host has to be ready before the settings page loads |
 | `native.ts` | The desktop end, in Electron's main process: provider requests (renderer requests are blocked by CORS) and installing updates |
 | `settings.ts` | The settings page and its migrations |
-| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours. Also which channel a copy follows, and adopting the installed build's own channel when nothing has been chosen |
+| `updater.ts` | When to look for an update: two days, first check a minute after Discord starts, re-examined every six hours. Only a copy on a disk looks by itself; a userscript is updated by its manager and asks only when the button is pressed. Also which channel a copy follows, and adopting the installed build's own channel when nothing has been chosen |
 | `ui/modal.tsx` | The panel that opens on left-clicking the button |
 | `ui/Feedback.tsx` | The feedback form at the top of the settings page |
-| `ui/Providers.tsx` | The provider blocks: one to ask and up to four behind it, each with its provider, key, model and, for an OpenAI-compatible one, address. Drawn whole rather than as settings rows, because a row is named once for the whole plugin and that is why there could only ever be one key per provider |
+| `ui/Providers.tsx` | The provider blocks: one to ask and up to four behind it, each with its provider, key, model and, for an OpenAI-compatible one, address. Drawn whole rather than as settings rows, because a row is named once for the whole plugin and that is why there could only ever be one key per provider. The one backup the page always shows has no minus: it is switched off with None, and `canRemove` in `core/slots.ts` is the rule |
 | `ui/ModelPicker.tsx` | The model dropdown, one per slot. Asks the provider when the key is finished rather than while it is typed, and the same answer says both which models the key can reach and whether the key was taken at all |
 | `ui/Logs.tsx` | The Logs button and the panel behind it: the log as text, with Copy, Save .txt and Clear |
 | `ui/LearnPanel.tsx` | The Corrections button under the AI Learn switch, and the panel behind it: what was written, what a native speaker would have written, and why. Hidden while AI Learn is off |
-| `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string |
+| `ui/KeepHelp.tsx`, `ui/SectionTitle.tsx`, `ui/UpdatePanel.tsx` | Smaller settings-page pieces. `SectionTitle` is a factory: one title per settings section, named by its string. `UpdatePanel` is the Check for updates button, and in a userscript it hands the new script to the userscript manager instead of installing anything |
+| `ui/ModalHeadings.ts` | Vencord draws "Authors" and "Settings" over every plugin's settings in English and cannot translate them. This puts the two words into the plugin's language after they are drawn, only inside this plugin's window and only where a heading holds nothing else. Called from the row of links in `ui/Feedback.tsx`, the one part of that window that is the plugin's own and is drawn again when the language changes |
 | `styles.css` | Styling. Discord resets list styles, so bullets are set on `li` here |
 
 Everything the settings page and the panel are built from sits in `ui/`. It is
@@ -87,7 +91,21 @@ over from the older name `AiTranslate`.
 with Vencord's own `pnpm buildWeb` and publishes it as `ai-translate.user.js`:
 that is Vencord with the whole plugin inside, `index.tsx`, the settings page and
 AI Learn included, so a browser copy has everything a desktop one has, drawn by
-Vencord's own settings page. Nothing about it needs separate care.
+Vencord's own settings page.
+
+One thing does differ: it has no main process, so it cannot update itself. Its
+userscript manager does, from the `@updateURL` and `@downloadURL` that
+`build/github.sh` writes into the header, and the `@version` that Vencord makes
+of its own version and the time of the build, which is what grows with every
+build and makes a manager offer the update. The Check for updates button in a
+userscript only asks `core/builds.ts` whether the build it runs is still the
+newest and hands the new script to the manager, by opening its `.user.js`
+address from the click. It asks nothing by itself: the manager would raise a
+question about the new address at a moment nobody chose. The header carries no
+`@connect`, on purpose: how a manager treats the addresses it does not list once
+there is one cannot be tried from a cloud session, and every provider request
+depends on the answer. The manager asks about each new address the first time,
+as it always has.
 
 `web/` is something else: a standalone build with no Vencord at all, which
 nothing publishes. `build/github.sh` never runs `web/build.mjs`, and neither do
@@ -137,6 +155,7 @@ printed before, line for line.
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Each run is a request of its own: the plugin's cache of answers is emptied before every one. Until 7 November it was not, so a count older than that, in a comment or a commit message, is one answer counted several times. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
+| `test/interface.mjs` | 167 checks on what a person sees, as far as Discord is not needed: every string present in all sixteen languages and no other, Logs and the two Vencord headings translated, the names a provider goes by, when the minus shows, the echo of what was typed against Discord's own escape rule, the two headings in a page shaped like Vencord's, and a userscript asking whether it is the newest, built with the same two lines the robot rewrites in `core/bridge.ts` |
 | `test/defaults.mjs` | 33 checks that `web/storage.ts` still agrees with `settings.ts`. The browser build writes its defaults out by hand, because importing the settings page would drag Vencord into the one build whose point is not having any, and nothing else notices when the two drift: a setting missing there is simply undefined, which reads as off. It caught AI Explain staying on in `web/` after it was switched off on the page. That build ships to nobody, but the check costs nothing and keeps it honest should it ever ship. A setting the browser does without has to be named in `DESKTOP_ONLY`, with the reason |
 | `test/log.mjs` | 23 checks on what reaches the log and what must never: a key quoted back by a provider is masked, a failure never shows a toast with nothing in it, and a request's token cost is written down |
 | `test/measure.mjs` | Tokens per request and the plugin's own time with the network taken out |
@@ -236,6 +255,7 @@ ran", which otherwise look identical.
 node test/prompts.mjs      # 200 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
+node test/interface.mjs    # 167 checks on strings, provider names, the echo, the headings, browser updating; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment
