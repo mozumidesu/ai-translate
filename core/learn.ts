@@ -15,9 +15,17 @@ import { config, set } from "./host";
 const ENOUGH_WORDS = 4;
 
 /** What a word is, for counting and for comparing: letters and digits. */
-const WORDS = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+const WORDS = /[\p{L}\p{N}][\p{L}\p{N}'\u2019\u2010\u2011-]*/gu;
 
 export const wordsOf = (text: string) => text.match(WORDS) ?? [];
+
+/**
+ * The words as they are compared. "i\u2019ll" is "i'll", Ukrainian "м\u02bcята" is
+ * "м'ята", and U+2011 is the keyboard's hyphen: a model's typography is never a
+ * correction of the person's.
+ */
+const compared = (text: string) => wordsOf(text.toLowerCase())
+    .map(word => word.replace(/[\u2019\u02bc]/g, "'").replace(/[\u2010\u2011]/g, "-"));
 
 /**
  * Whether this looks like the writer having a go at the target language
@@ -96,8 +104,8 @@ export interface Part {
  * as unmoved even when a word is added in the middle.
  */
 export function changedWords(before: string, after: string): Part[] {
-    const a = wordsOf(before.toLowerCase());
-    const b = wordsOf(after.toLowerCase());
+    const a = compared(before);
+    const b = compared(after);
     const shown = after.match(WORDS) ?? [];
 
     // Longest common subsequence, by length only: the table is small because a
@@ -127,4 +135,4 @@ export function changedWords(before: string, after: string): Part[] {
 
 /** Nothing to show when the correction is the message again. */
 export const sameMessage = (before: string, after: string) =>
-    wordsOf(before.toLowerCase()).join(" ") === wordsOf(after.toLowerCase()).join(" ");
+    compared(before).join(" ") === compared(after).join(" ");

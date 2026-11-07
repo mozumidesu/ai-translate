@@ -547,6 +547,16 @@ learn("a hyphen no keyboard has is no correction",
         await translated("correct", "it is a well-known place", "it is a well\u2011known place")).native),
     true);
 
+// The same holds when the model's typography reaches the comparison itself:
+// "i\u2019ll" for "i'll" is how iPhones type, and Ukrainian writes its apostrophe
+// three ways. None of them is a mistake the person made.
+learn("an apostrophe typed another way is no correction", sameMessage("i'll be there soon", "i\u2019ll be there soon"), true);
+learn("nor is the Ukrainian one", sameMessage("я люблю м'ятний чай", "я люблю м\u02bcятний чай"), true);
+learn("nor a hyphen that never went through the answer's tidying", sameMessage("какой-то фильм", "какой\u2011то фильм"), true);
+learn("while a word that did change is still the one marked",
+    changedWords("i'll went there", "i\u2019ll go there").map(p => (p.changed ? "*" : "") + p.text),
+    ["i\u2019ll", "*go", "there"]);
+
 // --- the providers, in order
 
 const shaped = () => readSlots().map(s => [s.provider, keyOf(s), modelOf(s), isReady(s)]);

@@ -16,6 +16,9 @@ when `release` moves.
   searching a chat for "какая-то" missed it, and AI Learn took it for a
   correction of a word that was already right. A dash you typed yourself,
   long or short, stays as you typed it.
+- **AI Learn no longer takes typography for a correction.** A model giving
+  back "i’ll" for your "i'll", or "мʼята" for your "м'ята", has given back the
+  same word, and nothing is shown for it.
 
 ## 0.2.0a
 
