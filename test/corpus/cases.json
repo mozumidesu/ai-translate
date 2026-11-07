@@ -90,6 +90,30 @@
     ]
   },
   {
+    "id": "a-meal-is-not-made-rice",
+    "why": "「ごはん」 is a meal as often as it is rice. The rice rule says an object is never folded into the verb, and obeyed past the point where a conversation is about rice it would feed somebody rice they never mentioned",
+    "kind": "received",
+    "to": "Russian",
+    "text": "ごはんを食べに行こう",
+    "must": [],
+    "mustNot": [
+      "рис"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-meal-is-not-made-rice-in-english",
+    "why": "the same the other way round, into English",
+    "kind": "received",
+    "to": "English",
+    "text": "ごはんを食べに行こう",
+    "must": [],
+    "mustNot": [
+      "rice"
+    ],
+    "group": "reverse"
+  },
+  {
     "id": "explain-can-see-the-message",
     "why": "AI Explain answered that the text of the message was not provided",
     "kind": "explain",
