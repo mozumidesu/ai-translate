@@ -225,6 +225,11 @@ for (const [name, phrase] of CONDITIONAL) {
 }
 check("Vietnamese negation frame", FULL_IN, "có … đâu");
 absent("Vietnamese negation frame: not with a message in English", IN, "có … đâu");
+// "Some kind of queen?" came back as "Какой-то королевой?", 3 runs out of 10:
+// a case taken from a verb across the question mark.
+check("a fragment takes no case from the sentence beside it", FULL_IN, "grammar does not reach across it");
+absent("a fragment's case: not into a language without cases", FULL_OUT, "grammar does not reach across it");
+absent("a fragment's case: not with a message of one sentence", IN, "grammar does not reach across it");
 
 // The part of the prompt that does not depend on the message comes first and
 // is the same for every message, so a provider's cache can keep it.

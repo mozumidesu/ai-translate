@@ -19,6 +19,9 @@ when `release` moves.
 - **AI Learn no longer takes typography for a correction.** A model giving
   back "i’ll" for your "i'll", or "мʼята" for your "м'ята", has given back the
   same word, and nothing is shown for it.
+- **A short question between two sentences keeps its own case** in Russian,
+  Ukrainian and Belarusian: "Who's depicted there? Some kind of queen?" comes
+  out as "Какая-то королева?", not in the case a verb beside it would give.
 
 ## 0.2.0a
 

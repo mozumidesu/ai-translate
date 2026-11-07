@@ -356,6 +356,8 @@ interface Involved {
     vietnamese: boolean;
     /** A language where the words for "I" and "you" depend on who is talking. */
     address: boolean;
+    /** Into a language that puts its nouns in cases: Russian, or the two whose rules are the same. */
+    declines: boolean;
 }
 
 function involved(target: string, text: string): Involved {
@@ -367,7 +369,8 @@ function involved(target: string, text: string): Involved {
         arabic: isLanguage(target, "arabic") || /\p{Script=Arabic}/u.test(written),
         vietnamese,
         address: vietnamese || isLanguage(target, "korean", "japanese")
-            || /[\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(written)
+            || /[\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(written),
+        declines: isLanguage(target, "russian", "ukrainian", "belarusian")
     };
 }
 
@@ -386,6 +389,16 @@ const DRAWN_OUT = /(\p{L})\1{2,}|(?<!\p{L})(\p{L})\2+(?!\p{L})/iu;
 
 /** The short app names SHORT_NAMES_RULE is about, and their like. */
 const SHORT_NAME = /(?<![\p{L}\p{N}])(?:tik|ig|insta|fb|tw|twt|yt|sc|snap|dc|tg|vk|wa)(?![\p{L}\p{N}])/iu;
+
+// "Some kind of queen?" came back as "Какой-то королевой?" 3 runs out of 10, and with this in no
+// run of 10. It has no example on purpose: one put its masculine "Какой-то" onto the queen.
+const FRAGMENT_CASE_RULE =
+    "A question mark ends a sentence, and grammar does not reach across it. A fragment with no verb of its own "
+    + "takes the case of the question word it answers, or the nominative when it answers none, and never a case "
+    + "that a verb in the sentence before or after it would give.";
+
+/** More than one sentence or line: a fragment needs a sentence beside it to borrow from. */
+const SEVERAL_SENTENCES = /[.?!…？！。]\s+\S|\n\s*\S/u;
 
 /** Only with a message in or into Arabic. */
 const ARABIC_COURTESY =
@@ -411,6 +424,7 @@ function messageRules(kind: Kind, text: string, has: Involved) {
             : "",
         SHORT_NAME.test(plain) ? SHORT_NAMES_RULE : "",
         has.address ? ADDRESS_RULE : "",
+        has.declines && SEVERAL_SENTENCES.test(plain) ? FRAGMENT_CASE_RULE : "",
         kind === "received" && has.vietnamese ? VIETNAMESE_NEGATION : "",
         has.arabic ? ARABIC_COURTESY : ""
     ].filter(Boolean);
