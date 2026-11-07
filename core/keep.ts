@@ -255,6 +255,34 @@ function findWords(text: string, words: string[], taken: Span[]): Span[] {
     return spans;
 }
 
+/** A backslash, and the mark after it when there is one: what Discord reads as an escape. */
+const BACKSLASH = /\\([!-/:-@[-`{-~])?/g;
+
+/**
+ * What somebody typed, ready to be drawn through Discord's markdown without
+ * losing a backslash. Discord reads a backslash before a mark, or before any
+ * letter outside A to Z, as an escape and drops it, so \WoW\, came back as
+ * \WoW, with the closing one gone. Every backslash outside code is shown as
+ * it was typed, and the mark after it with it, so \*this\* is not drawn in
+ * italics either. A < is left alone: a mention after a backslash would
+ * otherwise be shown as its number. Code is left alone as well, because
+ * Discord already shows a backslash in code as it is.
+ */
+export function literalBackslashes(text: string) {
+    const outside = (part: string) => part.replace(BACKSLASH, (_, mark?: string) =>
+        mark === undefined ? "\\\\" : mark === "<" ? "\\\\<" : "\\\\\\" + mark);
+
+    let shown = "";
+    let at = 0;
+
+    for (const code of text.matchAll(CODE)) {
+        shown += outside(text.slice(at, code.index)) + code[0];
+        at = code.index! + code[0].length;
+    }
+
+    return shown + outside(text.slice(at));
+}
+
 /**
  * The kept parts of a message. `markers` is for the writer's own messages,
  * where backslashes fence text off; `words` are the glossary's never-translate
