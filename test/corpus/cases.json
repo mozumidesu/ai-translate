@@ -145,7 +145,7 @@
   },
   {
     "id": "a-question-ends-where-it-ends",
-    "why": "\"Some kind of queen?\" came back as \"Какой-то королевой?\", the next sentence's verb pulled through the question mark",
+    "why": "\"Some kind of queen?\" came back as \"Какой-то королевой?\", the next sentence's verb pulled through the question mark. \"Какой-то королева?\" fails it too: the case is right and the gender is not",
     "kind": "received",
     "to": "Russian",
     "text": "Who's depicted there? Some kind of queen? Looks really beautiful.",
@@ -154,8 +154,21 @@
     ],
     "mustNot": [
       "королевой",
-      "королеву"
+      "королеву",
+      "какой-то королева"
     ]
+  },
+  {
+    "id": "a-fragment-keeps-the-case-it-was-asked-in",
+    "why": "the other side of \"Some kind of queen?\": a fragment does take its case from the question it answers, and \"Кого?\" asks for the accusative. A rule that only said fragments stand alone would turn \"Сестру?\" into \"Сестра?\". Not asked with \"Who did you call?\": the model writes \"Кого ты звонил\" there 9 runs out of 10, which would test the verb rather than the fragment",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who are you waiting for? Your sister? That's sweet.",
+    "must": [
+      "сестру"
+    ],
+    "mustNot": [],
+    "group": "reverse"
   },
   {
     "id": "no-question-mark-is-added",
