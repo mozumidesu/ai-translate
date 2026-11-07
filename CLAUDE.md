@@ -304,11 +304,13 @@ for both, and `1.0.0` is where the letter goes away and the beta ends. The
 robot publishes a new build whenever Vencord changes too, and those are not new
 versions of the plugin, which is why no build ever touches this.
 
-`main` is the working branch. `release` is what users get. The robot in
-`.github/workflows/build.yml` fetches `build/github.sh` **from `release`** every
-hour, builds Vencord with the plugin inside, and publishes the result on
-`builds.zolatau.com`; installed copies pick it up on their next check. Moving
-`release` is a deliberate act, never a side effect of a commit.
+`main` is the working branch, and it is where work is committed and pushed, in a
+cloud session too: no `claude/...` branch of its own. `release` is what users
+get. The robot in `.github/workflows/build.yml` fetches `build/github.sh`
+**from `release`** every hour, builds Vencord with the plugin inside, and
+publishes the result on `builds.zolatau.com`; installed copies pick it up on
+their next check. Moving `release` is a deliberate act, never a side effect of
+a commit.
 
 The same run also makes a **GitHub release**, tagged `v` and the version, with
 the four files Discord loads and the userscript attached, and marked a
