@@ -150,6 +150,11 @@ provedor e cole sua chave, igual ao aplicativo. A chave fica com o gerenciador
 de userscripts, não com a página, e os pedidos saem por ele também. Para
 remover, apague o script no seu gerenciador.
 
+Seu gerenciador de userscripts procura uma versão nova no ritmo dele.
+**Verificar atualizações**, lá no fim das configurações do plugin, pergunta na
+hora e, se houver algo novo, abre o script no seu gerenciador: confirme lá e
+recarregue a página.
+
 ## Atualizações
 
 Você não precisa fazer nada. O AI Translate procura uma versão nova sozinho a

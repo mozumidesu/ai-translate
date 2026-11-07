@@ -146,6 +146,10 @@ dán khóa của bạn, giống như trong ứng dụng. Khóa do trình quản 
 giữ, không nằm ở trang web, và các yêu cầu cũng đi ra qua nó. Muốn bỏ thì xóa
 tập lệnh trong trình quản lý.
 
+Trình quản lý userscript tự tìm phiên bản mới theo lịch riêng của nó. **Kiểm tra
+cập nhật** ở cuối phần cài đặt của plugin sẽ hỏi ngay, và nếu có bản mới thì mở
+tập lệnh trong trình quản lý: hãy xác nhận ở đó rồi tải lại trang.
+
 ## Cập nhật
 
 Bạn không phải làm gì cả. Cứ 2 ngày AI Translate tự tìm bản mới, tải về trong

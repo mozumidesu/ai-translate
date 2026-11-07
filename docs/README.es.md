@@ -150,6 +150,11 @@ y pega tu clave, igual que en la aplicación. La clave la guarda el gestor de
 userscripts, no la página, y las peticiones salen también por él. Para quitarlo,
 borra el script en tu gestor.
 
+Tu gestor de userscripts busca una versión nueva según su propio calendario.
+**Buscar actualizaciones**, al final de los ajustes del plugin, lo pregunta al
+momento y, si hay algo nuevo, abre el script en tu gestor: confírmalo allí y
+recarga la página.
+
 ## Actualizaciones
 
 No tienes que hacer nada. AI Translate busca una versión nueva por su cuenta

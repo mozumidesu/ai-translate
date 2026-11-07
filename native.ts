@@ -13,6 +13,7 @@ import { IpcMainInvokeEvent } from "electron";
 import { readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 
+import { channelRoot } from "./core/builds";
 import { fetchNet } from "./core/net";
 import { listModels, postFeedback, sendChat } from "./core/providers";
 
@@ -45,17 +46,6 @@ export async function sendAiTranslateFeedback(_: IpcMainInvokeEvent, payload: st
 // made by the build robot on GitHub (build/github.sh) whenever Vencord or a
 // release of the plugin changes. Updating is swapping those files for newer
 // ones; nothing is ever built on the user's computer.
-
-/** Where the build robot publishes. */
-const BUILDS = "https://builds.zolatau.com";
-
-/**
- * Released builds are handed out at the root; testing builds, which follow the
- * plugin's main branch, from a folder of their own. Anything that is not
- * "testing" is the released channel, so a settings value this version does not
- * know cannot send a copy somewhere that is not there.
- */
-const channelRoot = (channel?: string) => channel === "testing" ? `${BUILDS}/testing` : BUILDS;
 
 /** The files Discord loads, named as Vencord's own updater names them. */
 const BUILD_FILES = ["patcher.js", "preload.js", "renderer.js", "renderer.css"];

@@ -150,6 +150,10 @@ gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtarı sayfa 
 userscript yöneticisi tutar, istekler de onun üzerinden gider. Kaldırmak için
 betiği yöneticiden silin.
 
+Userscript yöneticiniz yeni sürümü kendi takvimine göre arar. Eklenti
+ayarlarının altındaki **Güncellemeleri denetle** hemen sorar ve yeni bir şey
+varsa betiği yöneticinizde açar: orada onaylayın ve sayfayı yenileyin.
+
 ## Güncellemeler
 
 Bir şey yapmanız gerekmez. AI Translate her 2 günde bir yeni sürümü kendisi

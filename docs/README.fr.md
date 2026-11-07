@@ -156,6 +156,11 @@ fournisseur et collez votre clé, comme dans l'application. La clé est gardée 
 le gestionnaire de userscripts, pas par la page, et les requêtes passent aussi
 par lui. Pour l'enlever, supprimez le script dans votre gestionnaire.
 
+Votre gestionnaire de userscripts cherche une nouvelle version à son rythme.
+**Rechercher les mises à jour**, en bas des paramètres du plugin, le demande
+tout de suite et, s'il y a du nouveau, ouvre le script dans votre gestionnaire :
+confirmez-le là-bas et rechargez la page.
+
 ## Mises à jour
 
 Vous n'avez rien à faire. AI Translate cherche une nouvelle version tout seul

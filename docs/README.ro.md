@@ -151,6 +151,10 @@ Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un fur
 userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
 șterge scriptul din manager.
 
+Managerul de userscripturi caută o versiune nouă în ritmul lui. **Verifică
+actualizările**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
+nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
+
 ## Actualizări
 
 Nu trebuie să faci nimic. AI Translate caută singur o versiune nouă o dată la 2

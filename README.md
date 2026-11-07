@@ -149,6 +149,11 @@ paste your key, the same as in the app. Your key is kept by the userscript
 manager, not by the page, and requests go out through the manager as well. To
 remove it, delete the script in your userscript manager.
 
+Your userscript manager looks for a new version on its own schedule. **Check for
+updates**, at the bottom of the plugin's settings, asks at once, and when there
+is something new it opens the new script in your manager: confirm it there and
+reload the page.
+
 ## Updates
 
 You do not need to do anything. AI Translate looks for a new version by itself

@@ -151,6 +151,11 @@ tempel kunci Anda, sama seperti di aplikasi. Kunci dipegang oleh pengelola
 userscript, bukan oleh halamannya, dan permintaan juga keluar lewat pengelola.
 Untuk melepasnya, hapus skripnya di pengelola Anda.
 
+Pengelola userscript Anda mencari versi baru sesuai jadwalnya sendiri. **Periksa
+pembaruan** di bagian bawah pengaturan plugin menanyakannya seketika dan, kalau
+ada yang baru, membuka skrip itu di pengelola Anda: konfirmasikan di sana lalu
+muat ulang halaman.
+
 ## Pembaruan
 
 Anda tidak perlu melakukan apa-apa. AI Translate mencari versi baru sendiri

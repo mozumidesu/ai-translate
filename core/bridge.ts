@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { newestBuild, userscriptUrl } from "./builds";
 import { pickNet } from "./net";
 import { listModels, postFeedback, sendChat } from "./providers";
 
@@ -72,6 +73,15 @@ function browserBuild() {
 /** Whether this copy is the desktop one, with a main process behind it. */
 export const onDesktop = () => desktop().makeAiTranslateRequest !== undefined;
 
+/**
+ * Whether this copy is a userscript the build robot made: the one kind of
+ * browser copy with something to be updated from. A copy somebody built
+ * themselves was never published, and an extension is kept by its store.
+ */
+export const isPublishedUserscript = () =>
+    typeof IS_USERSCRIPT !== "undefined" && IS_USERSCRIPT
+    && (BROWSER_CHANNEL === "release" || BROWSER_CHANNEL === "testing");
+
 export const Bridge = {
     makeAiTranslateRequest(payload: string) {
         const native = desktop().makeAiTranslateRequest;
@@ -92,19 +102,45 @@ export const Bridge = {
     },
 
     /**
-     * Updating is the host's business. A copy in a browser is kept current by
-     * the userscript manager or by the extension store, exactly as a copy
-     * built from source is kept current by whoever built it, so it answers the
-     * same way that one does and offers nothing.
+     * Updating is the host's business. A copy on a disk is updated by
+     * native.ts. A userscript is updated by its userscript manager, from the
+     * address in its own header and on the manager's own schedule, so all that
+     * can be done from here is to say whether it has happened yet. A copy
+     * built from source is kept current by whoever built it, and answers that
+     * it is one.
      */
-    checkAiTranslateUpdate(channel?: string) {
+    async checkAiTranslateUpdate(channel?: string) {
         const native = desktop().checkAiTranslateUpdate;
-        return native ? native(channel) : Promise.resolve({ state: "dev" as const, details: "" });
+        if (native) return native(channel);
+        if (!isPublishedUserscript()) return { state: "dev" as const, details: "" };
+
+        try {
+            const newest = await newestBuild(pickNet(), channel);
+
+            // The other channel is another script even when it carries the same build.
+            const elsewhere = (channel === "testing" ? "testing" : "release") !== BROWSER_CHANNEL;
+
+            return { state: newest !== BROWSER_BUILD || elsewhere ? "available" as const : "current" as const, details: "" };
+        } catch (e) {
+            return { state: "offline" as const, details: String(e) };
+        }
     },
 
+    /**
+     * For a userscript, handing the file to the userscript manager: it takes
+     * over a link to a .user.js and offers to install it, which for a script it
+     * already has is an update, and for the other channel's is a switch. It
+     * has to be called straight from a click, or a pop-up blocker stops the new
+     * tab, and then the page itself goes there: the click asked for it.
+     */
     installAiTranslateUpdate(channel?: string) {
         const native = desktop().installAiTranslateUpdate;
-        return native ? native(channel) : Promise.resolve({ ok: false, details: "not an installed copy" });
+        if (native) return native(channel);
+        if (!isPublishedUserscript()) return Promise.resolve({ ok: false, details: "not an installed copy" });
+
+        const url = userscriptUrl(channel);
+        if (!window.open(url, "_blank")) window.location.assign(url);
+        return Promise.resolve({ ok: true, details: "" });
     },
 
     /**
