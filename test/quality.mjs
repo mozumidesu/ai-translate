@@ -83,7 +83,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-quality-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext } from "./core/translate";\n`
+            + `export { aiTranslate, collectContext, forgetAnswers } from "./core/translate";\n`
             + `export { asText, clear } from "./core/log";\n`,
         resolveDir: PLUGIN,
         loader: "ts"
@@ -97,7 +97,7 @@ await esbuild.build({
 
 // No GM_xmlhttpRequest here, so core/net.ts reaches for fetch and the requests
 // are real. That is the whole point of this file.
-const { useHost, aiTranslate, collectContext, asText, clear } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, forgetAnswers, asText, clear } = await import(join(out, "core.mjs"));
 
 const cases = JSON.parse(await readFile(join(HERE, "corpus", "cases.json"), "utf-8"));
 const chosen = cases
@@ -232,6 +232,10 @@ for (const provider of Object.keys(PROVIDERS)) {
             // A free tier says how long to wait, so wait that rather than
             // counting its refusal as the plugin getting the answer wrong.
             for (let left = WAITS; ; left--) {
+                // The plugin keeps what it was told for a message it has seen,
+                // which is right in chat and wrong here: a run answered from
+                // that is the first run again, not a new one.
+                forgetAnswers();
                 clear();
                 try {
                     answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;

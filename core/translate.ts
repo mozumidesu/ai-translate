@@ -1122,6 +1122,15 @@ export interface TranslationResult {
 /** Repeated phrases are common in chat; caching them saves a round trip. */
 const cache = new Map<string, TranslationResult>();
 
+/**
+ * For test/quality.mjs: three runs of one message are three questions only if
+ * the second and third are not answered from here. Without this the corpus
+ * asked once and counted the same answer three times.
+ */
+export function forgetAnswers() {
+    cache.clear();
+}
+
 /** What a provider says went wrong, when it says anything a person can read. */
 function providerSaid(data: string) {
     try {
