@@ -458,7 +458,7 @@ check("the correction names the language being learnt", CORRECT, "learning Engli
 check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
 check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
 // Measured against Groq: "i'll be there in about ten minutes" came back as
-// "I'll", 2 runs out of 2, with a reason about capital letters, and naming
+// "I'll", with a reason about capital letters, and naming
 // two instances left a third behind.
 check("and neither is the way somebody types", CORRECT, "Capital letters and the apostrophes people leave out while typing are never corrections");
 check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");

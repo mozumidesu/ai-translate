@@ -134,7 +134,7 @@ printed before, line for line.
 | Path | Responsible for |
 |---|---|
 | `test/prompts.mjs` | 182 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed |
-| `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Costs tokens, so never part of the robot |
+| `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Each run is a request of its own: the plugin's cache of answers is emptied before every one. Until 7 November it was not, so a count older than that, in a comment or a commit message, is one answer counted several times. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list |
 | `test/defaults.mjs` | 33 checks that `web/storage.ts` still agrees with `settings.ts`. The browser build writes its defaults out by hand, because importing the settings page would drag Vencord into the one build whose point is not having any, and nothing else notices when the two drift: a setting missing there is simply undefined, which reads as off. It caught AI Explain staying on in `web/` after it was switched off on the page. That build ships to nobody, but the check costs nothing and keeps it honest should it ever ship. A setting the browser does without has to be named in `DESKTOP_ONLY`, with the reason |
@@ -191,15 +191,16 @@ When changing a rule:
   demonstrates just as well on a mundane sentence.
 - **Where a rule has to overcome a real ambiguity, name the fault rather than
   the answer.** A rule saying Japanese "ごはんを食べました" is "I ate rice", never
-  "I ate" was obeyed into English, 2 runs out of 2, and ignored into Russian, 5
-  out of 5. 「ごはん」 means both the rice and the meal, so the model had a
-  defensible reading of its own to hold on to, and a finished English answer was
-  not enough to move it; naming the fault, in whatever language is being
-  written, was. Seventeen of the forty rules hand over an English answer in the
-  same way, and eight of them were then measured the other way round,
-  `--group=reverse`: all eight held, 3 runs out of 3. So this is not a fault
-  the whole rule set has. It appears where the rule is arguing against a
-  reading the model can justify, not merely against a habit.
+  "I ate" was obeyed into English and ignored into Russian. 「ごはん」 means both
+  the rice and the meal, so the model had a defensible reading of its own to
+  hold on to, and a finished English answer was not enough to move it; naming
+  the fault, in whatever language is being written, was, though not every
+  time: 3 runs out of 3 into English, 2 out of 3 into Russian. Seventeen of the
+  forty rules hand over an English answer in the same way, and eight of them
+  were then measured the other way round, `--group=reverse`: all eight held, 3
+  runs out of 3. So this is not a fault the whole rule set has. It appears
+  where the rule is arguing against a reading the model can justify, not
+  merely against a habit.
 - Rules that apply to one language, or to something a message may not contain,
   are only sent when they can matter — see the gating in `core/translate.ts`. A
   rule

@@ -329,7 +329,7 @@
   },
   {
     "id": "style-is-not-a-mistake",
-    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one",
+    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one. Later a comma came back after \"now\", with a reason for it: nothing here is a mistake, so any reason at all means something was changed",
     "kind": "correct",
     "to": "English",
     "text": "ok im gonna head out now see ya tomorrow",
@@ -338,7 +338,8 @@
     ],
     "mustNot": [
       "i am going to",
-      "i'm"
+      "i'm",
+      "why:"
     ],
     "group": "learn"
   }
