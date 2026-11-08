@@ -593,6 +593,14 @@ learn("a letter from the other alphabet is no correction", sameMessage("я зв�
     await translated("correct", "я звонил маме вчера вечером", "я звонил мам\u0065 вчера вечером")).native), true);
 settings.sentLanguage = "English";
 
+// Turkish "İ" lowers to two characters, so lowering a sentence before splitting
+// it cut "İstanbul" in two: the marks moved one word along and the last read
+// "undefined", and a capital İ alone read as a correction.
+learn("a Turkish İ leaves the marks on the words that changed",
+    changedWords("İstanbul çok güzel", "İstanbul çok güzel bir şehir").map(p => (p.changed ? "*" : "") + p.text),
+    ["İstanbul", "çok", "güzel", "*bir", "*şehir"]);
+learn("and its capital alone is no correction", sameMessage("istanbul çok güzel bir şehir", "İstanbul çok güzel bir şehir"), true);
+
 // --- the providers, in order
 
 const shaped = () => readSlots().map(s => [s.provider, keyOf(s), modelOf(s), isReady(s)]);

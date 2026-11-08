@@ -22,10 +22,13 @@ export const wordsOf = (text: string) => text.match(WORDS) ?? [];
 /**
  * The words as they are compared. "i\u2019ll" is "i'll", Ukrainian "м\u02bcята" is
  * "м'ята", and U+2011 is the keyboard's hyphen: a model's typography is never a
- * correction of the person's.
+ * correction of the person's. Split first and lowered after: Turkish "İ" lowers
+ * to two characters, "i" and a dot, and lowered first it split "İstanbul" in
+ * two, so every mark after it moved one word along.
  */
-const compared = (text: string) => wordsOf(text.toLowerCase())
-    .map(word => word.replace(/[\u2019\u02bc]/g, "'").replace(/[\u2010\u2011]/g, "-"));
+const compared = (text: string) => wordsOf(text)
+    .map(word => word.toLowerCase().replace(/i\u0307/g, "i")
+        .replace(/[\u2019\u02bc]/g, "'").replace(/[\u2010\u2011]/g, "-"));
 
 /**
  * Whether this looks like the writer having a go at the target language

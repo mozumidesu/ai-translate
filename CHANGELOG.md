@@ -47,6 +47,9 @@ when `release` moves.
   word with one Latin letter that looks the same, or the other way round, is
   not found by searching for it. A Latin name with a Russian ending, as in
   "в Discordе", stays as it is.
+- **AI Learn marks the right words in Turkish.** In a correction with "İ" in
+  it, as in "İstanbul", every mark after it moved one word along and the last
+  one read "undefined", and a capital İ alone showed as a correction.
 - **AI Learn no longer takes typography for a correction.** A model giving
   back "i’ll" for your "i'll", or "мʼята" for your "м'ята", has given back the
   same word, and nothing is shown for it.
