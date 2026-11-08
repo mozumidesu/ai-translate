@@ -578,8 +578,32 @@ useHost({ ...host, appName: () => "Element" });
 check("the article follows the name", { name: "outgoing", text: await promptFor("sent", "тест артикля", "[ru] test") }, "inside an Element chat client.");
 useHost({ ...host, appName: () => "" });
 check("an empty name is no name", { name: "outgoing", text: await promptFor("sent", "пустое имя", "[ru] empty") }, "inside a Discord chat client.");
-useHost({ ...host, dialect: () => "telegram" });
+useHost({ ...host, dialect: () => "irc" });
 check("a dialect this version has not heard of is Discord's", { name: "outgoing", text: await promptFor("sent", "неизвестный диалект", "[ru] unknown") }, "Markdown that starts a line");
+
+// Telegram draws its formatting from marks around the text and a mention from
+// an @username, and has no raw ids at all. Links are named because one was
+// dropped whole, address and all, 1 run in 3 against Groq without it.
+useHost({ ...host, appName: () => "Telegram", dialect: () => "telegram" });
+
+const TG_OUT = { name: "outgoing in Telegram", text: await promptFor("sent", "привет как дела", "[ru] hi, how are you") };
+const TG_IN = { name: "incoming in Telegram", text: await promptFor("received", "hi how are you", "[en] привет, как дела") };
+const TELEGRAM_DRAWS = "emoji, :shortcodes:, mentions @username, URLs, inline `code` and ```code blocks```, bold **like this**, italic __like this__, strikethrough ~~like this~~, spoilers ||like this||, links [like this](https://example.com), and anything that is drawn rather than written — kaomoji and emoticons such as \\ ^^ / , \\o/ , :3 , TT , ¯\\_(ツ)_/¯ — which must be copied character for character, slashes and backslashes included";
+
+check("Telegram is named", TG_OUT, "You are a translation engine inside a Telegram chat client.");
+for (const where of [TG_OUT, TG_IN]) {
+    check("its marks and mentions are kept as typed", where, `- Keep these EXACTLY as they are: ${TELEGRAM_DRAWS}.`);
+    absent("and none of Discord's ids", where, "<@123>");
+    absent("nor markdown at the start of a line, which it does not draw", where, "Markdown that starts a line");
+}
+
+chat("a message that is only a username has nothing to translate", isNotWorthTranslating("@durov_helper_bot"), true);
+chat("nor one of two", isNotWorthTranslating("@durov @telegram"), true);
+chat("a username beside words still leaves the words", isNotWorthTranslating("@durov привет"), false);
+chat("Discord's raw ids mean nothing there", isNotWorthTranslating("<:x:123>"), false);
+chat("a backslash before a mark is no escape there, so it fences", fenced("\\*a*\\"), ["*a*"]);
+chat("and the echo is what was typed", literalBackslashes("\\*a*\\"), "\\*a*\\");
+chat("no line markdown, so nothing is fenced behind it", LINE_MARKS.map(behind), LINE_MARKS.map(() => 0));
 
 useHost(host);
 

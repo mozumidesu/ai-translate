@@ -16,17 +16,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export type DialectName = "discord" | "plain";
+export type DialectName = "discord" | "plain" | "telegram";
 
 export interface Dialect {
     name: DialectName;
-    /** Each form of raw id the chat writes for something it draws itself. Global, and taken out one after another. */
+    /** Each form of id the chat writes for something it draws itself: Discord's <@123>, Telegram's @username. Global, and taken out one after another. */
     ids: RegExp[];
     /** Those ids as words a model can use, where it is told who is who: a mention becomes the name `names` has for it. */
     readIds(text: string, names: Map<string, string>): string;
     /** What the prompts say the chat draws itself, each in the shape a model will meet it. */
     prompt: {
-        /** What is drawn from a raw id. */
+        /** What is drawn from an id. */
         ids: string[];
         /** What is drawn from marks around text. */
         marks: string[];
@@ -90,7 +90,34 @@ export const PLAIN: Dialect = {
     escapes: new Set<string>()
 };
 
-const ALL = new Map<string, Dialect>([["discord", DISCORD], ["plain", PLAIN]]);
+/**
+ * Telegram: no raw ids, a username drawn as a link, and formatting written as
+ * marks around the text, which is how a host hands a formatted message over.
+ */
+export const TELEGRAM: Dialect = {
+    name: "telegram",
+
+    // A letter, then letters, digits and underscores, up to 32 in all; never the middle of an address.
+    ids: [/(?<![\w@.])@[A-Za-z]\w{3,31}(?!\w)/g],
+
+    // An @username already reads as a name.
+    readIds: text => text,
+
+    prompt: {
+        ids: ["mentions @username"],
+        // Links are named: unnamed, one went missing whole, address and all, 1 run in 3.
+        marks: ["bold **like this**", "italic __like this__", "strikethrough ~~like this~~", "spoilers ||like this||", "links [like this](https://example.com)"],
+        lines: ""
+    },
+
+    lineMark: null,
+    lineStart: /^[ \t]*$/,
+
+    // Telegram shows a backslash as typed.
+    escapes: new Set<string>()
+};
+
+const ALL = new Map<string, Dialect>([["discord", DISCORD], ["plain", PLAIN], ["telegram", TELEGRAM]]);
 
 /** The dialect a host named: Discord's when it named none, or one this version has not heard of. */
 export const dialectNamed = (name?: string): Dialect => ALL.get(name ?? "") ?? DISCORD;

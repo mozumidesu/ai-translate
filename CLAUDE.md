@@ -51,7 +51,7 @@ effort level is set in `.claude/settings.json`.
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context and pacing. The biggest file and the one that matters most |
 | `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices, and optionally the chat's name, its dialect and the app's language. Answers empty, not throwing, until a host is installed |
-| `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes) and a plain dialect with none of that. The host chooses; Discord when it does not |
+| `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes), what Telegram draws (marks around text, @username), and a plain dialect with none of that. The host chooses; Discord when it does not |
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
 | `core/builds.ts` | Where the build robot publishes, and what each channel hands out now |
 | `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`); and a deadline that works without `AbortSignal.timeout` |
@@ -72,6 +72,10 @@ the tests run the real core without Discord. Keep it true. Nor does anything in
 knows reaches the core through the host, which is what lets it run in an app,
 and `test/bare.mjs` fails on a use. Inside `web/`, a bare
 `./host` is `web/`'s own host and the core's is `../core/host`.
+
+`core/` is also the Telegram Web userscript's, mozumidesu/ai-translate-telegram,
+which has it as a submodule pinned to a commit, uses it unchanged and speaks the
+`telegram` dialect. A change here reaches it only when that pin moves.
 
 ### The Vencord side
 
@@ -157,7 +161,7 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 238 checks; needs esbuild
+node test/prompts.mjs      # 252 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 167 checks on strings, provider names, the echo, the headings, browser updating; needs esbuild
