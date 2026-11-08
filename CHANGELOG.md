@@ -58,9 +58,9 @@ when `release` moves.
   out as "Какая-то королева?", not in the case a verb beside it would give.
 - **What you wrote, under a sent message, kept every backslash.** Discord drops
   a backslash in front of a mark, or of a letter outside A to Z, so
-  `\WoW\, ещё вечер` was shown as `\WoW, ещё вечер`, the closing backslash
-  gone, though it had been sent right. Both are shown now, and so are the marks
-  after them: an escaped star is not drawn as italics.
+  `\WoW\, todavía es temprano` was shown as `\WoW, todavía es temprano`, the
+  closing backslash gone, though it had been sent right. Both are shown now, and
+  so are the marks after them: an escaped star is not drawn as italics.
 
 ## 0.2.0a
 
