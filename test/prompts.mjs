@@ -225,6 +225,11 @@ for (const [name, phrase] of CONDITIONAL) {
 }
 check("Vietnamese negation frame", FULL_IN, "có … đâu");
 absent("Vietnamese negation frame: not with a message in English", IN, "có … đâu");
+// "Some kind of queen?" came back as "Какой-то королевой?", 3 runs out of 10:
+// a case taken from a verb across the question mark.
+check("a fragment takes no case from the sentence beside it", FULL_IN, "grammar does not reach across it");
+absent("a fragment's case: not into a language without cases", FULL_OUT, "grammar does not reach across it");
+absent("a fragment's case: not with a message of one sentence", IN, "grammar does not reach across it");
 
 // The part of the prompt that does not depend on the message comes first and
 // is the same for every message, so a provider's cache can keep it.
@@ -328,6 +333,60 @@ await behaves(
     "a hyphen inside a word is left where it is",
     translated("sent", "\u043f\u043e-\u043c\u043e\u0435\u043c\u0443, \u044d\u0442\u043e \u0432\u0430\u0436\u043d\u043e - \u043f\u0440\u0430\u0432\u0434\u0430", "[ru] it is a long-distance thing \u2014 really"),
     "it is a long-distance thing - really"
+);
+
+// gpt-oss writes "какая-то" with U+2011, which looks the same and is not found
+// by searching for it. The keyboard's own hyphen goes in its place.
+await behaves(
+    "a hyphen no keyboard has becomes the one it does",
+    translated("received", "who is that? some kind of queen?", "[en] кто это? какая\u2011то королева?"),
+    "кто это? какая-то королева?"
+);
+await behaves(
+    "in a message going out too",
+    translated("sent", "это известный факт", "[ru] it is a well\u2010known fact"),
+    "it is a well-known fact"
+);
+// Only inside a word: a dash the writer typed, long or short, stays theirs.
+await behaves(
+    "while the long dash the writer typed stays as it was",
+    translated("sent", "это важно \u2014 долгосрочный план", "[ru] it matters \u2014 a long\u2011term plan"),
+    "it matters \u2014 a long-term plan"
+);
+await behaves(
+    "and so does the short one",
+    translated("sent", "это важно \u2013 долгосрочно", "[ru] it matters \u2013 long\u2011term"),
+    "it matters \u2013 long-term"
+);
+await behaves(
+    "and a hyphen the writer typed that way is theirs to keep",
+    translated("sent", "по\u2011моему, это известный факт", "[ru] in my view, it is a well\u2011known fact"),
+    "in my view, it is a well\u2011known fact"
+);
+
+// gpt-oss once wrote "маме" with a Latin e: the same to the eye, another word
+// to a search. A letter with a twin in the answer's own alphabet goes over.
+await behaves(
+    "a Latin letter inside a Russian word becomes the Russian one",
+    translated("received", "and your mom?", "[en] а мам\u0065?"),
+    "а мам\u0435?"
+);
+await behaves(
+    "and a Russian letter inside an English word the English one",
+    translated("sent", "привет всем", "[ru] h\u0435llo everyone"),
+    "hello everyone"
+);
+// Only into the answer's alphabet and only in a word mostly written in it:
+// a Latin name with a Russian ending is how chat writes it.
+await behaves(
+    "while a Latin name with a Russian ending keeps it",
+    translated("received", "saw it on discord", "[en] видел в Discord\u0435"),
+    "видел в Discord\u0435"
+);
+await behaves(
+    "and a word the writer typed in two alphabets is theirs",
+    translated("sent", "го в Steam\u0435", "[ru] let's go to Steam\u0435"),
+    "let's go to Steam\u0435"
 );
 
 // --- names
@@ -458,7 +517,7 @@ check("the correction names the language being learnt", CORRECT, "learning Engli
 check("and asks for the version a native speaker would write", CORRECT, "a native speaker of English would have written");
 check("style is not a correction", CORRECT, "another way of saying the same thing is not a correction");
 // Measured against Groq: "i'll be there in about ten minutes" came back as
-// "I'll", 2 runs out of 2, with a reason about capital letters, and naming
+// "I'll", with a reason about capital letters, and naming
 // two instances left a third behind.
 check("and neither is the way somebody types", CORRECT, "Capital letters and the apostrophes people leave out while typing are never corrections");
 check("and a message already right comes back untouched", CORRECT, "answer with the message itself, word for word");
@@ -510,6 +569,37 @@ learn("a message of several lines keeps every one of them",
 learn("and a line that only looks like one is not the reason",
     splitCorrection("why: this is the message itself\nand this is its second line"),
     { native: "why: this is the message itself\nand this is its second line", why: "" });
+
+// "well-known" written with U+2011 is two words to the comparison, so a message
+// with nothing wrong in it came back as a correction of the one word it had right.
+learn("a hyphen no keyboard has is no correction",
+    sameMessage("it is a well-known place", splitCorrection(
+        await translated("correct", "it is a well-known place", "it is a well\u2011known place")).native),
+    true);
+
+// The same holds when the model's typography reaches the comparison itself:
+// "i\u2019ll" for "i'll" is how iPhones type, and Ukrainian writes its apostrophe
+// three ways. None of them is a mistake the person made.
+learn("an apostrophe typed another way is no correction", sameMessage("i'll be there soon", "i\u2019ll be there soon"), true);
+learn("nor is the Ukrainian one", sameMessage("я люблю м'ятний чай", "я люблю м\u02bcятний чай"), true);
+learn("nor a hyphen that never went through the answer's tidying", sameMessage("какой-то фильм", "какой\u2011то фильм"), true);
+learn("while a word that did change is still the one marked",
+    changedWords("i'll went there", "i\u2019ll go there").map(p => (p.changed ? "*" : "") + p.text),
+    ["i\u2019ll", "*go", "there"]);
+
+// The same stray letter in a correction is the model's, not the learner's.
+settings.sentLanguage = "Russian";
+learn("a letter from the other alphabet is no correction", sameMessage("я звонил маме вчера вечером", splitCorrection(
+    await translated("correct", "я звонил маме вчера вечером", "я звонил мам\u0065 вчера вечером")).native), true);
+settings.sentLanguage = "English";
+
+// Turkish "İ" lowers to two characters, so lowering a sentence before splitting
+// it cut "İstanbul" in two: the marks moved one word along and the last read
+// "undefined", and a capital İ alone read as a correction.
+learn("a Turkish İ leaves the marks on the words that changed",
+    changedWords("İstanbul çok güzel", "İstanbul çok güzel bir şehir").map(p => (p.changed ? "*" : "") + p.text),
+    ["İstanbul", "çok", "güzel", "*bir", "*şehir"]);
+learn("and its capital alone is no correction", sameMessage("istanbul çok güzel bir şehir", "İstanbul çok güzel bir şehir"), true);
 
 // --- the providers, in order
 

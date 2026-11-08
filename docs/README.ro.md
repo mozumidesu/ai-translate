@@ -80,7 +80,7 @@ vede niciodată cheia nimănui.
 | Google Gemini | da |
 | Z.ai GLM | da, și merge acolo unde celelalte două sunt blocate |
 | Anthropic Claude | nu |
-| Orice API compatibil cu OpenAI | depinde de furnizor |
+| Oricare compatibil cu OpenAI | depinde de furnizor |
 
 Poți pune un al doilea furnizor ca rezervă. Când primul e aglomerat, a rămas
 fără cotă sau refuză cererea, traducerea trece prin celălalt fără să te
@@ -150,6 +150,10 @@ Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un fur
 și lipește-ți cheia, la fel ca în aplicație. Cheia o ține managerul de
 userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
 șterge scriptul din manager.
+
+Managerul de userscripturi caută o versiune nouă în ritmul lui. **Verifică
+actualizările**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
+nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
 
 ## Actualizări
 

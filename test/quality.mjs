@@ -18,8 +18,12 @@
  *   node test/quality.mjs --pace=30        seconds between requests
  *   node test/quality.mjs --waits=0        do not wait out a refusal
  *
+ * A case says what the answer must and must not contain. A correction can
+ * also be "unchanged": judged the way the plugin judges it, by its words
+ * alone, because a comma or a capital it added is never shown to anybody.
+ *
  * Keys come from the environment and never from the repository:
- *   GROQ_API_KEY, or GROQ_API_ADDITIONAL, or GROQ_API_KEY_2
+ *   GROQ_API_KEY, or GROQ_API_KEY_ADDITIONAL, GROQ_API_ADDITIONAL or GROQ_API_KEY_2
  *   GEMINI_API_KEY
  */
 
@@ -83,8 +87,9 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-quality-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext } from "./core/translate";\n`
-            + `export { asText, clear } from "./core/log";\n`,
+            + `export { aiTranslate, collectContext, forgetAnswers } from "./core/translate";\n`
+            + `export { asText, clear } from "./core/log";\n`
+            + `export { sameMessage, splitCorrection } from "./core/learn";\n`,
         resolveDir: PLUGIN,
         loader: "ts"
     },
@@ -97,7 +102,8 @@ await esbuild.build({
 
 // No GM_xmlhttpRequest here, so core/net.ts reaches for fetch and the requests
 // are real. That is the whole point of this file.
-const { useHost, aiTranslate, collectContext, asText, clear } = await import(join(out, "core.mjs"));
+const { useHost, aiTranslate, collectContext, forgetAnswers, asText, clear, sameMessage, splitCorrection }
+    = await import(join(out, "core.mjs"));
 
 const cases = JSON.parse(await readFile(join(HERE, "corpus", "cases.json"), "utf-8"));
 const chosen = cases
@@ -173,9 +179,14 @@ function faults(kase, text) {
     const missing = (kase.must ?? []).filter(p => !said.includes(p.toLowerCase()));
     const present = (kase.mustNot ?? []).filter(p => said.includes(p.toLowerCase()));
 
+    // The plugin shows a correction only when a word changed, so that, and not
+    // a comma it added and then dropped unseen, is what fails the case.
+    const shown = kase.unchanged && !sameMessage(kase.text, splitCorrection(text).native);
+
     return [
         ...missing.map(p => `missing ${JSON.stringify(p)}`),
-        ...present.map(p => `says ${JSON.stringify(p)}`)
+        ...present.map(p => `says ${JSON.stringify(p)}`),
+        ...(shown ? ["a correction would be shown"] : [])
     ];
 }
 
@@ -193,6 +204,7 @@ if (DRY) {
         console.log(`  message  ${kase.text}`);
         if (kase.must?.length) console.log(`  must     ${kase.must.join(" · ")}`);
         if (kase.mustNot?.length) console.log(`  must not ${kase.mustNot.join(" · ")}`);
+        if (kase.unchanged) console.log("  unchanged, by its words");
     }
     console.log(`\n${chosen.filter(c => !c.skip).length} case(s) would be asked, nothing was.`);
     process.exit(0);
@@ -232,6 +244,10 @@ for (const provider of Object.keys(PROVIDERS)) {
             // A free tier says how long to wait, so wait that rather than
             // counting its refusal as the plugin getting the answer wrong.
             for (let left = WAITS; ; left--) {
+                // The plugin keeps what it was told for a message it has seen,
+                // which is right in chat and wrong here: a run answered from
+                // that is the first run again, not a new one.
+                forgetAnswers();
                 clear();
                 try {
                     answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;

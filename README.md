@@ -80,7 +80,7 @@ its own and never sees anyone else's key.
 | Google Gemini | yes |
 | Z.ai GLM | yes, and reachable where the other two are blocked |
 | Anthropic Claude | no |
-| Any OpenAI-compatible API | depends on the provider |
+| Any OpenAI-compatible | depends on the provider |
 
 A second provider can be named as a backup. When the first one is overloaded,
 out of quota or refuses the request, the translation goes through the other one
@@ -148,6 +148,11 @@ Then open **Settings → Vencord → Plugins → AI Translate**, choose a provid
 paste your key, the same as in the app. Your key is kept by the userscript
 manager, not by the page, and requests go out through the manager as well. To
 remove it, delete the script in your userscript manager.
+
+Your userscript manager looks for a new version on its own schedule. **Check for
+updates**, at the bottom of the plugin's settings, asks at once, and when there
+is something new it opens the new script in your manager: confirm it there and
+reload the page.
 
 ## Updates
 

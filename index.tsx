@@ -23,7 +23,7 @@ import { Message } from "@vencord/discord-types";
 import { ChannelStore, Menu, Parser, useEffect, useState, UserStore } from "@webpack/common";
 
 import { SettingsHeader } from "./ui/Feedback";
-import { keepPieces } from "./core/keep";
+import { keepPieces, literalBackslashes } from "./core/keep";
 import { LANGUAGES } from "./core/languages";
 import { currentLocale, shapeLanguageName, t } from "./core/locales";
 import { openAiTranslateModal } from "./ui/modal";
@@ -144,7 +144,9 @@ function rememberCorrection(sent: string, fixed: Fixed) {
  *
  * What comes back here is also the raw text Discord hands over, where an
  * @name has already become <@1474833983115231355>. The echo goes through
- * Parser for that reason, the same way the translation above it does.
+ * Parser for that reason, the same way the translation above it does. Parser
+ * drops a backslash in front of a mark, so those are put back first: the
+ * echo is what was typed, \markers\ included.
  */
 function asTyped(original: string) {
     let quoting = false;
@@ -225,7 +227,7 @@ function TranslationAccessory({ message }: { message: Message; }) {
                             {!!corrected.why && <span className={cl("note")}>{corrected.why}</span>}
                         </>
                         : <>{t("message.fine")}</>
-                    : <>{t("message.youWrote")} {Parser.parse(asTyped(original!))}</>}
+                    : <>{t("message.youWrote")} {Parser.parse(literalBackslashes(asTyped(original!)))}</>}
         </span>
     );
 }

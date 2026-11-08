@@ -55,7 +55,7 @@ API 密钥由你自己提供，并且一直是你的。插件没有自己的服�
 | Google Gemini | 有 |
 | Z.ai GLM | 有，而且在前两家被挡住的地方也能用 |
 | Anthropic Claude | 无 |
-| 任何兼容 OpenAI 的 API | 取决于提供商 |
+| 任何兼容 OpenAI 的服务 | 取决于提供商 |
 
 可以指定第二家作为备用。当第一家繁忙、额度用尽或拒绝请求时，翻译会悄悄走另一家，不来打扰你。
 
@@ -92,6 +92,8 @@ AI Translate 已经是开启状态。打开 **设置 → Vencord → Plugins →
 装上 [Tampermonkey](https://www.tampermonkey.net/) 或者别的用户脚本管理器，然后打开 [ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js)。管理器会询问是否安装，之后便从那里自动保持更新。打开 discord.com 并刷新页面。如果装了 Vencord Web 扩展，请把它关掉：这个脚本里已经有 Vencord，同一个标签页里两个会打架。
 
 然后打开 **设置 → Vencord → Plugins → AI Translate**，像在应用里一样选择一个提供商并粘贴你的密钥。密钥由用户脚本管理器保管，不在页面里，请求也是经它发出的。想撤掉的话，在管理器里删掉这个脚本。
+
+用户脚本管理器会按它自己的时间表查找新版本。插件设置最下面的 **检查更新** 会立刻去问，如果有新版本，就在管理器里打开脚本：在那里确认，然后刷新页面。
 
 ## 更新
 

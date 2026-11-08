@@ -8,7 +8,9 @@
  *
  * The defaults below mirror settings.ts, the Vencord settings page. They are
  * written out rather than imported because that file is the page itself,
- * Vencord and all; a test compares the two and fails if they drift apart.
+ * Vencord and all, and importing it would drag Vencord into the one build
+ * whose point is not having any. test/defaults.mjs compares the two and fails
+ * when they drift, naming what is missing or what no longer matches.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -22,6 +24,7 @@ const KEY = "aiTranslateSettings";
 
 export const DEFAULTS: Config = {
     locale: "auto",
+    providerSlots: "",
     provider: "groq",
     geminiApiKey: "",
     groqApiKey: "",
@@ -41,7 +44,7 @@ export const DEFAULTS: Config = {
     enabledChannels: "",
     onError: "hold",
     gender: "unset",
-    explain: true,
+    explain: false,
     useContext: true,
     showOriginal: false,
     formality: "match",

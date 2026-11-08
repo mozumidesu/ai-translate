@@ -82,7 +82,7 @@ keinen eigenen Server und sieht nie den Schlüssel von jemand anderem.
 | Google Gemini | ja |
 | Z.ai GLM | ja, und erreichbar, wo die anderen beiden gesperrt sind |
 | Anthropic Claude | nein |
-| Jede OpenAI-kompatible API | hängt vom Anbieter ab |
+| Jeder OpenAI-kompatible Anbieter | hängt vom Anbieter ab |
 
 Ein zweiter Anbieter lässt sich als Reserve eintragen. Wenn der erste überlastet
 ist, sein Kontingent aufgebraucht hat oder die Anfrage ablehnt, läuft die
@@ -153,6 +153,11 @@ steckt schon Vencord, und zwei davon in einem Tab vertragen sich nicht.
 Anbieter und füge deinen Schlüssel ein, genauso wie in der App. Den Schlüssel
 hält der Userscript-Manager, nicht die Seite, und die Anfragen laufen ebenfalls
 über ihn. Zum Entfernen lösche das Skript im Userscript-Manager.
+
+Dein Userscript-Manager sucht nach seinem eigenen Zeitplan nach einer neuen
+Version. **Nach Updates suchen** unten in den Einstellungen des Plugins fragt
+sofort nach und öffnet, wenn es etwas Neues gibt, das Skript in deinem Manager:
+bestätige es dort und lade die Seite neu.
 
 ## Updates
 

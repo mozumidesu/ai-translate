@@ -84,7 +84,7 @@ pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
 | Google Gemini | oui |
 | Z.ai GLM | oui, et accessible là où les deux autres sont bloqués |
 | Anthropic Claude | non |
-| Toute API compatible OpenAI | selon le fournisseur |
+| Tout fournisseur compatible OpenAI | selon le fournisseur |
 
 Un deuxième fournisseur peut être désigné comme secours. Quand le premier est
 saturé, à court de quota ou refuse la requête, la traduction passe par l'autre
@@ -155,6 +155,11 @@ Ouvrez ensuite **Paramètres → Vencord → Plugins → AI Translate**, choisis
 fournisseur et collez votre clé, comme dans l'application. La clé est gardée par
 le gestionnaire de userscripts, pas par la page, et les requêtes passent aussi
 par lui. Pour l'enlever, supprimez le script dans votre gestionnaire.
+
+Votre gestionnaire de userscripts cherche une nouvelle version à son rythme.
+**Rechercher les mises à jour**, en bas des paramètres du plugin, le demande
+tout de suite et, s'il y a du nouveau, ouvre le script dans votre gestionnaire :
+confirmez-le là-bas et rechargez la page.
 
 ## Mises à jour
 

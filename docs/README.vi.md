@@ -77,7 +77,7 @@ và không bao giờ nhìn thấy khóa của ai.
 | Google Gemini | có |
 | Z.ai GLM | có, và dùng được ở nơi hai cái kia bị chặn |
 | Anthropic Claude | không |
-| Bất kỳ API tương thích OpenAI nào | tùy nhà cung cấp |
+| Bất kỳ nhà cung cấp nào tương thích OpenAI | tùy nhà cung cấp |
 
 Có thể chỉ định nhà cung cấp thứ hai làm dự phòng. Khi cái thứ nhất quá tải, hết
 hạn mức hoặc từ chối yêu cầu, bản dịch lặng lẽ đi qua cái còn lại mà không làm
@@ -145,6 +145,10 @@ Rồi mở **Cài đặt → Vencord → Plugins → AI Translate**, chọn mộ
 dán khóa của bạn, giống như trong ứng dụng. Khóa do trình quản lý userscript
 giữ, không nằm ở trang web, và các yêu cầu cũng đi ra qua nó. Muốn bỏ thì xóa
 tập lệnh trong trình quản lý.
+
+Trình quản lý userscript tự tìm phiên bản mới theo lịch riêng của nó. **Kiểm tra
+cập nhật** ở cuối phần cài đặt của plugin sẽ hỏi ngay, và nếu có bản mới thì mở
+tập lệnh trong trình quản lý: hãy xác nhận ở đó rồi tải lại trang.
 
 ## Cập nhật
 

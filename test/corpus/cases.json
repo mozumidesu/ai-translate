@@ -90,6 +90,30 @@
     ]
   },
   {
+    "id": "a-meal-is-not-made-rice",
+    "why": "「ごはん」 is a meal as often as it is rice. The rice rule says an object is never folded into the verb, and obeyed past the point where a conversation is about rice it would feed somebody rice they never mentioned",
+    "kind": "received",
+    "to": "Russian",
+    "text": "ごはんを食べに行こう",
+    "must": [],
+    "mustNot": [
+      "рис"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-meal-is-not-made-rice-in-english",
+    "why": "the same the other way round, into English",
+    "kind": "received",
+    "to": "English",
+    "text": "ごはんを食べに行こう",
+    "must": [],
+    "mustNot": [
+      "rice"
+    ],
+    "group": "reverse"
+  },
+  {
     "id": "explain-can-see-the-message",
     "why": "AI Explain answered that the text of the message was not provided",
     "kind": "explain",
@@ -121,7 +145,7 @@
   },
   {
     "id": "a-question-ends-where-it-ends",
-    "why": "\"Some kind of queen?\" came back as \"Какой-то королевой?\", the next sentence's verb pulled through the question mark",
+    "why": "\"Some kind of queen?\" came back as \"Какой-то королевой?\", the next sentence's verb pulled through the question mark. \"Какой-то королева?\" fails it too: the case is right and the gender is not",
     "kind": "received",
     "to": "Russian",
     "text": "Who's depicted there? Some kind of queen? Looks really beautiful.",
@@ -130,8 +154,21 @@
     ],
     "mustNot": [
       "королевой",
-      "королеву"
+      "королеву",
+      "какой-то королева"
     ]
+  },
+  {
+    "id": "a-fragment-keeps-the-case-it-was-asked-in",
+    "why": "the other side of \"Some kind of queen?\": a fragment does take its case from the question it answers, and \"Кого?\" asks for the accusative. A rule that only said fragments stand alone would turn \"Сестру?\" into \"Сестра?\". Not asked with \"Who did you call?\": the model writes \"Кого ты звонил\" there 9 runs out of 10, which would test the verb rather than the fragment",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who are you waiting for? Your sister? That's sweet.",
+    "must": [
+      "сестру"
+    ],
+    "mustNot": [],
+    "group": "reverse"
   },
   {
     "id": "no-question-mark-is-added",
@@ -322,14 +359,12 @@
     "must": [
       "ten minutes"
     ],
-    "mustNot": [
-      "why:"
-    ],
+    "unchanged": true,
     "group": "learn"
   },
   {
     "id": "style-is-not-a-mistake",
-    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one",
+    "why": "lower case and \"gonna\" came back as formal English with the apostrophes put in, which is a different writer rather than a corrected one. A comma after \"now\" comes back about half the time too, but the plugin compares words alone and drops that answer unseen; naming commas in the rule to stop it brought \"I'm\" back 9 runs out of 10",
     "kind": "correct",
     "to": "English",
     "text": "ok im gonna head out now see ya tomorrow",
@@ -340,6 +375,103 @@
       "i am going to",
       "i'm"
     ],
+    "unchanged": true,
     "group": "learn"
+  },
+  {
+    "id": "who-you-called-is-dative",
+    "why": "\"Who did you call yesterday? Your mom?\" came back as \"Кого ты звонил вчера?\" 9 runs out of 10, and the question alone 7 out of 10: звонить takes the dative, \"Кому ты звонил?\". It is this verb only. \"Call me tomorrow\" holds 10 of 10, and помочь and верить hold 10 of 10 in a question too. English \"call\" is also звать, whose \"Кого ты звал?\" is right, and the model joins that question word to the other verb. One verb is not worth a rule's tokens on every message into Russian, so this case stays to say whether a model ever stops doing it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who did you call yesterday?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "call-me-is-dative",
+    "why": "the same verb with no question word in front of it, to tell the verb's fault from the question's. \"Набери меня\" would be right too and fails this, so read a failure before counting it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Call me tomorrow.",
+    "must": [
+      "мне"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "help-is-dative",
+    "why": "another verb of the same kind: помочь takes the dative, \"помочь брату\", never \"помочь брата\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Can you help my brother with the move?",
+    "must": [
+      "брату"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "belief-is-dative",
+    "why": "верить takes the dative too: \"Ты ему веришь?\", never \"Ты его веришь?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Do you believe him?",
+    "must": [
+      "ему"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "a-greeting-is-dative",
+    "why": "передать привет takes the dative: \"Передай маме привет\", never \"маму\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Tell your mom I said hi.",
+    "must": [
+      "маме"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "who-you-helped-is-dative",
+    "why": "the question form of help-is-dative, to tell whether \"Кого ты звонил\" came from the question word: it did not, \"Кому ты помог?\" holds 10 of 10. Never \"Кого ты помог?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who did you help yesterday?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "who-you-believe-is-dative",
+    "why": "the same with верить: \"Кому ты веришь?\", never \"Кого ты веришь?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who do you believe?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "seeing-stays-accusative",
+    "why": "the other side of the dative cases: видеть takes the accusative, \"сестру\", so a rule about the dative read too widely would show up here as \"сестре\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Did you see my sister yesterday?",
+    "must": [
+      "сестру"
+    ],
+    "mustNot": [],
+    "group": "dative"
   }
 ]

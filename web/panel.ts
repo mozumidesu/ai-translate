@@ -14,6 +14,10 @@ import { isChannelEnabled, toggleChannel } from "../core/chats";
 import { config, set } from "../core/host";
 import { LANGUAGES } from "../core/languages";
 import { LOCALES, t } from "../core/locales";
+import {
+    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
+    readSlots, Slot, writeSlots
+} from "../core/slots";
 import { addStyle, ui } from "./toast";
 
 /** Which chat is open. The address bar says it, and says it reliably. */
@@ -26,9 +30,8 @@ type Option = { value: string; label: string; };
 type Field =
     | { kind: "select"; name: string; label: () => string; hint?: () => string; options: () => Option[]; }
     | { kind: "switch"; name: string; label: () => string; hint?: () => string; }
-    | { kind: "text" | "secret" | "area" | "model"; name: string; label: () => string; hint?: () => string; only?: () => boolean; };
-
-const providers = ["groq", "gemini", "glm", "anthropic", "openai"];
+    | { kind: "text" | "secret" | "area"; name: string; label: () => string; hint?: () => string; only?: () => boolean; }
+    | { kind: "slots"; name: string; label: () => string; hint?: () => string; };
 
 const FIELDS: Field[] = [
     {
@@ -37,24 +40,8 @@ const FIELDS: Field[] = [
         options: () => LOCALES.map(l => ({ value: l.value, label: l.value === "auto" ? t("locale.auto") : l.label }))
     },
     {
-        kind: "select", name: "provider",
-        label: () => t("provider.name"), hint: () => t("provider.desc"),
-        options: () => providers.map(p => ({ value: p, label: t(`provider.${p}`) }))
-    },
-    {
-        kind: "secret", name: "key",
-        label: () => t("apiKey.name"), hint: () => t("apiKey.desc")
-    },
-    { kind: "model", name: "model", label: () => t("model.name"), hint: () => t("model.desc") },
-    {
-        kind: "text", name: "baseUrl",
-        label: () => t("baseUrl.name"), hint: () => t("baseUrl.desc"),
-        only: () => config().provider === "openai"
-    },
-    {
-        kind: "select", name: "fallbackProvider",
-        label: () => t("fallback.name"), hint: () => t("fallback.desc"),
-        options: () => [{ value: "none", label: t("fallback.none") }, ...providers.map(p => ({ value: p, label: t(`provider.${p}`) }))]
+        kind: "slots", name: "providerSlots",
+        label: () => t("provider.name"), hint: () => t("provider.desc")
     },
     {
         kind: "select", name: "sentLanguage",
@@ -101,12 +88,6 @@ const FIELDS: Field[] = [
     { kind: "area", name: "extraInstructions", label: () => t("extra.name"), hint: () => t("extra.desc") }
 ];
 
-/** The key and the model are per provider, so their real names move with it. */
-const realName = (name: string) => {
-    if (name === "key") return `${config().provider}ApiKey`;
-    if (name === "model") return `${config().provider}Model`;
-    return name;
-};
 
 const CSS = `
 .sheet {
@@ -160,6 +141,32 @@ const CSS = `
 .field textarea { min-height: 5rem; resize: vertical; }
 .field label input[type="checkbox"] { width: auto; margin: 0 .5rem 0 0; vertical-align: -1px; accent-color: #8B2BFF; }
 .field label:has(input[type="checkbox"]) { cursor: pointer; }
+
+.slot + .slot { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid rgba(183, 173, 220, .16); }
+.slot label { margin-top: .55rem; }
+.slot > label:first-child { margin-top: 0; }
+.slot .hint.bad { color: #FF6B81; margin: .3rem 0 0; }
+.slot .hint.bad:empty { display: none; }
+
+.keyrow { display: flex; gap: .45rem; align-items: center; }
+.keyrow input { flex: 1; min-width: 0; }
+
+.signs { display: flex; gap: .45rem; margin-top: .55rem; }
+
+.sign {
+    all: unset;
+    cursor: pointer;
+    min-width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    border: 1px solid rgba(183, 173, 220, .2);
+    background: #1A1B55;
+    color: #B7ADDC;
+    font-size: .95rem;
+}
+.sign:hover { color: #fff; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid #8B2BFF; outline-offset: 1px; }
 
 .dock {
@@ -195,7 +202,7 @@ let styled = false;
 function row(field: Field): HTMLElement | undefined {
     if ("only" in field && field.only && !field.only()) return undefined;
 
-    const name = realName(field.name);
+    const name = field.name;
     const value = config()[name];
 
     const box = document.createElement("div");
@@ -246,6 +253,11 @@ function row(field: Field): HTMLElement | undefined {
         return box;
     }
 
+    if (field.kind === "slots") {
+        box.append(slotList());
+        return box;
+    }
+
     if (field.kind === "area") {
         const area = document.createElement("textarea");
         area.value = String(value ?? "");
@@ -260,27 +272,203 @@ function row(field: Field): HTMLElement | undefined {
     input.spellcheck = false;
     input.onchange = () => set(name, input.value);
 
-    if (field.kind === "model") {
-        // Typed freely, with whatever the provider offers as suggestions:
-        // no loading state to get wrong, and an unlisted model still works.
-        const list = document.createElement("datalist");
-        list.id = "ai-translate-models";
-        input.setAttribute("list", list.id);
-        box.append(list);
-        void suggestModels(list);
-    }
-
     box.append(input);
     return box;
 }
 
-async function suggestModels(list: HTMLDataListElement) {
-    const provider = String(config().provider);
-    const apiKey = String(config()[`${provider}ApiKey`] ?? "");
+/** The eye beside a key, crossed through while the key is being shown. */
+function eye(shown: boolean) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "15");
+    svg.setAttribute("height", "15");
+
+    const open = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    open.setAttribute("fill", "currentColor");
+    open.setAttribute("d", "M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7Zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z");
+    svg.append(open);
+
+    if (shown) {
+        const slash = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        slash.setAttribute("stroke", "currentColor");
+        slash.setAttribute("stroke-width", "2");
+        slash.setAttribute("stroke-linecap", "round");
+        slash.setAttribute("d", "M4 4 20 20");
+        svg.append(slash);
+    }
+
+    return svg;
+}
+
+/**
+ * The providers, in order: one to ask and up to four behind it. Written whole
+ * rather than as fields, because a field is one name and one value and this is
+ * a list that grows and shrinks.
+ */
+function slotList() {
+    const list = document.createElement("div");
+
+    const draw = () => {
+        const slots = readSlots();
+        list.textContent = "";
+
+        const save = (next: Slot[]) => {
+            writeSlots(next);
+            draw();
+        };
+
+        const change = (at: number, make: (slot: Slot) => Slot) =>
+            save(slots.map((slot, i) => (i === at ? make(slot) : slot)));
+
+        slots.forEach((slot, at) => {
+            const first = at === 0;
+            const block = document.createElement("div");
+            block.className = "slot";
+
+            const heading = document.createElement("label");
+            heading.textContent = first ? t("provider.name")
+                : slots.length > 2 ? t("fallback.numbered", { number: at })
+                    : t("fallback.name");
+            block.append(heading);
+
+            const choose = document.createElement("select");
+            const options = [
+                ...(first ? [] : [{ value: NONE, label: t("fallback.none") }]),
+                ...PROVIDERS.map(id => ({ value: id, label: providerLabel(id, first) }))
+            ];
+
+            for (const option of options) {
+                const item = document.createElement("option");
+                item.value = option.value;
+                item.textContent = option.label;
+                choose.append(item);
+            }
+
+            choose.value = slot.provider;
+            choose.onchange = () => change(at, s => ({ ...s, provider: choose.value }));
+            block.append(choose);
+
+            if (slot.provider !== NONE) {
+                const keyLabel = document.createElement("label");
+                keyLabel.textContent = keyHeading(slot.provider);
+                block.append(keyLabel);
+
+                const row = document.createElement("div");
+                row.className = "keyrow";
+
+                const key = document.createElement("input");
+                key.type = "password";
+                key.value = keyOf(slot);
+                key.spellcheck = false;
+                // Committed when the field is left, which is also when the
+                // provider is asked whether it takes the key at all.
+                key.onchange = () => change(at, s => ({ ...s, keys: { ...s.keys, [s.provider]: key.value } }));
+
+                const show = document.createElement("button");
+                show.type = "button";
+                show.className = "sign";
+                show.title = t("apiKey.show");
+                show.append(eye(false));
+                show.onclick = () => {
+                    const hidden = key.type === "password";
+                    key.type = hidden ? "text" : "password";
+                    show.title = t(hidden ? "apiKey.hide" : "apiKey.show");
+                    show.textContent = "";
+                    show.append(eye(hidden));
+                };
+
+                row.append(key, show);
+                block.append(row);
+
+                const said = document.createElement("span");
+                said.className = "hint bad";
+                block.append(said);
+
+                const modelLabel = document.createElement("label");
+                modelLabel.textContent = t("model.name");
+                block.append(modelLabel);
+
+                const model = document.createElement("input");
+                model.type = "text";
+                model.value = modelOf(slot);
+                model.spellcheck = false;
+                model.onchange = () => change(at, s => ({ ...s, models: { ...s.models, [s.provider]: model.value } }));
+
+                // Typed freely, with whatever the provider offers as
+                // suggestions: no loading state to get wrong, and an unlisted
+                // model still works.
+                const suggestions = document.createElement("datalist");
+                suggestions.id = `ai-translate-models-${slot.id}`;
+                model.setAttribute("list", suggestions.id);
+                block.append(suggestions, model);
+
+                void offerModels(slot, suggestions, said);
+
+                if (slot.provider === "openai") {
+                    const urlLabel = document.createElement("label");
+                    urlLabel.textContent = t("baseUrl.name");
+                    block.append(urlLabel);
+
+                    const url = document.createElement("input");
+                    url.type = "text";
+                    url.value = baseUrlOf(slot);
+                    url.spellcheck = false;
+                    url.onchange = () => change(at, s =>
+                        ({ ...s, baseUrls: { ...s.baseUrls, [s.provider]: url.value } }));
+                    block.append(url);
+                }
+            }
+
+            const buttons = document.createElement("div");
+            buttons.className = "signs";
+
+            if (canRemove(slots.length, at)) {
+                const less = document.createElement("button");
+                less.type = "button";
+                less.className = "sign";
+                less.textContent = "\u2212";
+                less.title = t("fallback.remove");
+                less.onclick = () => save(slots.filter((_, i) => i !== at));
+                buttons.append(less);
+            }
+
+            if (at === slots.length - 1 && slots.length < MOST_SLOTS) {
+                const more = document.createElement("button");
+                more.type = "button";
+                more.className = "sign";
+                more.textContent = "+";
+                more.title = t("fallback.add");
+                more.onclick = () => save([...slots, emptySlot(NONE)]);
+                buttons.append(more);
+            }
+
+            if (buttons.childElementCount) block.append(buttons);
+            list.append(block);
+        });
+    };
+
+    draw();
+    return list;
+}
+
+/**
+ * The provider's own list of models, and its verdict on the key in the same
+ * answer. Only a refusal of the key is the key's fault: a timeout or a rate
+ * limit says nothing about it.
+ */
+async function offerModels(slot: Slot, list: HTMLDataListElement, said: HTMLElement) {
+    const apiKey = keyOf(slot);
     if (!apiKey) return;
 
     try {
-        const { models } = await Bridge.listAiModels(JSON.stringify({ provider, apiKey, baseUrl: config().baseUrl }));
+        const { status, models } = await Bridge.listAiModels(JSON.stringify({
+            provider: slot.provider, apiKey, baseUrl: baseUrlOf(slot)
+        }));
+
+        if (status === 401 || status === 403) {
+            said.textContent = t("apiKey.bad", { provider: providerName(slot.provider) });
+            return;
+        }
 
         for (const model of models) {
             const item = document.createElement("option");

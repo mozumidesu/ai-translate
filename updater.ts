@@ -5,6 +5,11 @@
  * inside) and puts it in place of the running one. It takes over at the next
  * restart, which the user is offered at once.
  *
+ * A userscript in a browser is updated by its userscript manager instead,
+ * from the address in the script's own header. What is here for it is only
+ * the answer to "is mine the newest", and the way to hand the manager the new
+ * one at once.
+ *
  * Reads the settings store directly; importing settings.ts would be circular.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -14,7 +19,7 @@ import { showNotification } from "@api/Notifications";
 import { Settings } from "@api/Settings";
 import { relaunch } from "@utils/native";
 
-import { Bridge } from "./core/bridge";
+import { Bridge, onDesktop } from "./core/bridge";
 import { t } from "./core/locales";
 
 /** How often a copy looks for a release on its own. */
@@ -90,8 +95,17 @@ export function announceUpdate() {
     });
 }
 
-/** Asks the build site only once two days have passed since the last answer. */
+/**
+ * Asks the build site only once two days have passed since the last answer.
+ *
+ * Only a copy on a disk looks by itself. A userscript is updated by its
+ * userscript manager, which looks on its own schedule; a request from here
+ * would only raise the manager's question about a new address, at some moment
+ * nobody chose. The button in the settings is where a browser copy asks.
+ */
 async function checkIfDue() {
+    if (!onDesktop()) return;
+
     const last = Number(store()?.lastUpdateCheck) || 0;
     if (Date.now() - last < CHECK_EVERY_MS) return;
 

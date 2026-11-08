@@ -79,7 +79,7 @@ yoktur ve kimsenin anahtarını görmez.
 | Google Gemini | var |
 | Z.ai GLM | var, ve diğer ikisinin engellendiği yerlerden erişilebilir |
 | Anthropic Claude | yok |
-| OpenAI uyumlu her API | sağlayıcıya bağlı |
+| OpenAI uyumlu herhangi biri | sağlayıcıya bağlı |
 
 İkinci bir sağlayıcı yedek olarak tanımlanabilir. İlki yoğun olduğunda, kotası
 bittiğinde ya da isteği geri çevirdiğinde çeviri sizi rahatsız etmeden diğeri
@@ -149,6 +149,10 @@ Sonra **Ayarlar → Vencord → Plugins → AI Translate** yolunu açın, uygula
 gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtarı sayfa değil
 userscript yöneticisi tutar, istekler de onun üzerinden gider. Kaldırmak için
 betiği yöneticiden silin.
+
+Userscript yöneticiniz yeni sürümü kendi takvimine göre arar. Eklenti
+ayarlarının altındaki **Güncellemeleri denetle** hemen sorar ve yeni bir şey
+varsa betiği yöneticinizde açar: orada onaylayın ve sayfayı yenileyin.
 
 ## Güncellemeler
 
