@@ -42,7 +42,8 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext, isJustAName } from "./core/translate";\n`
+            + `export { aiTranslate, collectContext, isJustAName, isNotWorthTranslating } from "./core/translate";\n`
+            + `export { keepPieces, literalBackslashes } from "./core/keep";\n`
             + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
             + `export { isReady, keyOf, modelOf, readSlots } from "./core/slots";\n`,
         resolveDir: plugin,
@@ -77,7 +78,8 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext, isJustAName,
+const { useHost, aiTranslate, collectContext, isJustAName, isNotWorthTranslating,
+    keepPieces, literalBackslashes,
     changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
     isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
 
@@ -93,13 +95,16 @@ const settings = ({
         fallbackProvider: "none"
     });
 
-useHost({
+// Says nothing about which chat it is, so it is Discord.
+const host = {
     config: () => settings,
     set: () => { },
     recent: () => history,
     meId: () => undefined,
     notice: () => { }
-});
+};
+
+useHost(host);
 
 /** Runs one translation and hands back what came out of it. */
 async function translated(kind, text, ...replies) {
@@ -490,6 +495,93 @@ gone("a message with no text of its own is not announced", "Mozumi:");
 
 settings.useContext = false;
 history = [];
+
+// --- which chat it is
+
+// A host that names no app and no dialect is Discord, which is what every
+// prompt said before a host could say anything else. These are those prompts'
+// own words, the whole of the rule rather than a part of it: a change to any
+// of them is a change to what every Discord user's provider is sent.
+const DISCORD_DRAWS = "emoji, :shortcodes:, custom emoji <:name:123>, mentions <@123>, roles <@&123>, channels <#123>, timestamps <t:123:R>, URLs, inline `code` and ```code blocks```, spoilers ||like this||, and anything that is drawn rather than written — kaomoji and emoticons such as \\ ^^ / , \\o/ , :3 , TT , ¯\\_(ツ)_/¯ — which must be copied character for character, slashes and backslashes included. Markdown that starts a line — headings (#, ##, ###), subtext (-#), quotes (>), bullets (- or *) and numbered list markers — must stay at the start of that line, exactly as written";
+
+check("a host that names no app is Discord", OUT, "You are a translation engine inside a Discord chat client. Translate the user's message into");
+check("an incoming message too", IN, "Translate this Discord message into");
+check("and an explanation", EXPLAIN, "You are explaining one Discord message to someone who does not understand it");
+check("what Discord draws itself is kept as typed", OUT, `- Keep these EXACTLY as they are: ${DISCORD_DRAWS}.`);
+check("both ways", IN, `- Keep these EXACTLY as they are: ${DISCORD_DRAWS}.`);
+
+/** Which of Discord's own rules apply to a piece of text, for the helpers that decide it. */
+const chat = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `chat: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "wanted:", JSON.stringify(want));
+};
+const fenced = text => keepPieces(text, true).pieces.map(piece => piece.text);
+
+// A model that drops a line's markers has them put back, in a chat that draws them.
+await behaves("Discord's line markers are put back", translated("sent", "- пункт\n- ещё", "[ru] item\nanother"), "- item\n- another");
+chat("a backslash before a mark is Discord's own escape and fences nothing", fenced("\\*a*\\"), []);
+chat("and the echo of it keeps every backslash", literalBackslashes("\\*a*\\"), "\\\\\\*a*\\\\");
+chat("an emoji's id on its own is nothing to translate", isNotWorthTranslating("<:x:123>"), true);
+// Every kind of line Discord draws: a heading, subtext, a quote, a list, a numbered one.
+const LINE_MARKS = ["# ", "## ", "### ", "-# ", "> ", ">> ", "- ", "* ", "1. ", "12. "];
+const behind = mark => fenced(`${mark}\\ вся строка целиком`).length;
+chat("a line fenced off behind any of Discord's line markers is kept", LINE_MARKS.map(behind), LINE_MARKS.map(() => 1));
+history = [{ id: "1", authorId: "them", authorName: "Hoshi", content: "hi" }];
+chat("a mention beside a name is still just the name", isJustAName("<@123> Hoshi", "c"), true);
+history = [];
+
+// Another chat: its name is the host's to give, and so is how it writes.
+const elsewhere = { ...host, appName: () => "Telegram", dialect: () => "plain" };
+useHost(elsewhere);
+
+const OTHER_OUT = { name: "outgoing in another chat", text: await promptFor("sent", "привет как дела", "[ru] hi, how are you") };
+const OTHER_IN = { name: "incoming in another chat", text: await promptFor("received", "hi how are you", "[en] привет, как дела") };
+const OTHER_EXPLAIN = { name: "explanation in another chat", text: await promptFor("explain", "what does she say in russian ?", "Spanish for please.") };
+
+check("the app's name is the host's to give", OTHER_OUT, "You are a translation engine inside a Telegram chat client.");
+check("in an incoming message", OTHER_IN, "Translate this Telegram message into");
+check("and in an explanation", OTHER_EXPLAIN, "You are explaining one Telegram message to someone who does not understand it");
+for (const where of [OTHER_OUT, OTHER_IN, OTHER_EXPLAIN]) absent("and Discord is not named", where, "Discord");
+
+// A chat that draws no markdown is not told to guard any, which costs tokens
+// on every message and sends a model looking for what is not there.
+for (const where of [OTHER_OUT, OTHER_IN]) {
+    check("what every chat has is still kept as typed", where, "- Keep these EXACTLY as they are: emoji, :shortcodes:, URLs, inline `code` and ```code blocks```, and anything that is drawn rather than written");
+    absent("ids it does not write are not guarded", where, "custom emoji <:name:123>");
+    absent("nor spoilers", where, "spoilers ||like this||");
+    absent("nor markdown at the start of a line", where, "Markdown that starts a line");
+}
+
+// The same message in the other chat is another question, not a cached answer.
+await behaves("an answer is not served to a chat it was not made for", translated("sent", "- пункт\n- ещё", "[ru] item\nanother"), "item\nanother");
+counted("and the provider was asked again", 1);
+
+chat("a backslash before a mark fences a stretch where nothing is escaped", fenced("\\*a*\\"), ["*a*"]);
+chat("and the echo is what was typed", literalBackslashes("\\*a*\\"), "\\*a*\\");
+chat("an emoji's id means nothing where there are none", isNotWorthTranslating("<:x:123>"), false);
+chat("a line marker is no markdown there, so nothing is fenced behind it", LINE_MARKS.map(behind), LINE_MARKS.map(() => 0));
+history = [{ id: "1", authorId: "them", authorName: "Hoshi", content: "hi" }];
+chat("and a mention is no mention, so a name beside it is not all there is", isJustAName("<@123> Hoshi", "c"), false);
+history = [];
+
+settings.useContext = true;
+history = [{ id: "1", authorId: KAII, authorName: "Kaii", content: `look at <@${KAII}> <:blobcat_hype:1234567890123456>` }];
+ctx = await promptWithContext("sent", "красиво", "[ru] beautiful");
+check("raw ids in the conversation are left as written", ctx, `Kaii: look at <@${KAII}> <:blobcat_hype:1234567890123456>`);
+settings.useContext = false;
+history = [];
+
+// "an Element", not "a Element"; and nothing at all is Discord.
+useHost({ ...host, appName: () => "Element" });
+check("the article follows the name", { name: "outgoing", text: await promptFor("sent", "тест артикля", "[ru] test") }, "inside an Element chat client.");
+useHost({ ...host, appName: () => "" });
+check("an empty name is no name", { name: "outgoing", text: await promptFor("sent", "пустое имя", "[ru] empty") }, "inside a Discord chat client.");
+useHost({ ...host, dialect: () => "telegram" });
+check("a dialect this version has not heard of is Discord's", { name: "outgoing", text: await promptFor("sent", "неизвестный диалект", "[ru] unknown") }, "Markdown that starts a line");
+
+useHost(host);
 
 // --- a word carrying both endings
 

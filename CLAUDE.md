@@ -50,10 +50,11 @@ effort level is set in `.claude/settings.json`.
 | File | Responsible for |
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context and pacing. The biggest file and the one that matters most |
-| `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices. Answers empty, not throwing, until a host is installed |
+| `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices, and optionally the chat's name, its dialect and the app's language. Answers empty, not throwing, until a host is installed |
+| `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes) and a plain dialect with none of that. The host chooses; Discord when it does not |
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
 | `core/builds.ts` | Where the build robot publishes, and what each channel hands out now |
-| `core/net.ts` | How to make one HTTP request: `fetch` or `GM_xmlhttpRequest` |
+| `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`); and a deadline that works without `AbortSignal.timeout` |
 | `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, and every retry rule |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
 | `core/languages.ts` | The language list for the dropdowns |
@@ -66,7 +67,10 @@ effort level is set in `.claude/settings.json`.
 
 Nothing in `core/` imports anything above it, and esbuild refuses any import
 from outside the folder: that is what makes the browser build possible and lets
-the tests run the real core without Discord. Keep it true. Inside `web/`, a bare
+the tests run the real core without Discord. Keep it true. Nor does anything in
+`core/` but `bridge.ts` touch `document`, `window` or `navigator`: what a page
+knows reaches the core through the host, which is what lets it run in an app,
+and `test/bare.mjs` fails on a use. Inside `web/`, a bare
 `./host` is `web/`'s own host and the core's is `../core/host`.
 
 ### The Vencord side
@@ -98,7 +102,7 @@ from the older name `AiTranslate`.
 
 | Path | Responsible for |
 |---|---|
-| `test/` | The checks. `prompts.mjs`, `interface.mjs`, `log.mjs` and `defaults.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
+| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs` and `defaults.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule works, asked of a real provider several times a case. Costs tokens, so never part of the robot. A count from before 7 November is one answer counted several times |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
@@ -134,6 +138,10 @@ a rule anywhere: do not create one.
 - Where a rule has to overcome a real ambiguity, name the fault, not the answer.
 - A rule for one language, or for something a message may not contain, is sent
   only when it can matter: unconditional, it costs every user on every message.
+- What the chat is called and what it draws itself (mentions, spoilers, line
+  markdown) come from the host's dialect, `core/dialect.ts`; the wording of the
+  rule stays here. A host that says nothing is Discord, and Discord's prompts
+  stay byte for byte what they were, which `test/prompts.mjs` pins.
 - What varies per message goes after the "Answer format" line, under "For this
   message in particular:". Everything above it stays byte-identical from message
   to message, which a check enforces, so providers can cache it.
@@ -149,10 +157,11 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 202 checks; needs esbuild
+node test/prompts.mjs      # 238 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 167 checks on strings, provider names, the echo, the headings, browser updating; needs esbuild
+node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment

@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Net } from "./net";
+import { Net, timeoutSignal } from "./net";
 
 /** Where the build robot publishes (build/github.sh). */
 export const BUILDS = "https://builds.zolatau.com";
@@ -31,7 +31,7 @@ export async function newestBuild(net: Net, channel?: string) {
         url: `${channelRoot(channel)}/build.json`,
         headers: { "Cache-Control": "no-cache" },
         // A userscript manager may be waiting for its owner to answer a question about this address.
-        signal: AbortSignal.timeout(30_000)
+        signal: timeoutSignal(30_000)
     });
     if (res.status !== 200) throw new Error(res.status === -1 ? res.data : `HTTP ${res.status}`);
 

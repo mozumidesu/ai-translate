@@ -8,8 +8,15 @@
  * code. The core asks through here, so everything a new host has to provide
  * is one short list in one small file.
  *
+ * Three more things are asked here and may be left unsaid: what the chat is
+ * called in the prompts, how it writes text (dialect.ts) and which language
+ * the app is shown in. Unsaid, they are Discord's, and English for the
+ * language, so a host written before they existed behaves as it did.
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+
+import { dialectNamed, type Dialect, type DialectName } from "./dialect";
 
 /** The settings the core reads. Where the host keeps them is its business. */
 export interface Config {
@@ -46,6 +53,13 @@ export interface Host {
     /** The signed-in user, so their own messages are told apart. */
     meId(): string | undefined;
     notice(text: string, kind: "message" | "failure"): void;
+
+    /** What the chat is called in the prompts: "inside a Discord chat client", "one Discord message". */
+    appName?(): string;
+    /** How the chat writes text, which decides what is kept as typed and what is put back. */
+    dialect?(): DialectName;
+    /** The language the app itself is shown in, as a locale code: what a plugin set to follow the app speaks. */
+    appLocale?(): string;
 }
 
 /**
@@ -74,3 +88,6 @@ export const set = (name: string, value: unknown) => installed.set(name, value);
 export const recent = (channelId: string) => installed.recent(channelId);
 export const meId = () => installed.meId();
 export const notice = (text: string, kind: "message" | "failure") => installed.notice(text, kind);
+export const appName = () => installed.appName?.() || "Discord";
+export const dialect = (): Dialect => dialectNamed(installed.dialect?.());
+export const appLocale = () => installed.appLocale?.() || "en";

@@ -22,5 +22,7 @@ export const browserHost: Host = {
     set: save,
     recent: (): Said[] => [],
     meId: () => undefined,
+    // The language Discord is shown in, which a plugin set to follow it speaks.
+    appLocale: () => document.documentElement.lang || navigator.language || "en",
     notice: (text, kind) => toast(text, kind)
 };

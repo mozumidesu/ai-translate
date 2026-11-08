@@ -103,8 +103,38 @@ export const gmNet: Net = ({ url, method = "GET", headers, body, signal }) => ne
     signal?.addEventListener("abort", () => handle?.abort?.(), { once: true });
 });
 
+let own: Net | undefined;
+
+/**
+ * A host with a way of its own to make a request says so here: a desktop shell
+ * with an HTTP client, an app that hands requests to the platform. Without
+ * one, `pickNet` looks for the userscript manager's, and then for fetch.
+ */
+export const useNet = (net: Net | undefined) => {
+    own = net;
+};
+
 /** Whichever way out this host has, best first. */
 export function pickNet(): Net {
+    if (own) return own;
     if (typeof GM_xmlhttpRequest === "function") return gmNet;
     return fetchNet;
+}
+
+/**
+ * A signal that gives up after `ms`. AbortSignal.timeout is newer than
+ * AbortController, and an older WebView, or the engine an app runs the core in,
+ * can have the second without the first. With neither there is no signal, and
+ * the host's own Net has to carry a deadline of its own.
+ */
+export function timeoutSignal(ms: number): AbortSignal | undefined {
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function")
+        return AbortSignal.timeout(ms);
+    if (typeof AbortController === "undefined") return undefined;
+
+    const controller = new AbortController();
+    const timer: any = setTimeout(() => controller.abort(new Error("timed out")), ms);
+    // Like the real one, no reason for a process to stay alive.
+    timer?.unref?.();
+    return controller.signal;
 }

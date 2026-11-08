@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { config } from "./host";
+import { appLocale, config } from "./host";
 
 type Strings = Record<string, string>;
 
@@ -3227,11 +3227,6 @@ export const LOCALES = [
     { value: "zh", label: "中文" }
 ];
 
-/** The language Discord itself is displayed in. */
-function discordLocale(): string {
-    return document.documentElement.lang || navigator.language || "en";
-}
-
 /**
  * Reading an unset dropdown makes Vencord evaluate its labels, which are
  * translated, which asks for the language again. This breaks that loop.
@@ -3251,7 +3246,7 @@ function activeLocale(): string {
 
     try {
         const chosen = config().locale;
-        const code = String(chosen && chosen !== "auto" ? chosen : discordLocale()).toLowerCase();
+        const code = String(chosen && chosen !== "auto" ? chosen : appLocale()).toLowerCase();
 
         // "ru", "ru-RU" and "uk-UA" all map to the same block.
         const base = code.split("-")[0];

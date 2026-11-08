@@ -39,6 +39,15 @@ When changing a rule:
   are only sent when they can matter — see the gating in `core/translate.ts`. A
   rule
   added unconditionally costs every user tokens on every message.
+- What the chat is called, and what it draws itself, is not a rule but a fact
+  about the chat, and the host gives it: the app's name in the three opening
+  sentences, and in the rule that keeps things as typed, the ids, spoilers and
+  line markdown of the host's dialect (`core/dialect.ts`). The wording of the
+  rule stays in `core/translate.ts`; the dialect supplies only the chat's own
+  syntax, as a model will meet it. A host that says nothing is Discord, and
+  Discord's prompts stay byte for byte what they were: `test/prompts.mjs` pins
+  the three sentences and the whole of that rule. A chat with no markdown is
+  not told to guard any, which would cost it tokens on every message.
 - Everything that varies per message goes after the "Answer format" line, under
   "For this message in particular:". Everything above it must be identical from
   message to message, which a check enforces, because providers only cache a

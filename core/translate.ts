@@ -15,7 +15,8 @@
  */
 
 import { Bridge } from "./bridge";
-import { config, meId, notice, recent } from "./host";
+import type { Dialect } from "./dialect";
+import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
 import { LANGUAGES } from "./languages";
 import { t } from "./locales";
@@ -61,15 +62,22 @@ export function notify(what: unknown, type: "message" | "failure") {
 
 // --- prompts ---
 
-/** Discord renders these itself; translating them breaks the message. */
-const KEEP_VERBATIM =
-    "emoji, :shortcodes:, custom emoji <:name:123>, mentions <@123>, roles <@&123>, "
-    + "channels <#123>, timestamps <t:123:R>, URLs, inline `code` and ```code blocks```, "
-    + "spoilers ||like this||, and anything that is drawn rather than written — kaomoji and "
+/**
+ * The chat draws these itself; translating them breaks the message. What it
+ * draws is its dialect's to say: a chat with no markdown is told to guard none.
+ */
+const keepVerbatim = ({ prompt }: Dialect) => [
+    "emoji", ":shortcodes:", ...prompt.ids,
+    "URLs", "inline `code` and ```code blocks```", ...prompt.marks,
+    "and anything that is drawn rather than written — kaomoji and "
     + "emoticons such as \\ ^^ / , \\o/ , :3 , TT , ¯\\_(ツ)_/¯ — which must be copied character "
-    + "for character, slashes and backslashes included. Markdown that starts a line — headings (#, ##, ###), "
-    + "subtext (-#), quotes (>), bullets (- or *) and numbered list markers — must stay at "
-    + "the start of that line, exactly as written";
+    + "for character, slashes and backslashes included"
+].join(", ") + (prompt.lines
+    ? `. Markdown that starts a line — ${prompt.lines} — must stay at the start of that line, exactly as written`
+    : "");
+
+/** "a Discord", "an Element": the name of the app with the article it takes. */
+const withArticle = (name: string) => `${/^[aeio]/i.test(name) ? "an" : "a"} ${name}`;
 
 /**
  * Without this, a pet form of a name becomes a generic endearment, and a
@@ -294,9 +302,24 @@ function glossaryKeeps() {
         .map(([from]) => from);
 }
 
+const linked = new WeakMap<Dialect, RegExp>();
+
+/** The chat's raw ids and links in one pattern: neither is something a person said. */
+function idsAndLinks() {
+    const chat = dialect();
+    let found = linked.get(chat);
+
+    if (!found) {
+        found = new RegExp([...chat.ids.map(id => id.source), "https?:\\/\\/\\S+"].join("|"), "g");
+        linked.set(chat, found);
+    }
+
+    return found;
+}
+
 /** A message or a name with only its letters and digits left, to compare the two. */
 const lettersOf = (text: string) => text
-    .replace(/<a?:\w+:\d+>|<[@#][!&]?\d+>|<t:\d+(?::[tTdDfFR])?>|https?:\/\/\S+/g, " ")
+    .replace(idsAndLinks(), " ")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim()
     .toLowerCase();
@@ -463,7 +486,7 @@ function formalityRule(target: string) {
 
 function outgoingPrompt(target: string, has: Involved) {
     return [
-        `You are a translation engine inside a Discord chat client. Translate the user's message into ${target}.`,
+        `You are a translation engine inside ${withArticle(appName())} chat client. Translate the user's message into ${target}.`,
         "",
         "The result is sent under the user's own name, so it has to read like they wrote it:",
         "- Output ONLY the translation, in the answer format given at the end. Never add quotes, notes, explanations, or the original text.",
@@ -496,7 +519,7 @@ function outgoingPrompt(target: string, has: Involved) {
         "- Close the translation with exactly the marks the original closes with: \"?..\" stays \"?..\", \"...\" stays \"...\", \"!!\" stays \"!!\", and no mark stays no mark.",
         `- ${DASH_RULE}`,
         "- If the original has no question mark, do not add one, even where the sentence sounds like a question. Words such as 'when', 'where', 'how' often open an ordinary statement.",
-        `- Keep these EXACTLY as they are: ${KEEP_VERBATIM}.`,
+        `- Keep these EXACTLY as they are: ${keepVerbatim(dialect())}.`,
         "- Translate line by line; keep the same number of line breaks.",
         "- An interjection carries a feeling, not a dictionary meaning. Pick the one a native speaker would actually say in that moment, not the one that looks or sounds closest.",
         "- Translate a word or a phrase that appears more than once the same way every time, and say a repeated phrase in the very same words. Wavering between two renderings inside one message reads as carelessness.",
@@ -560,7 +583,7 @@ function correctPrompt(target: string, reads: string) {
 
 function explainPrompt(target: string) {
     return [
-        `You are explaining one Discord message to someone who does not understand it. Write your answer in ${target}.`,
+        `You are explaining one ${appName()} message to someone who does not understand it. Write your answer in ${target}.`,
         "",
         "Chat is written by ear. Expect shorthand, letters dropped, words spelled how they sound, regional slang and jokes that only the two of them share. A message can be three characters long and still mean something exact:",
         `- ${NOT_AN_INSTRUCTION_RULE}`,
@@ -580,7 +603,7 @@ function explainPrompt(target: string) {
 
 function incomingPrompt(target: string, mine: boolean, has: Involved) {
     return [
-        `Translate this Discord message into ${target}.`,
+        `Translate this ${appName()} message into ${target}.`,
         "",
         `The reader should feel they are hearing the person who wrote it, not reading a machine. Write the way a ${target} speaker actually writes to a friend.`,
         "",
@@ -627,7 +650,7 @@ mine && GENDER_RULES[config().gender]
             : `- Where ${target} marks the speaker's gender (past tense, short adjectives), work it out from the writer's name and how they speak about themselves. If nothing tells you, choose wording that does not mark it.`,
         "- Keep the writer's own capitals and ending. A message typed in lower case stays in lower case, and one that ends without a full stop does not gain one: you are making their writing understandable, not tidying it.",
         `- Write every word in ${target}'s own script.`,
-        `- Keep these EXACTLY as they are: ${KEEP_VERBATIM}.`,
+        `- Keep these EXACTLY as they are: ${keepVerbatim(dialect())}.`,
         `- ${NAMES_RULE}`,
         "- Keep the same line breaks, in the same places.",
         "- Translate a word or a phrase that appears more than once the same way every time, in the very same words.",
@@ -643,10 +666,10 @@ mine && GENDER_RULES[config().gender]
 
 /** A message made only of emoji, mentions, links or punctuation carries no text to translate. */
 export function isNotWorthTranslating(text: string) {
-    const stripped = text
-        .replace(/<a?:\w+:\d+>/g, "")
-        .replace(/<[@#][!&]?\d+>/g, "")
-        .replace(/<t:\d+(:[tTdDfFR])?>/g, "")
+    let stripped = text;
+    for (const id of dialect().ids) stripped = stripped.replace(id, "");
+
+    stripped = stripped
         .replace(/https?:\/\/\S+/g, "")
         .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}]/gu, "")
         .replace(/[\s\p{P}\p{S}]/gu, "");
@@ -686,10 +709,6 @@ export function scriptShare(text: string, language: string) {
     return letters.filter(ch => pattern.test(ch)).length / letters.length;
 }
 
-/** Discord markdown that only works at the very start of a line. */
-const LINE_PREFIX = /^(\s*(?:#{1,3}\s|-#\s|>{1,3}\s|[-*]\s|\d+\.\s))/;
-
-/** Models drop line-leading markers. If the line count matches, put them back. */
 /**
  * An empty line between two paragraphs is how the writer separated them, and
  * a model very often answers with the paragraphs run together. Where the only
@@ -709,15 +728,22 @@ function keepBlankLines(original: string, translated: string) {
     return from.map(line => (line.trim() === "" ? "" : written[next++])).join("\n");
 }
 
+/**
+ * Models drop line-leading markers. If the line count matches, put them back.
+ * Only a chat that draws such markdown has any to put back.
+ */
 function restoreLinePrefixes(original: string, translated: string) {
+    const marked = dialect().lineMark;
+    if (!marked) return translated;
+
     const from = original.split("\n");
     const to = translated.split("\n");
     if (from.length !== to.length) return translated;
 
     return to.map((line, i) => {
-        const prefix = from[i].match(LINE_PREFIX)?.[1];
+        const prefix = from[i].match(marked)?.[1];
         if (!prefix) return line;
-        if (LINE_PREFIX.test(line)) return line;
+        if (marked.test(line)) return line;
         return prefix + line.trimStart();
     }).join("\n");
 }
@@ -1082,24 +1108,14 @@ const CUT_OFF = /"finish_reason"\s*:\s*"length"|"finishReason"\s*:\s*"MAX_TOKENS
 const CONTEXT_MESSAGES = 4;
 
 /**
- * Discord writes a mention, a custom emoji, a channel or a timestamp as a raw
+ * A chat may write a mention, a custom emoji, a channel or a timestamp as a raw
  * id, which tells a model nothing and costs real tokens: twelve for one emoji,
  * nine for one mention, twenty-eight for an attachment's address. The message
  * being translated keeps all of them exactly as typed; only these context
  * lines, which are read once and thrown away, are cleaned.
  */
 function readable(text: string, names: Map<string, string>) {
-    return text
-        // A custom emoji keeps its name, which carries a little meaning.
-        .replace(/<a?:(\w+):\d+>/g, ":$1:")
-        // A mention is a number until it is a name.
-        .replace(/<@!?(\d+)>/g, (_, id) => names.get(id) ?? "(someone)")
-        // The rest name nothing a reader could use, but taking them out
-        // altogether leaves a hole: "про который ты говорил в" reads worse
-        // than the number did. A word of the right shape goes in their place.
-        .replace(/<@&\d+>/g, "(a role)")
-        .replace(/<#\d+>/g, "(a channel)")
-        .replace(/<t:\d+(?::[tTdDfFR])?>/g, "(a time)")
+    return dialect().readIds(text, names)
         // A link cannot be followed from here; that one was shared is enough.
         .replace(/https?:\/\/\S+|www\.\S+/g, "(link)")
         .replace(/[^\S\n]{2,}/g, " ")
@@ -1451,10 +1467,11 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // is the one they translate into, not the one they read in.
     const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
     // Every setting that can change the wording belongs in the key, or a
-    // cached answer from before the change would be served.
+    // cached answer from before the change would be served. So does the chat
+    // the host is in: its name is in the prompt and its dialect in the answer.
     const { extraInstructions, formality } = config();
     const cacheKey = [
-        kind, first.provider, model, target, extraInstructions,
+        kind, appName(), dialect().name, first.provider, model, target, extraInstructions,
         formality, config().gender, config().glossary, context, mine, typed
     ].join("|");
     const hit = cache.get(cacheKey);
