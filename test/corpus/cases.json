@@ -380,7 +380,7 @@
   },
   {
     "id": "who-you-called-is-dative",
-    "why": "\"Who did you call yesterday? Your mom?\" came back as \"Кого ты звонил вчера?\" 9 runs out of 10: звонить takes the dative, \"Кому ты звонил?\". With the cases beside it this asks whether that is one verb, or every verb that takes a direct object in English and the dative in Russian",
+    "why": "\"Who did you call yesterday? Your mom?\" came back as \"Кого ты звонил вчера?\" 9 runs out of 10, and the question alone 7 out of 10: звонить takes the dative, \"Кому ты звонил?\". It is this verb only. \"Call me tomorrow\" holds 10 of 10, and помочь and верить hold 10 of 10 in a question too. English \"call\" is also звать, whose \"Кого ты звал?\" is right, and the model joins that question word to the other verb. One verb is not worth a rule's tokens on every message into Russian, so this case stays to say whether a model ever stops doing it",
     "kind": "received",
     "to": "Russian",
     "text": "Who did you call yesterday?",
@@ -440,7 +440,7 @@
   },
   {
     "id": "who-you-helped-is-dative",
-    "why": "the question form of help-is-dative. \"Call me tomorrow\" and \"help my brother\" hold 10 of 10 while \"Who did you call?\" fails 7 of 10, so the suspect is the question word, not the verb: \"Кому ты помог?\", never \"Кого ты помог?\"",
+    "why": "the question form of help-is-dative, to tell whether \"Кого ты звонил\" came from the question word: it did not, \"Кому ты помог?\" holds 10 of 10. Never \"Кого ты помог?\"",
     "kind": "received",
     "to": "Russian",
     "text": "Who did you help yesterday?",
