@@ -439,6 +439,30 @@
     "group": "dative"
   },
   {
+    "id": "who-you-helped-is-dative",
+    "why": "the question form of help-is-dative. \"Call me tomorrow\" and \"help my brother\" hold 10 of 10 while \"Who did you call?\" fails 7 of 10, so the suspect is the question word, not the verb: \"Кому ты помог?\", never \"Кого ты помог?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who did you help yesterday?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
+    "id": "who-you-believe-is-dative",
+    "why": "the same with верить: \"Кому ты веришь?\", never \"Кого ты веришь?\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "Who do you believe?",
+    "must": [
+      "кому"
+    ],
+    "mustNot": [],
+    "group": "dative"
+  },
+  {
     "id": "seeing-stays-accusative",
     "why": "the other side of the dative cases: видеть takes the accusative, \"сестру\", so a rule about the dative read too widely would show up here as \"сестре\"",
     "kind": "received",
