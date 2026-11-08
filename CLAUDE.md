@@ -172,7 +172,7 @@ no colour or margin, so `styles.css` names both and doubles the class.
 
 ## How a change reaches users
 
-- The version lives in `core/version.ts` and nowhere else, `0.2.0a` today. The
+- The version lives in `core/version.ts` and nowhere else, `0.2.1a` today. The
   third number counts fixes, the second anything new and puts the third back to
   zero, nine is the ceiling for both, and `1.0.0` drops the letter. Raising it
   is part of moving `release`, never of a commit; builds made because Vencord

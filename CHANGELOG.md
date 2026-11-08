@@ -7,7 +7,7 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
-## Unreleased
+## 0.2.1a
 
 ### Added
 
