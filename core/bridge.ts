@@ -13,6 +13,7 @@
 import { newestBuild, userscriptUrl } from "./builds";
 import { pickNet } from "./net";
 import { listModels, postFeedback, sendChat } from "./providers";
+import { VERSION } from "./version";
 
 /**
  * native.ts as the renderer sees it across Vencord's bridge: the same
@@ -54,20 +55,20 @@ const BROWSER_BUILD = "web";
 const BROWSER_CHANNEL: string = "dev";
 
 /**
- * How that copy names itself in a support report, with the kind of browser
- * build it is in front, since the three are kept apart in the store and in the
- * userscript manager. The flags are Vencord's, and a build of our own will not
- * have them, so neither is assumed to exist.
+ * How that copy names itself in a support report: the plugin's version, then
+ * the build in brackets, as native.ts writes it for a desktop copy. Here the
+ * kind of browser build goes in front of the build, since the three are kept
+ * apart in the store and in the userscript manager. The flags are Vencord's,
+ * and a build of our own will not have them, so neither is assumed to exist.
  */
 function browserBuild() {
     const userscript = typeof IS_USERSCRIPT !== "undefined" && IS_USERSCRIPT;
     const extension = typeof IS_EXTENSION !== "undefined" && IS_EXTENSION;
 
+    const kind = userscript ? "userscript " : extension ? "extension " : "";
     const testing = BROWSER_CHANNEL === "testing" ? " testing" : "";
 
-    if (userscript) return `userscript ${BROWSER_BUILD}${testing}`;
-    if (extension) return `extension ${BROWSER_BUILD}${testing}`;
-    return `${BROWSER_BUILD}${testing}`;
+    return `${VERSION} (${kind}${BROWSER_BUILD}${testing})`;
 }
 
 /** Whether this copy is the desktop one, with a main process behind it. */

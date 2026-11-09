@@ -164,7 +164,7 @@ menu, it always answers, "nothing to correct here" included.
 node test/prompts.mjs      # 252 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
-node test/interface.mjs    # 167 checks on strings, provider names, the echo, the headings, browser updating; needs esbuild
+node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs tsc, npm and that same checkout

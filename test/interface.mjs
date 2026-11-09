@@ -4,14 +4,16 @@
  * Every string in all sixteen languages, the names a provider goes by, the
  * minus that must not take the last backup away, the echo of what somebody
  * typed, the two headings Vencord draws in English over the plugin's settings,
- * and updating a copy that lives in a browser tab. The React that draws them
- * is not here; what it is handed is.
+ * updating a copy that lives in a browser tab, and the build a support report
+ * names, the same way from every kind of copy. The React that draws them is
+ * not here; what it is handed is.
  *
  * Run it from the plugin folder:  node test/interface.mjs
  * It needs esbuild, exactly as test/prompts.mjs does.
  */
 
-import { mkdtemp, readFile, rm } from "fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "fs/promises";
+import { createRequire } from "module";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -338,6 +340,7 @@ async function bridgeAs(channel) {
 }
 
 const asked = [];
+const sent = [];
 const opened = [];
 const assigned = [];
 let served = { status: 200, body: JSON.stringify({ build: OWN, channel: "release" }) };
@@ -345,6 +348,7 @@ let blocked = false;
 
 globalThis.GM_xmlhttpRequest = options => {
     asked.push(options.url);
+    sent.push(options.data);
     setImmediate(() => served === "silence" ? options.onerror() : options.onload({
         status: served.status,
         responseText: served.body,
@@ -439,6 +443,86 @@ const extension = await bridgeAs("release");
 reset();
 check("an extension copy is not asked about either",
     (await extension.Bridge.checkAiTranslateUpdate("release")).state === "dev" && asked.length === 0);
+
+// --- the build a support report names ---
+//
+// Whoever reads a report has to read its build line the same way whichever copy
+// sent it: the plugin's version, then the build in brackets. A desktop copy's
+// is written by native.ts, a browser copy's by bridge.ts.
+
+const VERSION = (await readFile(join(plugin, "core/version.ts"), "utf8")).match(/^export const VERSION = "(.+)";$/m)?.[1];
+check("the plugin's version can be read from core/version.ts", /^\d+\.\d+\.\d+[a-z]?$/.test(VERSION), VERSION);
+
+const report = JSON.stringify({ endpoint: "https://relay.example/report", body: { subject: "s", message: "m" } });
+
+async function reportOf(bridge) {
+    await bridge.Bridge.sendAiTranslateFeedback(report);
+    return JSON.parse(sent.at(-1));
+}
+
+globalThis.IS_USERSCRIPT = true;
+globalThis.IS_EXTENSION = false;
+const fromRelease = await reportOf(release);
+check("a userscript's report: the version, then its build in brackets, as a userscript",
+    fromRelease.build === `${VERSION} (userscript ${OWN})`, fromRelease.build);
+check("and the rest of the report goes as the form wrote it", fromRelease.subject === "s" && fromRelease.message === "m");
+
+const fromTesting = (await reportOf(testing)).build;
+check("a testing userscript says so inside the brackets", fromTesting === `${VERSION} (userscript ${OWN} testing)`, fromTesting);
+
+const fromSource = (await reportOf(unpublished)).build;
+check("a userscript somebody built has no build of the robot's to name",
+    fromSource === `${VERSION} (userscript web)`, fromSource);
+
+globalThis.IS_USERSCRIPT = false;
+globalThis.IS_EXTENSION = true;
+const fromExtension = (await reportOf(extension)).build;
+check("an extension says so in front of its build", fromExtension === `${VERSION} (extension ${OWN})`, fromExtension);
+
+globalThis.IS_EXTENSION = false;
+const fromPlain = (await reportOf(release)).build;
+check("a browser copy that is neither is only its build", fromPlain === `${VERSION} (${OWN})`, fromPlain);
+
+// The desktop copy: native.ts as Electron's main process runs it, which finds the build the installer wrote beside it.
+const desktop = join(out, "desktop");
+await mkdir(desktop);
+await esbuild.build({
+    entryPoints: [join(plugin, "native.ts")],
+    bundle: true,
+    format: "cjs",
+    platform: "node",
+    outfile: join(desktop, "native.cjs"),
+    external: ["electron"],
+    logLevel: "error"
+});
+const native = createRequire(import.meta.url)(join(desktop, "native.cjs"));
+
+const posted = [];
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, init) => (posted.push(init.body), new Response("", { status: 200 }));
+
+async function desktopBuild(installed) {
+    const file = join(desktop, "build.json");
+    if (installed) await writeFile(file, JSON.stringify(installed));
+    else await rm(file, { force: true });
+
+    await native.sendAiTranslateFeedback({}, report);
+    return JSON.parse(posted.at(-1)).build;
+}
+
+const desktopRelease = await desktopBuild({ build: OWN, channel: "release" });
+check("a desktop copy's report: the version, then its build in brackets", desktopRelease === `${VERSION} (${OWN})`, desktopRelease);
+
+const desktopTesting = await desktopBuild({ build: OWN, channel: "testing" });
+check("a testing build says so inside the brackets", desktopTesting === `${VERSION} (${OWN} testing)`, desktopTesting);
+
+const desktopOlder = await desktopBuild({ build: OWN });
+check("a copy installed before there were two channels is a release", desktopOlder === `${VERSION} (${OWN})`, desktopOlder);
+
+const desktopSource = await desktopBuild(null);
+check("a copy built from source has no build to name: dev", desktopSource === `${VERSION} (dev)`, desktopSource);
+
+globalThis.fetch = realFetch;
 
 await rm(out, { recursive: true, force: true });
 
