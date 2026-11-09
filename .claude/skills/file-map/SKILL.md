@@ -38,6 +38,14 @@ page knows reaches the core through the host, and `test/bare.mjs` fails on a
 use. `web/` has a `host.ts` of its own, so inside `web/` a bare `./host` is that
 one and the core's is `../core/host`.
 
+The one reach upwards is a type. `bridge.ts` derives the desktop bridge's
+signatures from `native.ts` with `import("../native")`, so that a member renamed
+or a parameter added there cannot go unnoticed here. esbuild erases it, so no
+build sees `native.ts` through `core/`; `tsc` follows it. A program that
+type-checks `core/` type-checks `native.ts` too, and wants Node's types and an
+`electron` declaration for it, which `test/types.mjs` gives its own program. The
+Telegram userscript's is such a program.
+
 ### The Vencord side
 
 | File | Responsible for |

@@ -18,11 +18,13 @@ import { VERSION } from "./version";
 /**
  * native.ts as the renderer sees it across Vencord's bridge: the same
  * functions without the Electron event that only the main process is handed.
- * Derived from native.ts itself, so the two cannot drift apart.
+ * Derived from native.ts itself, so the two cannot drift apart. native.ts is
+ * one folder up, and any program that type-checks core/ reads it too; the check
+ * in test/types.mjs fails if this path stops resolving.
  */
 type Called<F> = F extends (event: any, ...rest: infer A) => infer R ? (...args: A) => R : never;
 
-type Desktop = { [K in keyof typeof import("./native")]: Called<(typeof import("./native"))[K]> };
+type Desktop = { [K in keyof typeof import("../native")]: Called<(typeof import("../native"))[K]> };
 
 /**
  * Vencord builds this bridge out of native.ts under the plugin's own name. In

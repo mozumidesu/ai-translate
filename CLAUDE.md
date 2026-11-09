@@ -73,6 +73,12 @@ knows reaches the core through the host, which is what lets it run in an app,
 and `test/bare.mjs` fails on a use. Inside `web/`, a bare
 `./host` is `web/`'s own host and the core's is `../core/host`.
 
+The one reach upwards is a type: `bridge.ts` derives the desktop bridge's
+signatures from `native.ts` with `import("../native")`, so the two cannot drift
+apart. esbuild erases it, but `tsc` follows it: a program that type-checks
+`core/` type-checks `native.ts` too, and needs Node's types and an `electron`
+declaration to do it, as `test/types.mjs` gives its own.
+
 `core/` is also the Telegram Web userscript's, mozumidesu/ai-translate-telegram,
 which has it as a submodule pinned to a commit, uses it unchanged and speaks the
 `telegram` dialect. A change here reaches it only when that pin moves.

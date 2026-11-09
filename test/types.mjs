@@ -8,11 +8,15 @@
  * `tags: ["Chat", "Utility", "Translate"]` went unnoticed after Vencord made
  * its tags a closed list and "Translate" stopped being one of them.
  *
+ * native.ts is read too, though nothing imports it: Vencord finds it by name.
+ * core/bridge.ts derives the type of the desktop bridge from it, so a misspelt
+ * member of the bridge, or a type error in native.ts, fails here.
+ *
  * Run it from the plugin folder:  node test/types.mjs
  *   VENCORD=/path/to/vencord     a checkout to check against
  *   otherwise test/imports.mjs's shallow clone is reused if it is there
  *
- * It needs the TypeScript compiler and npm, for React's types.
+ * It needs the TypeScript compiler and npm, for React's and Node's types.
  *
  * Errors Vencord's own build also carries are listed below and not counted:
  * its globals, its CSS imports, and one piece of inference in settings.ts that
@@ -38,15 +42,22 @@ if (!existsSync(join(VC, "tsconfig.json"))) {
 
 // React's types, which Vencord has as a dependency and a bare checkout does
 // not: without them every piece of JSX in the plugin is an error of its own.
+// Node's come with them, for native.ts.
 const deps = join(tmpdir(), "ai-translate-types");
-if (!existsSync(join(deps, "node_modules", "@types", "react"))) {
+if (!["react", "node"].every(name => existsSync(join(deps, "node_modules", "@types", name)))) {
     mkdirSync(deps, { recursive: true });
-    console.log("Installing React's types, once, into", deps);
+    console.log("Installing React's and Node's types, once, into", deps);
     execFileSync("npm", ["install", "--no-save", "--no-audit", "--no-fund", "--prefix", deps,
         "@types/react", "@types/node"], { stdio: ["ignore", "pipe", "pipe"] });
 }
 
 const types = join(deps, "node_modules", "@types");
+
+// native.ts takes one thing from Electron, the event its functions are handed,
+// and a bare checkout has no node_modules to find Electron in. If it ever takes
+// more, this is where that is declared.
+const electron = join(deps, "electron.d.ts");
+writeFileSync(electron, 'declare module "electron" {\n    export interface IpcMainInvokeEvent {}\n}\n');
 
 const config = join(deps, "tsconfig.check.json");
 writeFileSync(config, JSON.stringify({
@@ -59,6 +70,8 @@ writeFileSync(config, JSON.stringify({
         noEmit: true,
         skipLibCheck: true,
         esModuleInterop: true,
+        // Named, because TypeScript 6 reads no @types package it is not told of.
+        types: ["node"],
         paths: {
             "@api/*": [`${VC}/src/api/*`],
             "@components/*": [`${VC}/src/components/*`],
@@ -73,8 +86,10 @@ writeFileSync(config, JSON.stringify({
     include: [
         `${PLUGIN}/index.tsx`,
         `${PLUGIN}/settings.ts`,
+        `${PLUGIN}/native.ts`,
         `${PLUGIN}/core/*.ts`,
-        `${PLUGIN}/ui/*.tsx`
+        `${PLUGIN}/ui/*.tsx`,
+        electron
     ]
 }, null, 2));
 
@@ -88,7 +103,6 @@ const EXPECTED = [
     /Cannot find name 'Vencord(Native)?'/,
     /Cannot find name 'IS_[A-Z_]+'/,
     /Cannot find module '~plugins'/,
-    /Cannot find module '\.\/native'/,
     /settings\.ts.*implicitly has (type|return type) 'any' because it (does not have|is referenced)/
 ];
 
