@@ -473,5 +473,27 @@
     ],
     "mustNot": [],
     "group": "dative"
+  },
+  {
+    "id": "an-adverb-never-describes-a-noun",
+    "why": "\"あら、ねーちゃん！気分いいね！\" came back as \"Как здорово настроение!\" 5 runs out of 5, and inside the two-line message it came from 10 out of 10: \"Как здорово!\" with the noun put after it, where an adverb cannot describe a noun (\"Ты в отличном настроении!\"). It takes \"ねーちゃん\": without it the same words come back as \"Настроение отличное!\", and \"Oh, sis! What a great mood!\" as \"Какое классное настроение!\". No rule in the prompt brings it on, and five rules written against it, one quoting the phrase as not Russian, left it 25 runs out of 30. At medium reasoning it is right 4 runs out of 5, but reasoning stays low for speed. A rule that does not work is not worth its tokens, so the case stays to say whether a model ever stops doing it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "あら、ねーちゃん！気分いいね！(≧∇≦)b",
+    "must": [],
+    "mustNot": [
+      "как здорово настроение",
+      "как классно настроение",
+      "как круто настроение",
+      "как хорошо настроение",
+      "как отлично настроение"
+    ],
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "みんな！元気？何してる？"
+      }
+    ]
   }
 ]
