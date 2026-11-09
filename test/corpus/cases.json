@@ -495,5 +495,34 @@
         "text": "みんな！元気？何してる？"
       }
     ]
+  },
+  {
+    "id": "a-slip-in-a-verb-of-naming-is-read",
+    "why": "\"Привык знать его Oxen\", typed for \"Привык звать его Oxen\", I'm used to calling him Oxen, went out as \"Me acostumbré a conocer a Oxen\", and through this runner came back \"conocer su Oxen\" 9 runs out of 10 and \"conocerlo Oxen\" once: the one-letter slip translated as it stood, and \"его\" made \"his\" to fit it, so the name became somebody else. Typed right it comes back \"llamarlo Oxen\" 3 runs of 3 with no rule at all, so the slip is the whole fault. \"Decirle Oxen\" would be right too and fails this, so read a failure before counting it",
+    "kind": "sent",
+    "to": "Spanish",
+    "text": "Привык знать его Oxen",
+    "must": [
+      "llam"
+    ],
+    "mustNot": [
+      "conoc",
+      "a oxen",
+      "su oxen"
+    ]
+  },
+  {
+    "id": "a-name-in-an-object-case-is-someone-else",
+    "why": "the other side of the slip: the rule reads \"знать\" before a pronoun and a name as \"звать\", and \"знал его Машу\" has those three words in a row. The name is in the case of an object, so it is knowing his Masha, and nothing is a slip",
+    "kind": "sent",
+    "to": "Spanish",
+    "text": "Я хорошо знал его Машу",
+    "must": [
+      "conoc"
+    ],
+    "mustNot": [
+      "llam"
+    ],
+    "group": "reverse"
   }
 ]

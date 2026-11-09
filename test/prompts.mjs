@@ -235,6 +235,15 @@ absent("Vietnamese negation frame: not with a message in English", IN, "có … 
 check("a fragment takes no case from the sentence beside it", FULL_IN, "grammar does not reach across it");
 absent("a fragment's case: not into a language without cases", FULL_OUT, "grammar does not reach across it");
 absent("a fragment's case: not with a message of one sentence", IN, "grammar does not reach across it");
+// "Привык знать его Oxen" went out as "Me acostumbré a conocer su Oxen": "знать" typed for "звать",
+// and the pronoun made "his" to fit it.
+const CALLING = "Translate a verb of calling, never one of knowing";
+check("знать typed for звать before a name is read as calling", { name: "outgoing with знать, a pronoun and a name", text: await promptFor("sent", "привыкла знать его Макс", "[ru] I'm used to calling him Max") }, CALLING);
+check("in a message coming in too", { name: "incoming with знать, a pronoun and a name", text: await promptFor("received", "в школе все знали меня Саша", "[ru] в школе все звали меня Саша") }, CALLING);
+absent("знать before a name: not sent with a plain message", OUT, CALLING);
+absent("знать before a name: not sent with a plain message", IN, CALLING);
+absent("nor with знать and no name after it", { name: "outgoing", text: await promptFor("sent", "я знал его давно", "[ru] I've known him for a long time") }, CALLING);
+absent("nor with a form of знать no letter away from звать", { name: "outgoing", text: await promptFor("sent", "я знаю его Машу", "[ru] I know his Masha") }, CALLING);
 
 // The part of the prompt that does not depend on the message comes first and
 // is the same for every message, so a provider's cache can keep it.

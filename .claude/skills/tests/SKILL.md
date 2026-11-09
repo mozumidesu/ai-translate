@@ -9,7 +9,7 @@ The full text behind the Everything else and Running things sections of CLAUDE.m
 
 | Path | Responsible for |
 |---|---|
-| `test/prompts.mjs` | 252 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed. Also which chat the host says it is: for a host that says nothing, Discord's three opening sentences and the whole of the rule that keeps what Discord draws, word for word; for a host that names another chat with the plain dialect, its name in the prompts and none of Discord's syntax; for Telegram's dialect, its marks and @username in that rule, word for word |
+| `test/prompts.mjs` | 258 checks. Builds the real core, runs a real translation past a fake provider, reads the prompt that provider was handed. Also which chat the host says it is: for a host that says nothing, Discord's three opening sentences and the whole of the rule that keeps what Discord draws, word for word; for a host that names another chat with the plain dialect, its name in the prompts and none of Discord's syntax; for Telegram's dialect, its marks and @username in that rule, word for word |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule actually works. Each case is a defect that came back from real use; the runner asks a real provider several times, because a model is not deterministic, and says how many runs each case survived. Each run is a request of its own: the plugin's cache of answers is emptied before every one. Until 7 November it was not, so a count older than that, in a comment or a commit message, is one answer counted several times. Costs tokens, so never part of the robot |
 | `test/imports.mjs` | Whether every Vencord import the plugin makes still exists, resolved against a real Vencord checkout. The one test that cannot be fooled by esbuild's externals |
 | `test/types.mjs` | The other half of that: whether the values handed to Vencord are still ones it accepts. esbuild strips types without reading them, so neither the robot nor the import check would ever notice. It found `tags: ["Translate"]` after Vencord made its tags a closed list. It reads `native.ts` as well, which nothing imports because Vencord finds it by name, and with it the type `core/bridge.ts` derives from it: a misspelt member of the bridge, a signature that drifts, a type error in `native.ts` or a path that stops resolving all fail it. A bare checkout has no `node_modules`, so `electron` is a declaration the test writes beside its tsconfig, holding only the event type `native.ts` takes; anything more is added there. The test installs the compiler itself, at the version Vencord builds with, and fails when it did not run: until 9 November it called `npx tsc`, which on a machine with no TypeScript, a CI runner among them, fetches an abandoned package of that name that checks nothing, and passed |
@@ -31,7 +31,7 @@ The full text behind the Everything else and Running things sections of CLAUDE.m
 ## Running things
 
 ```
-node test/prompts.mjs      # 252 checks; needs esbuild
+node test/prompts.mjs      # 258 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild

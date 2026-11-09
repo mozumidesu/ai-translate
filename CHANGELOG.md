@@ -7,6 +7,14 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## Unreleased
+
+### Fixed
+
+- **A slip of "знать" for "звать" before a name is read as the word you meant**
+  in Russian: "все знали её Маша" goes out as what everyone called her, not as
+  knowing someone of hers called Masha.
+
 ## 0.2.1a
 
 ### Added

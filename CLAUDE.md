@@ -167,7 +167,7 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 252 checks; needs esbuild
+node test/prompts.mjs      # 258 checks; needs esbuild
 node test/log.mjs          # 23 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild

@@ -423,6 +423,16 @@ const FRAGMENT_CASE_RULE =
 /** More than one sentence or line: a fragment needs a sentence beside it to borrow from. */
 const SEVERAL_SENTENCES = /[.?!…？！。]\s+\S|\n\s*\S/u;
 
+// "Привык знать его Oxen" went out as "conocer su Oxen" 9 runs out of 10, "знать" typed for "звать" and
+// "его" made "his" to fit it. Naming the fault without naming the two verbs left "conocer" in 25 runs of 25.
+const CALLING_RULE =
+    "With a pronoun and a name straight after it, Russian \"знать\" is a slip for \"звать\", a letter away: "
+    + "\"все знали её Маша\" means \"все звали её Маша\", what she is called. Translate a verb of calling, never "
+    + "one of knowing: the pronoun is that person and the name the one they go by, never someone else.";
+
+/** The forms of "знать" a letter away from "звать", with a pronoun and a name after them. */
+const KNOWN_BY_NAME = /(?<![\p{L}\p{N}])зна(?:ть|л|ла|ло|ли)\s+(?:меня|тебя|его|её|ее|нас|вас|их)\s+(?=\p{Lu}|\p{Script=Latin})/u;
+
 /** Only with a message in or into Arabic. */
 const ARABIC_COURTESY =
     "Arabic \u0639\u0641\u0648\u0627 is both \"sorry\" and \"you are welcome\": where the rest of the message "
@@ -448,6 +458,7 @@ function messageRules(kind: Kind, text: string, has: Involved) {
         SHORT_NAME.test(plain) ? SHORT_NAMES_RULE : "",
         has.address ? ADDRESS_RULE : "",
         has.declines && SEVERAL_SENTENCES.test(plain) ? FRAGMENT_CASE_RULE : "",
+        KNOWN_BY_NAME.test(plain) ? CALLING_RULE : "",
         kind === "received" && has.vietnamese ? VIETNAMESE_NEGATION : "",
         has.arabic ? ARABIC_COURTESY : ""
     ].filter(Boolean);
