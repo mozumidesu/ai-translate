@@ -79,7 +79,7 @@ apart. esbuild erases it, but `tsc` follows it: a program that type-checks
 `core/` type-checks `native.ts` too, and needs Node's types and an `electron`
 declaration to do it, as `test/types.mjs` gives its own.
 
-`core/` is also the Telegram Web userscript's, mozumidesu/ai-translate-telegram,
+`core/` is also AI Translate for Telegram's, mozumidesu/ai-translate-telegram,
 which has it as a submodule pinned to a commit, uses it unchanged and speaks the
 `telegram` dialect. A change here reaches it only when that pin moves.
 
