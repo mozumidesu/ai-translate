@@ -423,8 +423,8 @@ const FRAGMENT_CASE_RULE =
 /** More than one sentence or line: a fragment needs a sentence beside it to borrow from. */
 const SEVERAL_SENTENCES = /[.?!…？！。]\s+\S|\n\s*\S/u;
 
-// "Привык знать его Oxen" went out as "conocer su Oxen" 9 runs out of 10, "знать" typed for "звать" and
-// "его" made "his" to fit it. Naming the fault without naming the two verbs left "conocer" in 25 runs of 25.
+// "Привык знать его Oxen" went out as "conocer su Oxen" 9 runs out of 10, and with this as "llamarlo Oxen"
+// 10 of 10. Naming the fault without naming the two verbs left "conocer" in 25 runs of 25.
 const CALLING_RULE =
     "With a pronoun and a name straight after it, Russian \"знать\" is a slip for \"звать\", a letter away: "
     + "\"все знали её Маша\" means \"все звали её Маша\", what she is called. Translate a verb of calling, never "
