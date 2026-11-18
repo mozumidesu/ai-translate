@@ -524,5 +524,43 @@
       "llam"
     ],
     "group": "reverse"
+  },
+  {
+    "id": "a-code-naming-the-target-is-not-the-last-word",
+    "why": "\"Hola a todos, ¿cómo están hoy?\" answered \"[en] Hi everyone, how are you today?\" went out in Spanish, as typed: the code named the language it was translated into, and Spanish and English share the alphabet that was meant to back the code up",
+    "kind": "sent",
+    "to": "English",
+    "text": "Hola a todos, ¿cómo están hoy?",
+    "must": [
+      "today"
+    ],
+    "mustNot": [
+      "hola",
+      "todos",
+      "están"
+    ],
+    "group": "tag"
+  },
+  {
+    "id": "a-message-already-in-the-target-goes-as-typed",
+    "why": "the other side: \"Yo everyone! Gll\" once went out as \"Heyyy\", English rewritten into other English under a code that said English. A message already in the target goes out exactly as typed",
+    "kind": "sent",
+    "to": "English",
+    "text": "Yo everyone! Gll",
+    "must": [
+      "Yo everyone! Gll"
+    ],
+    "group": "tag"
+  },
+  {
+    "id": "a-message-typed-loosely-in-the-target-goes-as-typed",
+    "why": "the same with a message a model is tempted to tidy: lower case, no apostrophes. Tidied, it is no longer what was typed, and it was already in the language it goes out in",
+    "kind": "sent",
+    "to": "English",
+    "text": "im gonna be late, dont wait for me",
+    "must": [
+      "im gonna be late, dont wait for me"
+    ],
+    "group": "tag"
   }
 ]

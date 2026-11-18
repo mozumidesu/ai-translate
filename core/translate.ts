@@ -19,6 +19,7 @@ import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
 import { LANGUAGES } from "./languages";
+import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
@@ -1207,6 +1208,14 @@ function isSameLanguage(reported: string, language: string) {
     return said === language.toLowerCase() || (!!known && said === known.code.toLowerCase());
 }
 
+// "Hola a todos" answered "[en] Hi everyone" went out in Spanish: the code named the language it went into.
+const namedTheTarget = (target: string) =>
+    `\n\nIMPORTANT: your previous answer began with the code of ${target}, as if the message were already written`
+    + ` in ${target}, yet it did not give the message back as written. The code names the language the message is`
+    + ` written in, the language it is translated FROM. If the message really is written in ${target}, answer with`
+    + " that code and the message exactly as written. If it is not, answer with the code of the language it is"
+    + " written in, then the translation.";
+
 export interface TranslationResult {
     text: string;
     /** Only filled in for incoming messages, where the model is asked to name it. */
@@ -1752,9 +1761,18 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // The model's word alone is not enough, since a slip would send a Russian
     // message untranslated, so the message's own alphabet has to agree.
     if (kind === "sent" && result.inTarget && scriptShare(kept ? kept.bare(text) : text, target) >= 0.97) {
-        const asTyped = { text: kept?.restore(text) ?? typed };
-        cache.set(cacheKey, asTyped);
-        return asTyped;
+        // Where both languages use that alphabet it agrees with anything: "[en]"
+        // over the English for "Hola a todos" sent the Spanish. So a changed
+        // message is asked about once more, and only one given back as it was
+        // goes as typed.
+        if (!sameMessage(text, result.text))
+            result = await ask(basePrompt + namedTheTarget(target), false, "the answer named the target language and changed the message");
+
+        if (result.inTarget && sameMessage(text, result.text)) {
+            const asTyped = { text: kept?.restore(text) ?? typed };
+            cache.set(cacheKey, asTyped);
+            return asTyped;
+        }
     }
 
     // Judge the answer by its alphabet rather than by comparing it to the input.

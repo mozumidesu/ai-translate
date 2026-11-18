@@ -441,6 +441,35 @@ counted("and not asked about again", 1);
 await behaves("a one-word message sent back untranslated is still asked again", translated("sent", "Привет", "[ru] Привет", "[ru] Hi"), "Hi");
 counted("which takes a second request", 2);
 
+// Spanish and English share an alphabet, so the alphabet that backs up a tag
+// agrees with anything: "[en]" in front of the English for "Hola a todos" sent
+// the Spanish as typed, silently, and kept it for the next time.
+await behaves(
+    "a message tagged as already in the target goes out translated when the answer changed it",
+    translated("sent", "Hola a todos, ¿cómo están hoy?", "[en] Hi everyone, how are you today?"),
+    "Hi everyone, how are you today?"
+);
+counted("after asking once more", 2);
+check("and the second request says what was wrong with the first", { name: "request", text: asked[1]?.messages?.[0]?.content ?? "" }, "yet it did not give the message back as written");
+await behaves(
+    "and the Spanish is not what is kept for the next time",
+    translated("sent", "Hola a todos, ¿cómo están hoy?", "[es] something else entirely"),
+    "Hi everyone, how are you today?"
+);
+await behaves(
+    "a message handed back as it was still goes out as typed",
+    translated("sent", "see you tomorrow then", "[en] see you tomorrow then"),
+    "see you tomorrow then"
+);
+counted("in one request", 1);
+// "Yo everyone! Gll" once went out as "Heyyy": English rewritten into other English.
+await behaves(
+    "and one the model rewrote goes out as typed once it is handed back as it was",
+    translated("sent", "Yo everyone! Gll", "[en] Heyyy", "[en] Yo everyone! Gll"),
+    "Yo everyone! Gll"
+);
+counted("which took a second request", 2);
+
 // --- the context block: what the model is told about the conversation
 
 /** The system prompt for one translation, with the context block built in. */
