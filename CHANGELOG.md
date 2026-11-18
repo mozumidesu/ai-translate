@@ -11,6 +11,32 @@ when `release` moves.
 
 ### Fixed
 
+- **A name in another alphabet no longer passes for a message that was not
+  translated.** A game, an app or a handle that stays as you wrote it, in Latin
+  letters inside an answer in Japanese or Russian, made the plugin ask the model
+  again and, for a short message, give up: "Genshin Impact или Honkai Star
+  Rail?" into Japanese cost three requests and then failed with "The model
+  returned the text untranslated", and "я сейчас в Discord" always cost two.
+  Words that stand unchanged in your message are not counted now. For the same
+  reason, a word the model leaves behind exactly as it was is no longer asked
+  about again.
+- **Hindi, Bengali, Urdu and Armenian keep their own full stop, and Greek its
+  question mark.** "Я дома." into Hindi came out with a second full stop after
+  the danda, "Как дела?" into Greek ended in ";?", and a Greek question read in
+  English lost its question mark. A mark that only some alphabets have is no
+  longer put into a text in another: a Japanese "。" read in English is a full
+  stop.
+- **A capital you typed no longer becomes a letter Georgian does not use**, and
+  a Georgian message no longer makes the English answer start in lower case.
+- **The English "I" no longer rewrites links.** An "i" in an address, as in
+  "https://x.com/i/spaces/1abc" or "?i=42", became "I", and so did the one of
+  "i.e.". It is put right in the words you wrote and nowhere else.
+- **Brackets that are not an ending are left alone when your gender is set.**
+  "sin(x)" in a Russian answer became "sin", and a Japanese word with its
+  reading, "今日(きょう)", lost its brackets. An ending is settled only when the
+  word and the ending are in the alphabet of the language you translate into.
+- **A Chinese dash written as two characters is one dash.** "我想——是他" no
+  longer comes out with a comma for each of them.
 - **A slip of "знать" for "звать" before a name is read as the word you meant**
   in Russian: "все знали её Маша" goes out as what everyone called her, not as
   knowing someone of hers called Masha.

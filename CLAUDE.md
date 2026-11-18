@@ -42,6 +42,11 @@ effort level is set in `.claude/settings.json`.
   fails when a language lacks a string English has, or has one English does not.
 - **The README exists in 16 languages too**: `README.md` plus
   `docs/README.<code>.md`. Same rule.
+- **What a language is written in is its row in `core/languages.ts`**: its
+  alphabet, its closing marks, whether it has capitals. The core reads the
+  record and never guesses from a prefix of the English name. Adding a language
+  is adding one row, and `test/prompts.mjs` fails on a row that names the wrong
+  alphabet or none.
 
 ## What each file does
 
@@ -57,7 +62,7 @@ effort level is set in `.claude/settings.json`.
 | `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`); and a deadline that works without `AbortSignal.timeout` |
 | `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, and every retry rule |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
-| `core/languages.ts` | The language list for the dropdowns |
+| `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals. Finding a record by name, and reading a text by them |
 | `core/locales.ts` | Interface text in 16 languages |
 | `core/chats.ts` | Which chats have auto-translation on |
 | `core/slots.ts` | Which providers this copy asks, in what order, and what each is called |
@@ -167,7 +172,7 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 291 checks; needs esbuild
+node test/prompts.mjs      # 352 checks; needs esbuild
 node test/log.mjs          # 32 checks on the log and on error notices; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
