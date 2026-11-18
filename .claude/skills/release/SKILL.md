@@ -18,14 +18,14 @@ versions of the plugin, which is why no build ever touches this.
 `main` is the working branch, and it is where work is committed and pushed, in a
 cloud session too: no `claude/...` branch of its own. `release` is what users
 get. The robot in `.github/workflows/build.yml` fetches `build/github.sh`
-**from `release`** as soon as `release` moves and every hour, builds Vencord
-with the plugin inside, and publishes the result on `builds.zolatau.com`;
-installed copies pick it up on their next check. Moving `release` is a
-deliberate act, never a side effect of a commit.
+**from `release`** as soon as `release` or `main` moves and every hour, builds
+Vencord with the plugin inside, and publishes the result on
+`builds.zolatau.com`; installed copies pick it up on their next check. Moving
+`release` is a deliberate act, never a side effect of a commit.
 
-The schedule runs `build.yml` as it is on `main`, a push to `release` as it is
-on `release`, and both share one concurrency group, so a run waits for the one
-before it rather than cancelling it. A change to the robot itself therefore
+The schedule runs `build.yml` as it is on `main`, a push as it is on the branch
+pushed to, and all of them share one concurrency group, so a run waits for the
+one before it rather than cancelling it. A change to the robot itself therefore
 reaches `release` by the same merge from `main`, without raising the version:
 the build it starts is like one made because Vencord moved.
 
@@ -47,10 +47,8 @@ installs those builds; an installed copy says which channel it follows in a
 line under the update button in the settings, and switches back there. Nothing
 advertises it: not the plugin's page, not the README. The one place it is
 written down is the page the robot itself generates on `builds.zolatau.com`.
-So every push to `main` reaches whoever is on that channel with the next
-build. A push to `main` starts none: the next one is a scheduled run, which
-GitHub fires hours apart, a move of `release`, or a manual run of Build, which
-is what brings a change out at once.
+So every push to `main` is built and published there at once, and reaches
+whoever is on that channel on their copy's next check.
 
 The whole site is replaced on every deploy, which is why the script carries
 over the files of whichever channel it did not rebuild. **If those cannot be

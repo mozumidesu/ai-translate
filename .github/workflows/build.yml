@@ -1,10 +1,10 @@
 # AI Translate - the build robot.
 #
-# Whenever the release branch moves, every hour for a new Vencord, and on
-# demand from Actions > Build > Run workflow, this fetches build/github.sh from
-# the plugin's release branch and runs it, and that script decides whether
-# there is anything new to build. It takes the copy on release rather than the
-# one on main, so a build only ever follows what has been released. It uses no
+# Whenever release or main moves, every hour for a new Vencord, and on demand
+# from Actions > Build > Run workflow, this fetches build/github.sh from the
+# plugin's release branch and runs it, and that script decides whether there
+# is anything new to build. It takes the copy on release rather than the one
+# on main, so a build only ever follows what has been released. It uses no
 # ready-made GitHub actions, only what every GitHub runner already has, so
 # nothing in it goes out of date.
 #
@@ -14,13 +14,13 @@
 
 name: Build
 
-# The schedule runs this file as it is on main, a push as it is on release, so
-# a change here has to reach release too.
+# A push runs this file as it is on the branch pushed to, the schedule as it is
+# on main, so a change here has to reach release too.
 on:
-  # GitHub fires the hourly schedule hours apart, so a moved release does not
-  # wait for it.
+  # GitHub fires the hourly schedule hours apart, so neither channel waits for
+  # it: release is the released one, main the testing one.
   push:
-    branches: [release]
+    branches: [release, main]
   # Vencord moves without telling anyone.
   schedule:
     - cron: "17 * * * *"
