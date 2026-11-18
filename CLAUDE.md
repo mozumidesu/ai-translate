@@ -205,7 +205,9 @@ no colour or margin, so `styles.css` names both and doubles the class.
   session too: no `claude/...` branch. `release` is what users get, and moving
   it is a deliberate act, never a side effect of a commit.
 - `main` is also the testing channel: every push to it reaches whoever follows
-  that channel within the hour. Nothing advertises it.
+  that channel with the next build. A push to `main` starts none, and GitHub
+  fires the hourly schedule hours apart, so a manual run of Build is what
+  brings it out at once. Nothing advertises it.
 - The robot takes `build/github.sh` from `release` and makes a GitHub release
   only when the version changed. If it cannot carry over the channel it did not
   rebuild, nothing is published at all.

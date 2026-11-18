@@ -40,14 +40,17 @@ runs the script with no checkout and so has no git remote to infer it from. A
 testing build never makes one: its number is the one the last release carries,
 so the release would say nothing.
 
-`main` is also the **testing channel**. The same hourly run builds it into
+`main` is also the **testing channel**. The same run builds it into
 `/testing/` on that same site, so a change can be tried without `release`
 moving at all. `AIT_CHANNEL=testing` in front of either install command
 installs those builds; an installed copy says which channel it follows in a
 line under the update button in the settings, and switches back there. Nothing
 advertises it: not the plugin's page, not the README. The one place it is
 written down is the page the robot itself generates on `builds.zolatau.com`.
-So every push to `main` reaches whoever is on that channel within the hour.
+So every push to `main` reaches whoever is on that channel with the next
+build. A push to `main` starts none: the next one is a scheduled run, which
+GitHub fires hours apart, a move of `release`, or a manual run of Build, which
+is what brings a change out at once.
 
 The whole site is replaced on every deploy, which is why the script carries
 over the files of whichever channel it did not rebuild. **If those cannot be
