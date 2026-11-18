@@ -54,6 +54,9 @@ jobs:
       - name: What a person sees, in sixteen languages
         run: ESBUILD=node_modules/esbuild node test/interface.mjs
 
+      - name: Whether the core still runs with nothing around it
+        run: ESBUILD=node_modules/esbuild node test/bare.mjs
+
       - name: Whether the Vencord imports still exist
         run: ESBUILD=node_modules/esbuild node test/imports.mjs
 

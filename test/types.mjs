@@ -8,11 +8,19 @@
  * `tags: ["Chat", "Utility", "Translate"]` went unnoticed after Vencord made
  * its tags a closed list and "Translate" stopped being one of them.
  *
+ * native.ts is read too, though nothing imports it: Vencord finds it by name.
+ * core/bridge.ts derives the type of the desktop bridge from it, so a misspelt
+ * member of the bridge, or a type error in native.ts, fails here.
+ *
  * Run it from the plugin folder:  node test/types.mjs
  *   VENCORD=/path/to/vencord     a checkout to check against
  *   otherwise test/imports.mjs's shallow clone is reused if it is there
  *
- * It needs the TypeScript compiler and npm, for React's types.
+ * It needs npm. The compiler and the types are installed once into a folder of
+ * their own, the compiler at the version Vencord builds with. It does not ask
+ * for a `tsc` it finds: on a machine with none (a CI runner) `npx tsc` fetches
+ * an abandoned package of that name, which checks nothing, and this test once
+ * took that silence for a pass.
  *
  * Errors Vencord's own build also carries are listed below and not counted:
  * its globals, its CSS imports, and one piece of inference in settings.ts that
@@ -36,17 +44,33 @@ if (!existsSync(join(VC, "tsconfig.json"))) {
     process.exit(2);
 }
 
-// React's types, which Vencord has as a dependency and a bare checkout does
-// not: without them every piece of JSX in the plugin is an error of its own.
+// What Vencord has as dependencies and a bare checkout does not: React's
+// types (without them every piece of JSX in the plugin is an error of its
+// own), Node's, which native.ts is written against, and the compiler.
 const deps = join(tmpdir(), "ai-translate-types");
-if (!existsSync(join(deps, "node_modules", "@types", "react"))) {
+const modules = join(deps, "node_modules");
+
+// The compiler's version is the one Vencord's own pnpm catalog names.
+const catalog = existsSync(join(VC, "pnpm-workspace.yaml")) ? readFileSync(join(VC, "pnpm-workspace.yaml"), "utf8") : "";
+const wanted = /^\s*["']?typescript["']?\s*:\s*["']?([^"'\s#]+)/m.exec(catalog)?.[1] ?? "latest";
+
+if (!["typescript", "@types/react", "@types/node"].every(name => existsSync(join(modules, name)))) {
     mkdirSync(deps, { recursive: true });
-    console.log("Installing React's types, once, into", deps);
+    console.log(`Installing TypeScript ${wanted} and the types, once, into`, deps);
     execFileSync("npm", ["install", "--no-save", "--no-audit", "--no-fund", "--prefix", deps,
-        "@types/react", "@types/node"], { stdio: ["ignore", "pipe", "pipe"] });
+        `typescript@${wanted}`, "@types/react", "@types/node"], { stdio: ["ignore", "pipe", "pipe"] });
 }
 
-const types = join(deps, "node_modules", "@types");
+const types = join(modules, "@types");
+const manifest = JSON.parse(readFileSync(join(modules, "typescript", "package.json"), "utf8"));
+const tsc = join(modules, "typescript", typeof manifest.bin === "string" ? manifest.bin : manifest.bin.tsc);
+console.log("TypeScript", manifest.version);
+
+// native.ts takes one thing from Electron, the event its functions are handed,
+// and a bare checkout has no node_modules to find Electron in. If it ever takes
+// more, this is where that is declared.
+const electron = join(deps, "electron.d.ts");
+writeFileSync(electron, 'declare module "electron" {\n    export interface IpcMainInvokeEvent {}\n}\n');
 
 const config = join(deps, "tsconfig.check.json");
 writeFileSync(config, JSON.stringify({
@@ -59,6 +83,8 @@ writeFileSync(config, JSON.stringify({
         noEmit: true,
         skipLibCheck: true,
         esModuleInterop: true,
+        // Named, because TypeScript 6 reads no @types package it is not told of.
+        types: ["node"],
         paths: {
             "@api/*": [`${VC}/src/api/*`],
             "@components/*": [`${VC}/src/components/*`],
@@ -73,8 +99,10 @@ writeFileSync(config, JSON.stringify({
     include: [
         `${PLUGIN}/index.tsx`,
         `${PLUGIN}/settings.ts`,
+        `${PLUGIN}/native.ts`,
         `${PLUGIN}/core/*.ts`,
-        `${PLUGIN}/ui/*.tsx`
+        `${PLUGIN}/ui/*.tsx`,
+        electron
     ]
 }, null, 2));
 
@@ -88,15 +116,27 @@ const EXPECTED = [
     /Cannot find name 'Vencord(Native)?'/,
     /Cannot find name 'IS_[A-Z_]+'/,
     /Cannot find module '~plugins'/,
-    /Cannot find module '\.\/native'/,
     /settings\.ts.*implicitly has (type|return type) 'any' because it (does not have|is referenced)/
 ];
 
 let output = "";
+let status = 0;
+let failure = "";
 try {
-    execFileSync("npx", ["tsc", "-p", config], { stdio: ["ignore", "pipe", "pipe"] });
+    // From the plugin folder, whichever the caller is in: the filter below tells
+    // ours from Vencord's by the paths tsc prints, relative to where it ran.
+    execFileSync(process.execPath, [tsc, "-p", config], { cwd: PLUGIN, stdio: ["ignore", "pipe", "pipe"] });
 } catch (e) {
+    status = e.status ?? 1;
+    failure = e.message;
     output = String(e.stdout ?? "") + String(e.stderr ?? "");
+}
+
+// A compiler that finds fault says what, so one that fails with nothing of the
+// kind to show did not run, and its silence is not a pass.
+if (status && !/error TS\d+/.test(output)) {
+    console.error("tsc did not run, so nothing was checked:\n" + (output.trim() || failure));
+    process.exit(2);
 }
 
 // tsc prints paths relative to where it was run, so the plugin's own files

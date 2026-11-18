@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Net, NetResponse } from "./net";
+import { Net, NetResponse, timeoutSignal } from "./net";
 
 /**
  * Who is asking. Protection in front of these APIs treats a client that names
@@ -74,7 +74,7 @@ export async function listModels(net: Net, payload: string) {
             break;
     }
 
-    const res = await net({ url, headers, signal: AbortSignal.timeout(20_000) });
+    const res = await net({ url, headers, signal: timeoutSignal(20_000) });
     if (!ok(res.status)) return { status: res.status, models: [] as string[], data: res.data };
 
     try {
@@ -280,7 +280,7 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
     // One budget for the whole exchange, retries included. Without it a request
     // the provider never answers waits for ever: no translation appears and no
     // error either, and from the outside the plugin looks simply dead.
-    const deadline = AbortSignal.timeout(60_000);
+    const deadline = timeoutSignal(60_000);
 
     const send = async (payload: any): Promise<Result> => {
         const res = await net({

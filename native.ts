@@ -16,6 +16,7 @@ import { join } from "path";
 import { channelRoot } from "./core/builds";
 import { fetchNet } from "./core/net";
 import { listModels, postFeedback, sendChat } from "./core/providers";
+import { VERSION } from "./core/version";
 
 export async function makeAiTranslateRequest(_: IpcMainInvokeEvent, payload: string) {
     return sendChat(fetchNet, payload);
@@ -32,12 +33,14 @@ export async function sendAiTranslateFeedback(_: IpcMainInvokeEvent, payload: st
 
     // Which build the report came from, so it can be checked against that
     // exact version. The form does not know it; this process does.
-    // A report from a testing build says so: the version number alone cannot,
-    // because it is the same one the last release carries.
+    // The plugin's version goes first and the build follows in brackets, the
+    // same from every copy (browserBuild in core/bridge.ts writes it for a
+    // browser). A report from a testing build says so: the version number
+    // alone cannot, because it is the same one the last release carries.
     const info = installedInfo();
-    const build = info ? info.channel === "testing" ? `${info.build} testing` : info.build : "dev";
+    const which = info ? info.channel === "testing" ? `${info.build} testing` : info.build : "dev";
 
-    return postFeedback(fetchNet, endpoint, { ...body, build });
+    return postFeedback(fetchNet, endpoint, { ...body, build: `${VERSION} (${which})` });
 }
 
 // --- updates ---

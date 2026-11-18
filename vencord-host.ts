@@ -47,6 +47,9 @@ export const vencordHost: Host = {
 
     meId: () => UserStore.getCurrentUser()?.id,
 
+    // The language Discord is shown in, which a plugin set to follow it speaks.
+    appLocale: () => document.documentElement.lang || navigator.language || "en",
+
     notice(text: string, kind: "message" | "failure") {
         try {
             // One object, and the text is read off it. Handed a string, as this

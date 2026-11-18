@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { dialect } from "./host";
+
 export interface KeptPiece {
     /** Exactly what goes back into the message. */
     text: string;
@@ -83,9 +85,6 @@ function numberOf(digits: string) {
 /** Fenced blocks first, then inline code in double and in single backticks. */
 const CODE = /```[\s\S]*?```|``(?:[^`\n]|`(?!`))+?``|`[^`\n]+`/g;
 
-/** Discord's own escapes — \*, \_, \:emoji:, \@everyone — are not markers. */
-const ESCAPED = new Set([..."\\*_~`|<>#:@[]-()/"]);
-
 /**
  * Faces drawn with a backslash. Arms raised: \o/, \m/, \^^/, \ ^^ /, \(^o^)/,
  * \ (•◡•) /, a backslash, a few marks and a slash. And the shrug, ¯\_(ツ)_/¯,
@@ -101,9 +100,6 @@ function looksLikeFace(between: string) {
 
 /** A marker opens after a space or an opening bracket or quote, never mid-word. */
 const OPENERS = new Set([..."([{\"'«„“‘‹（「『【"]);
-
-/** Discord markdown that may stand in front of a line-long marker. */
-const LINE_START = /^[ \t]*(?:#{1,3}[ \t]+|-#[ \t]+|>{1,3}[ \t]+|[-*][ \t]+|\d+\.[ \t]+)?[ \t]*$/;
 
 interface Span {
     start: number;
@@ -145,6 +141,9 @@ function findFaces(text: string, code: Span[]): Span[] {
 }
 
 function findMarkers(text: string, code: Span[], faces: Span[]): Span[] {
+    // What the chat itself escapes is not a marker, and what it draws at the
+    // start of a line may stand in front of one.
+    const chat = dialect();
     const spans: Span[] = [];
     // Neither code nor a face can open or close a marker.
     const skipAt = (i: number) =>
@@ -166,11 +165,11 @@ function findMarkers(text: string, code: Span[], faces: Span[]): Span[] {
 
             const next = text[i + 1] ?? "";
             const prev = i > lineStart ? text[i - 1] : "";
-            const atLineStart = LINE_START.test(text.slice(lineStart, i));
+            const atLineStart = chat.lineStart.test(text.slice(lineStart, i));
 
             const opens = (atLineStart || /\s/.test(prev) || OPENERS.has(prev))
                 && next !== "" && next !== "\n"
-                && !ESCAPED.has(next)
+                && !chat.escapes.has(next)
                 // "\ text" only at the start of a line; mid-line it is a stray backslash
                 && (!/\s/.test(next) || atLineStart);
 
@@ -266,9 +265,12 @@ const BACKSLASH = /\\([!-/:-@[-`{-~])?/g;
  * it was typed, and the mark after it with it, so \*this\* is not drawn in
  * italics either. A < is left alone: a mention after a backslash would
  * otherwise be shown as its number. Code is left alone as well, because
- * Discord already shows a backslash in code as it is.
+ * Discord already shows a backslash in code as it is. A chat that escapes
+ * nothing shows a backslash as typed, and the text goes back as it came.
  */
 export function literalBackslashes(text: string) {
+    if (!dialect().escapes.size) return text;
+
     const outside = (part: string) => part.replace(BACKSLASH, (_, mark?: string) =>
         mark === undefined ? "\\\\" : mark === "<" ? "\\\\<" : "\\\\\\" + mark);
 

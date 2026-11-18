@@ -473,5 +473,94 @@
     ],
     "mustNot": [],
     "group": "dative"
+  },
+  {
+    "id": "an-adverb-never-describes-a-noun",
+    "why": "\"あら、ねーちゃん！気分いいね！\" came back as \"Как здорово настроение!\" 5 runs out of 5, and inside the two-line message it came from 10 out of 10: \"Как здорово!\" with the noun put after it, where an adverb cannot describe a noun (\"Ты в отличном настроении!\"). It takes \"ねーちゃん\": without it the same words come back as \"Настроение отличное!\", and \"Oh, sis! What a great mood!\" as \"Какое классное настроение!\". No rule in the prompt brings it on, and five rules written against it, one quoting the phrase as not Russian, left it 25 runs out of 30. At medium reasoning it is right 4 runs out of 5, but reasoning stays low for speed. A rule that does not work is not worth its tokens, so the case stays to say whether a model ever stops doing it",
+    "kind": "received",
+    "to": "Russian",
+    "text": "あら、ねーちゃん！気分いいね！(≧∇≦)b",
+    "must": [],
+    "mustNot": [
+      "как здорово настроение",
+      "как классно настроение",
+      "как круто настроение",
+      "как хорошо настроение",
+      "как отлично настроение"
+    ],
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "みんな！元気？何してる？"
+      }
+    ]
+  },
+  {
+    "id": "a-slip-in-a-verb-of-naming-is-read",
+    "why": "\"Привык знать его Oxen\", typed for \"Привык звать его Oxen\", I'm used to calling him Oxen, went out as \"Me acostumbré a conocer a Oxen\", and through this runner came back \"conocer su Oxen\" 9 runs out of 10 and \"conocerlo Oxen\" once: the one-letter slip translated as it stood, and \"его\" made \"his\" to fit it, so the name became somebody else. Typed right it comes back \"llamarlo Oxen\" 3 runs of 3 with no rule at all, so the slip is the whole fault. \"Decirle Oxen\" would be right too and fails this, so read a failure before counting it",
+    "kind": "sent",
+    "to": "Spanish",
+    "text": "Привык знать его Oxen",
+    "must": [
+      "llam"
+    ],
+    "mustNot": [
+      "conoc",
+      "a oxen",
+      "su oxen"
+    ]
+  },
+  {
+    "id": "a-name-in-an-object-case-is-someone-else",
+    "why": "the other side of the slip: the rule reads \"знать\" before a pronoun and a name as \"звать\", and \"знал его Машу\" has those three words in a row. The name is in the case of an object, so it is knowing his Masha, and nothing is a slip",
+    "kind": "sent",
+    "to": "Spanish",
+    "text": "Я хорошо знал его Машу",
+    "must": [
+      "conoc"
+    ],
+    "mustNot": [
+      "llam"
+    ],
+    "group": "reverse"
+  },
+  {
+    "id": "a-code-naming-the-target-is-not-the-last-word",
+    "why": "\"Hola a todos, ¿cómo están hoy?\" answered \"[en] Hi everyone, how are you today?\" went out in Spanish, as typed: the code named the language it was translated into, and Spanish and English share the alphabet that was meant to back the code up. Through this runner none of Groq's three models did it: before the fix the code came back \"[es]\" in 10 runs of 10 for each of gpt-oss-120b, gpt-oss-20b and qwen3.8-27b, and after it the message was translated in every run, 10 of 10, 5 of 5 and 5 of 5. Gemini answered none of 10 that day. The answer that went out in Spanish came from a fake provider, so this case is kept for a model that does write the target's code",
+    "kind": "sent",
+    "to": "English",
+    "text": "Hola a todos, ¿cómo están hoy?",
+    "must": [
+      "today"
+    ],
+    "mustNot": [
+      "hola",
+      "todos",
+      "están"
+    ],
+    "group": "tag"
+  },
+  {
+    "id": "a-message-already-in-the-target-goes-as-typed",
+    "why": "the other side: \"Yo everyone! Gll\" once went out as \"Heyyy\", English rewritten into other English under a code that said English. A message already in the target goes out exactly as typed. Through this runner gpt-oss-120b and gpt-oss-20b take it for Spanish, for \"Yo\": all 25 of their answers read raw began \"[es]\", and \"I everyone! Gll\" or \"Hey everyone! Gll\" came back for the first in 2 and 3 runs of two tens with the fix and 3 of 10 without it, and for the second in 4 runs of 5. A code naming another language never reaches the question asked again, so this fails for a reason of its own that no rule answers yet. qwen3.8-27b: 5 of 5 as typed",
+    "kind": "sent",
+    "to": "English",
+    "text": "Yo everyone! Gll",
+    "must": [
+      "Yo everyone! Gll"
+    ],
+    "group": "tag"
+  },
+  {
+    "id": "a-message-typed-loosely-in-the-target-goes-as-typed",
+    "why": "the same with a message a model is tempted to tidy: lower case, no apostrophes. Tidied, it is no longer what was typed, and it was already in the language it goes out in. With the fix it went as typed 10 runs of 10 for gpt-oss-120b and 5 of 5 for gpt-oss-20b and qwen3.8-27b",
+    "kind": "sent",
+    "to": "English",
+    "text": "im gonna be late, dont wait for me",
+    "must": [
+      "im gonna be late, dont wait for me"
+    ],
+    "group": "tag"
   }
 ]

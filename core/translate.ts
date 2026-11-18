@@ -15,9 +15,11 @@
  */
 
 import { Bridge } from "./bridge";
-import { config, meId, notice, recent } from "./host";
+import type { Dialect } from "./dialect";
+import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { LANGUAGES } from "./languages";
+import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from "./languages";
+import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record } from "./log";
 import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
@@ -61,15 +63,22 @@ export function notify(what: unknown, type: "message" | "failure") {
 
 // --- prompts ---
 
-/** Discord renders these itself; translating them breaks the message. */
-const KEEP_VERBATIM =
-    "emoji, :shortcodes:, custom emoji <:name:123>, mentions <@123>, roles <@&123>, "
-    + "channels <#123>, timestamps <t:123:R>, URLs, inline `code` and ```code blocks```, "
-    + "spoilers ||like this||, and anything that is drawn rather than written — kaomoji and "
+/**
+ * The chat draws these itself; translating them breaks the message. What it
+ * draws is its dialect's to say: a chat with no markdown is told to guard none.
+ */
+const keepVerbatim = ({ prompt }: Dialect) => [
+    "emoji", ":shortcodes:", ...prompt.ids,
+    "URLs", "inline `code` and ```code blocks```", ...prompt.marks,
+    "and anything that is drawn rather than written — kaomoji and "
     + "emoticons such as \\ ^^ / , \\o/ , :3 , TT , ¯\\_(ツ)_/¯ — which must be copied character "
-    + "for character, slashes and backslashes included. Markdown that starts a line — headings (#, ##, ###), "
-    + "subtext (-#), quotes (>), bullets (- or *) and numbered list markers — must stay at "
-    + "the start of that line, exactly as written";
+    + "for character, slashes and backslashes included"
+].join(", ") + (prompt.lines
+    ? `. Markdown that starts a line — ${prompt.lines} — must stay at the start of that line, exactly as written`
+    : "");
+
+/** "a Discord", "an Element": the name of the app with the article it takes. */
+const withArticle = (name: string) => `${/^[aeio]/i.test(name) ? "an" : "a"} ${name}`;
 
 /**
  * Without this, a pet form of a name becomes a generic endearment, and a
@@ -294,9 +303,24 @@ function glossaryKeeps() {
         .map(([from]) => from);
 }
 
+const linked = new WeakMap<Dialect, RegExp>();
+
+/** The chat's raw ids and links in one pattern: neither is something a person said. */
+function idsAndLinks() {
+    const chat = dialect();
+    let found = linked.get(chat);
+
+    if (!found) {
+        found = new RegExp([...chat.ids.map(id => id.source), "https?:\\/\\/\\S+"].join("|"), "g");
+        linked.set(chat, found);
+    }
+
+    return found;
+}
+
 /** A message or a name with only its letters and digits left, to compare the two. */
 const lettersOf = (text: string) => text
-    .replace(/<a?:\w+:\d+>|<[@#][!&]?\d+>|<t:\d+(?::[tTdDfFR])?>|https?:\/\/\S+/g, " ")
+    .replace(idsAndLinks(), " ")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim()
     .toLowerCase();
@@ -400,6 +424,16 @@ const FRAGMENT_CASE_RULE =
 /** More than one sentence or line: a fragment needs a sentence beside it to borrow from. */
 const SEVERAL_SENTENCES = /[.?!…？！。]\s+\S|\n\s*\S/u;
 
+// "Привык знать его Oxen" went out as "conocer su Oxen" 9 runs out of 10, and with this as "llamarlo Oxen"
+// 10 of 10. Naming the fault without naming the two verbs left "conocer" in 25 runs of 25.
+const CALLING_RULE =
+    "With a pronoun and a name straight after it, Russian \"знать\" is a slip for \"звать\", a letter away: "
+    + "\"все знали её Маша\" means \"все звали её Маша\", what she is called. Translate a verb of calling, never "
+    + "one of knowing: the pronoun is that person and the name the one they go by, never someone else.";
+
+/** The forms of "знать" a letter away from "звать", with a pronoun and a name after them. */
+const KNOWN_BY_NAME = /(?<![\p{L}\p{N}])зна(?:ть|л|ла|ло|ли)\s+(?:меня|тебя|его|её|ее|нас|вас|их)\s+(?=\p{Lu}|\p{Script=Latin})/u;
+
 /** Only with a message in or into Arabic. */
 const ARABIC_COURTESY =
     "Arabic \u0639\u0641\u0648\u0627 is both \"sorry\" and \"you are welcome\": where the rest of the message "
@@ -425,6 +459,7 @@ function messageRules(kind: Kind, text: string, has: Involved) {
         SHORT_NAME.test(plain) ? SHORT_NAMES_RULE : "",
         has.address ? ADDRESS_RULE : "",
         has.declines && SEVERAL_SENTENCES.test(plain) ? FRAGMENT_CASE_RULE : "",
+        KNOWN_BY_NAME.test(plain) ? CALLING_RULE : "",
         kind === "received" && has.vietnamese ? VIETNAMESE_NEGATION : "",
         has.arabic ? ARABIC_COURTESY : ""
     ].filter(Boolean);
@@ -463,7 +498,7 @@ function formalityRule(target: string) {
 
 function outgoingPrompt(target: string, has: Involved) {
     return [
-        `You are a translation engine inside a Discord chat client. Translate the user's message into ${target}.`,
+        `You are a translation engine inside ${withArticle(appName())} chat client. Translate the user's message into ${target}.`,
         "",
         "The result is sent under the user's own name, so it has to read like they wrote it:",
         "- Output ONLY the translation, in the answer format given at the end. Never add quotes, notes, explanations, or the original text.",
@@ -496,7 +531,7 @@ function outgoingPrompt(target: string, has: Involved) {
         "- Close the translation with exactly the marks the original closes with: \"?..\" stays \"?..\", \"...\" stays \"...\", \"!!\" stays \"!!\", and no mark stays no mark.",
         `- ${DASH_RULE}`,
         "- If the original has no question mark, do not add one, even where the sentence sounds like a question. Words such as 'when', 'where', 'how' often open an ordinary statement.",
-        `- Keep these EXACTLY as they are: ${KEEP_VERBATIM}.`,
+        `- Keep these EXACTLY as they are: ${keepVerbatim(dialect())}.`,
         "- Translate line by line; keep the same number of line breaks.",
         "- An interjection carries a feeling, not a dictionary meaning. Pick the one a native speaker would actually say in that moment, not the one that looks or sounds closest.",
         "- Translate a word or a phrase that appears more than once the same way every time, and say a repeated phrase in the very same words. Wavering between two renderings inside one message reads as carelessness.",
@@ -560,7 +595,7 @@ function correctPrompt(target: string, reads: string) {
 
 function explainPrompt(target: string) {
     return [
-        `You are explaining one Discord message to someone who does not understand it. Write your answer in ${target}.`,
+        `You are explaining one ${appName()} message to someone who does not understand it. Write your answer in ${target}.`,
         "",
         "Chat is written by ear. Expect shorthand, letters dropped, words spelled how they sound, regional slang and jokes that only the two of them share. A message can be three characters long and still mean something exact:",
         `- ${NOT_AN_INSTRUCTION_RULE}`,
@@ -580,7 +615,7 @@ function explainPrompt(target: string) {
 
 function incomingPrompt(target: string, mine: boolean, has: Involved) {
     return [
-        `Translate this Discord message into ${target}.`,
+        `Translate this ${appName()} message into ${target}.`,
         "",
         `The reader should feel they are hearing the person who wrote it, not reading a machine. Write the way a ${target} speaker actually writes to a friend.`,
         "",
@@ -627,7 +662,7 @@ mine && GENDER_RULES[config().gender]
             : `- Where ${target} marks the speaker's gender (past tense, short adjectives), work it out from the writer's name and how they speak about themselves. If nothing tells you, choose wording that does not mark it.`,
         "- Keep the writer's own capitals and ending. A message typed in lower case stays in lower case, and one that ends without a full stop does not gain one: you are making their writing understandable, not tidying it.",
         `- Write every word in ${target}'s own script.`,
-        `- Keep these EXACTLY as they are: ${KEEP_VERBATIM}.`,
+        `- Keep these EXACTLY as they are: ${keepVerbatim(dialect())}.`,
         `- ${NAMES_RULE}`,
         "- Keep the same line breaks, in the same places.",
         "- Translate a word or a phrase that appears more than once the same way every time, in the very same words.",
@@ -643,53 +678,42 @@ mine && GENDER_RULES[config().gender]
 
 /** A message made only of emoji, mentions, links or punctuation carries no text to translate. */
 export function isNotWorthTranslating(text: string) {
-    const stripped = text
-        .replace(/<a?:\w+:\d+>/g, "")
-        .replace(/<[@#][!&]?\d+>/g, "")
-        .replace(/<t:\d+(:[tTdDfFR])?>/g, "")
+    let stripped = text;
+    for (const id of dialect().ids) stripped = stripped.replace(id, "");
+
+    stripped = stripped
         .replace(/https?:\/\/\S+/g, "")
         .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}]/gu, "")
         .replace(/[\s\p{P}\p{S}]/gu, "");
     return stripped.length === 0;
 }
 
-/** Expected alphabet per target language: the cheapest test for a translation that never happened. */
-const SCRIPTS: [RegExp, string[]][] = [
-    [/\p{Script=Cyrillic}/u, ["Russian", "Ukrainian", "Belarusian", "Bulgarian", "Serbian", "Macedonian", "Kazakh", "Mongolian"]],
-    [/\p{Script=Arabic}/u, ["Arabic", "Persian", "Urdu", "Pashto"]],
-    [/\p{Script=Hebrew}/u, ["Hebrew", "Yiddish"]],
-    [/\p{Script=Greek}/u, ["Greek"]],
-    [/\p{Script=Thai}/u, ["Thai"]],
-    [/\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}/u, ["Japanese"]],
-    [/\p{Script=Han}/u, ["Chinese (Simplified)", "Chinese (Traditional)", "Chinese"]],
-    [/\p{Script=Hangul}/u, ["Korean"]],
-    [/\p{Script=Devanagari}/u, ["Hindi", "Marathi", "Nepali"]],
-    [/\p{Script=Bengali}/u, ["Bengali"]],
-    [/\p{Script=Tamil}/u, ["Tamil"]],
-    [/\p{Script=Armenian}/u, ["Armenian"]],
-    [/\p{Script=Georgian}/u, ["Georgian"]]
-];
+/** What is writing in a text: not its code, its links, its mentions or its :shortcodes:. */
+const writingOf = (text: string) => text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "");
 
-function expectedScript(language: string) {
-    for (const [pattern, languages] of SCRIPTS)
-        if (languages.some(l => language.toLowerCase().startsWith(l.toLowerCase()))) return pattern;
+/** A word as it is compared: without its case, and in the one form Unicode has for it. */
+const wordKey = (word: string) => word.normalize("NFC").toLowerCase();
 
-    return /\p{Script=Latin}/u;
-}
+/**
+ * Share of the letters that are written in the alphabet the target uses. Given
+ * the message an answer is for, it leaves out the words that stand unchanged in
+ * it: a game, an app or a user's name, which the model was told to keep, is in
+ * the alphabet of the message and says nothing about whether the answer is in
+ * the target's. Only when nothing else is left is the whole answer counted, since
+ * an answer that repeats the message word for word is the one that has to be.
+ */
+export function scriptShare(text: string, language: string, source = "") {
+    const pattern = scriptPattern(language);
+    const words = writingOf(text).match(/[\p{L}\p{M}]+/gu) ?? [];
+    const kept = new Set((writingOf(source).match(/[\p{L}\p{M}]+/gu) ?? []).map(wordKey));
+    const changed = words.filter(word => !kept.has(wordKey(word)));
 
-/** Share of the letters that are written in the alphabet the target uses. */
-export function scriptShare(text: string, language: string) {
-    const pattern = expectedScript(language);
-    const letters = text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "").match(/\p{L}/gu) ?? [];
+    const letters = (changed.length ? changed : words).join("").match(/\p{L}/gu) ?? [];
     if (!letters.length) return 1;
 
     return letters.filter(ch => pattern.test(ch)).length / letters.length;
 }
 
-/** Discord markdown that only works at the very start of a line. */
-const LINE_PREFIX = /^(\s*(?:#{1,3}\s|-#\s|>{1,3}\s|[-*]\s|\d+\.\s))/;
-
-/** Models drop line-leading markers. If the line count matches, put them back. */
 /**
  * An empty line between two paragraphs is how the writer separated them, and
  * a model very often answers with the paragraphs run together. Where the only
@@ -709,15 +733,22 @@ function keepBlankLines(original: string, translated: string) {
     return from.map(line => (line.trim() === "" ? "" : written[next++])).join("\n");
 }
 
+/**
+ * Models drop line-leading markers. If the line count matches, put them back.
+ * Only a chat that draws such markdown has any to put back.
+ */
 function restoreLinePrefixes(original: string, translated: string) {
+    const marked = dialect().lineMark;
+    if (!marked) return translated;
+
     const from = original.split("\n");
     const to = translated.split("\n");
     if (from.length !== to.length) return translated;
 
     return to.map((line, i) => {
-        const prefix = from[i].match(LINE_PREFIX)?.[1];
+        const prefix = from[i].match(marked)?.[1];
         if (!prefix) return line;
-        if (LINE_PREFIX.test(line)) return line;
+        if (marked.test(line)) return line;
         return prefix + line.trimStart();
     }).join("\n");
 }
@@ -736,6 +767,20 @@ const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
 
 /** Links, mentions, custom emoji and timestamps are left alone. */
 const NOT_PROSE = /https?:\/\/\S+|www\.\S+|<[^>\s]+>/g;
+
+/** Runs `change` over the prose between links, mentions and the like, which it never sees. */
+function inProse(text: string, change: (prose: string) => string) {
+    let out = "";
+    let last = 0;
+
+    for (const match of text.matchAll(NOT_PROSE)) {
+        const at = match.index ?? 0;
+        out += change(text.slice(last, at)) + match[0];
+        last = at + match[0].length;
+    }
+
+    return out + change(text.slice(last));
+}
 
 /**
  * "yeah = yes" says which of the two words the user wants to see, and that
@@ -764,29 +809,10 @@ function applyGlossary(text: string) {
             : to;
     }), part);
 
-    let out = "";
-    let last = 0;
-
-    for (const match of text.matchAll(NOT_PROSE)) {
-        const at = match.index ?? 0;
-        out += swap(text.slice(last, at)) + match[0];
-        last = at + match[0].length;
-    }
-
-    return out + swap(text.slice(last));
+    return inProse(text, swap);
 }
 
-/** The prompt asks for these; this enforces them. */
-/** The same mark is drawn differently in different writing systems. */
-/** The run of marks a message closes on: "?..", "!!", "...", "?!", ".". */
-const CLOSING = /[.?!…。？！｡؟]+$/;
-
-/** The same marks written the Western way, so "？" and "?" count as one. */
-const plainMarks = (run: string) => run
-    .replace(/[。｡]/g, ".")
-    .replace(/[？؟]/g, "?")
-    .replace(/！/g, "!")
-    .replace(/…/g, "...");
+// The prompt asks for these; this enforces them.
 
 /**
  * A dash the writer typed: any em or en dash, or a hyphen standing between
@@ -797,8 +823,11 @@ const WRITERS_DASH = /[\u2013\u2014\u2015]|[^\S\n]-[^\S\n]/;
 /** The one they held two parts apart with, spaces on both sides of it. */
 const SPACED_DASH = /[^\S\n]([-\u2013\u2014\u2015])[^\S\n]/;
 
-/** A long dash however it is spaced, and a hyphen only where it stands between spaces. */
-const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015][^\S\n]*/g;
+/**
+ * A long dash however it is spaced, and a hyphen only where it stands between
+ * spaces. A run of long dashes, a Chinese "——", is one dash.
+ */
+const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015]+[^\S\n]*/g;
 
 /**
  * "all—or almost all—of the problems", where the writer typed no dash at all:
@@ -808,7 +837,7 @@ const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015][^\S\n]*/g
 function dropAddedDashes(source: string, translated: string) {
     if (WRITERS_DASH.test(source)) return translated;
 
-    return translated.replace(/\s*[\u2013\u2014\u2015]\s*/g, (run: string, at: number, whole: string) => {
+    return translated.replace(/\s*[\u2013\u2014\u2015]+\s*/g, (run: string, at: number, whole: string) => {
         const before = whole[at - 1] ?? "";
         const after = whole[at + run.length] ?? "";
 
@@ -860,8 +889,12 @@ function settleGender(text: string, target: string) {
     // this, a plural in brackets would quietly lose its ending.
     if (isLanguage(target, "english")) return text;
 
-    return text.replace(HEDGED_ENDING, (whole, stem: string, dash: string, ending: string) =>
-        gender === "male" ? stem : stem + ending.replace(/^-/, ""));
+    return text.replace(HEDGED_ENDING, (whole, stem: string, dash: string, ending: string) => {
+        // An ending continues its word in the language's own alphabet: "sin(x)"
+        // in a Russian answer is code, and "今日(きょう)" is a word and its reading.
+        if (!writtenIn(target, stem, ending)) return whole;
+        return gender === "male" ? stem : stem + ending.replace(/^-/, "");
+    });
 }
 
 /**
@@ -891,7 +924,7 @@ const inTwoAlphabets = (word: string) => /\p{Script=Latin}/u.test(word) && /\p{S
  * only in a word mostly written in it, so "в Discordе" keeps its Russian ending.
  */
 function oneAlphabet(text: string, target: string) {
-    const script = expectedScript(target);
+    const script = scriptPattern(target);
     const cyrillic = script.test("\u0430");
     if (!cyrillic && !script.test("a")) return text;
 
@@ -905,6 +938,16 @@ function oneAlphabet(text: string, target: string) {
         return word.replace(stray, letter => twins[letter]);
     });
 }
+
+/**
+ * The English pronoun as a model writes it in lower case, on its own or in a
+ * contraction. A dot after it closes a sentence only when no letter follows it:
+ * that is what tells "so do i." from "i.e.". A slash or an equals sign beside it
+ * means a path or a query, in an address that no link span covers.
+ */
+const PRONOUN_I = /(^|[^\p{L}\p{N}/])i(?=$|[^\p{L}\p{N}'’./=]|\.(?!\p{L}))/gu;
+const CONTRACTED_I = /(^|[^\p{L}\p{N}/])i(?=['’](?:m|ve|ll|d|re)\b)/giu;
+const STARTS_WITH_I = /^I(?=$|[^\p{L}\p{N}.]|\.(?!\p{L}))/u;
 
 function postProcess(original: string, translated: string, target: string, kind: Kind) {
     let t = translated.trim();
@@ -942,39 +985,40 @@ function postProcess(original: string, translated: string, target: string, kind:
         // what the translation closes with. Checking only for a question mark
         // is how "?.." once went out bare: the model shortened it to "?", and
         // a source that did not end on "?" had that stripped too.
-        const theirs = source.match(CLOSING)?.[0] ?? "";
-        const ours = t.match(CLOSING)?.[0] ?? "";
+        // Each is read in the marks of the language it is written in.
+        const theirs = closingOf(source);
+        const ours = closingOf(t, target);
 
-        if (plainMarks(ours) !== plainMarks(theirs))
-            t = t.slice(0, t.length - ours.length).trimEnd() + theirs;
+        if (ours.plain !== theirs.plain)
+            t = t.slice(0, t.length - ours.run.length).trimEnd() + closeIn(target, theirs.run);
 
         // Spanish opens questions and exclamations as well; those go when the
         // matching closing mark is not there.
-        if (!plainMarks(theirs).includes("?")) t = t.replace(/^¿\s*/, "");
-        if (!plainMarks(theirs).includes("!")) t = t.replace(/^¡\s*/, "");
+        if (!theirs.plain.includes("?")) t = t.replace(/^¿\s*/, "");
+        if (!theirs.plain.includes("!")) t = t.replace(/^¡\s*/, "");
     }
 
     // A lower-case "i" is never the English pronoun, whatever the model thinks.
-    if (/^english/i.test(target)) {
-        t = t.replace(/(^|[^\p{L}\p{N}])i(?=$|[^\p{L}\p{N}'’])/gu, "$1I");
-        t = t.replace(/(^|[^\p{L}\p{N}])i(?=['’](?:m|ve|ll|d|re)\b)/giu, "$1I");
-    }
+    // In prose only: an address has its own letters, and "i.e." is no pronoun.
+    if (isLanguage(target, "english"))
+        t = inProse(t, prose => prose.replace(PRONOUN_I, "$1I").replace(CONTRACTED_I, "$1I"));
 
     // The writer's own capital at the start should survive, and so should its
     // absence: chat is typed in lower case on purpose. German is left alone,
     // because there every noun is capitalised whatever the original did.
     const firstLetter = source.match(/\p{L}/u)?.[0];
-    const cased = !!firstLetter && firstLetter.toUpperCase() !== firstLetter.toLowerCase();
+    const cased = !!firstLetter && hasCase(firstLetter) && firstLetter.toUpperCase() !== firstLetter.toLowerCase();
 
     // Two capitals are the language's own and not the writer's to drop: every
     // German noun, and the English pronoun "I".
-    const keepsCapital = /^german/i.test(target)
-        || (/^english/i.test(target) && /^I(?=$|[^\p{L}\p{N}])/u.test(t));
+    const keepsCapital = isLanguage(target, "german")
+        || (isLanguage(target, "english") && STARTS_WITH_I.test(t));
 
+    // An alphabet with no capitals people type has no case to change.
     if (cased && firstLetter === firstLetter!.toUpperCase())
-        t = t.replace(/\p{L}/u, c => c.toUpperCase());
+        t = t.replace(/\p{L}/u, c => (hasCase(c) ? c.toUpperCase() : c));
     else if (cased && !keepsCapital)
-        t = t.replace(/\p{L}/u, c => c.toLowerCase());
+        t = t.replace(/\p{L}/u, c => (hasCase(c) ? c.toLowerCase() : c));
 
     return restoreLinePrefixes(source, keepBlankLines(source, t));
 }
@@ -994,8 +1038,8 @@ function extractText(provider: string, raw: string): string {
     }
 }
 
-/** Anything in square brackets at the very start of a line. */
-const BRACKETED = /^[ \t]*\[([^\]\n]{1,24})\][ \t]*/;
+/** Anything in square brackets at the very start of a line, but a link's words: "[FAQ](…)" is no code. */
+const BRACKETED = /^[ \t]*\[([^\]\n]{1,24})\](?!\()[ \t]*/;
 
 /** A language code, or the English name of one: what the prompt asked for. */
 function looksLikeLanguage(token: string) {
@@ -1082,28 +1126,27 @@ const CUT_OFF = /"finish_reason"\s*:\s*"length"|"finishReason"\s*:\s*"MAX_TOKENS
 const CONTEXT_MESSAGES = 4;
 
 /**
- * Discord writes a mention, a custom emoji, a channel or a timestamp as a raw
+ * Other people's text goes into the rules, where a line break of theirs would
+ * start a paragraph that reads like one of ours. Every kind of break goes.
+ */
+const oneLine = (text: string) => text.replace(/[\p{White_Space}\p{Cc}]+/gu, " ").trim();
+
+/** Discord stops a name at 32 characters and Telegram a first name at 64. */
+const NAME_LIMIT = 64;
+
+const asName = (name: unknown) => Array.from(oneLine(String(name ?? ""))).slice(0, NAME_LIMIT).join("").trim();
+
+/**
+ * A chat may write a mention, a custom emoji, a channel or a timestamp as a raw
  * id, which tells a model nothing and costs real tokens: twelve for one emoji,
  * nine for one mention, twenty-eight for an attachment's address. The message
  * being translated keeps all of them exactly as typed; only these context
  * lines, which are read once and thrown away, are cleaned.
  */
 function readable(text: string, names: Map<string, string>) {
-    return text
-        // A custom emoji keeps its name, which carries a little meaning.
-        .replace(/<a?:(\w+):\d+>/g, ":$1:")
-        // A mention is a number until it is a name.
-        .replace(/<@!?(\d+)>/g, (_, id) => names.get(id) ?? "(someone)")
-        // The rest name nothing a reader could use, but taking them out
-        // altogether leaves a hole: "про который ты говорил в" reads worse
-        // than the number did. A word of the right shape goes in their place.
-        .replace(/<@&\d+>/g, "(a role)")
-        .replace(/<#\d+>/g, "(a channel)")
-        .replace(/<t:\d+(?::[tTdDfFR])?>/g, "(a time)")
+    return oneLine(dialect().readIds(text, names)
         // A link cannot be followed from here; that one was shared is enough.
-        .replace(/https?:\/\/\S+|www\.\S+/g, "(link)")
-        .replace(/[^\S\n]{2,}/g, " ")
-        .trim();
+        .replace(/https?:\/\/\S+|www\.\S+/g, "(link)"));
 }
 
 /**
@@ -1135,20 +1178,24 @@ export function collectContext(channelId: string, beforeId?: string): string {
         // have spoken earlier than the lines that are handed over.
         const names = new Map<string, string>();
         if (me) names.set(me, "Me");
-        for (const m of said)
-            if (m.authorId && m.authorName) names.set(m.authorId, m.authorName);
+        for (const m of said) {
+            const name = asName(m.authorName);
+            if (m.authorId && name) names.set(m.authorId, name);
+        }
 
         const lines: string[] = [];
         for (const m of said.slice(-CONTEXT_MESSAGES)) {
+            const name = asName(m.authorName);
+
             // Whoever is talking here is a person the message may name.
-            if (m.authorName) protectedWords.add(m.authorName);
+            if (name) protectedWords.add(name);
 
             // A message that was nothing but an emoji or a mention is empty
             // once cleaned, and an empty line only costs tokens.
             const content = readable(m.content, names).slice(0, 300);
             if (!content) continue;
 
-            lines.push(`${m.authorId === me ? "Me" : (m.authorName || "Them")}: ${content}`);
+            lines.push(`${m.authorId === me ? "Me" : (name || "Them")}: ${content}`);
         }
 
         if (lines.length)
@@ -1179,6 +1226,15 @@ function isSameLanguage(reported: string, language: string) {
 
     return said === language.toLowerCase() || (!!known && said === known.code.toLowerCase());
 }
+
+// "Hola a todos" answered "[en] Hi everyone" went out in Spanish: the code named the language it went into.
+// Groq's three models wrote "[es]" there 30 runs of 30: the second request is for a model that does not.
+const namedTheTarget = (target: string) =>
+    `\n\nIMPORTANT: your previous answer began with the code of ${target}, as if the message were already written`
+    + ` in ${target}, yet it did not give the message back as written. The code names the language the message is`
+    + ` written in, the language it is translated FROM. If the message really is written in ${target}, answer with`
+    + " that code and the message exactly as written. If it is not, answer with the code of the language it is"
+    + " written in, then the translation.";
 
 export interface TranslationResult {
     text: string;
@@ -1211,12 +1267,104 @@ function providerSaid(data: string) {
     return "";
 }
 
+/**
+ * The key a request was sent with, taken out of what came back. A provider can
+ * quote it in a shape no mask in log.ts knows, and its words reach the log and
+ * the notice, which a host may pass on. Shorter than any real key, it is left:
+ * taking out every "k" would only garble the rest.
+ */
+function withoutKey(text: string, key: string) {
+    const sent = key.trim();
+    return sent.length >= 8 ? text.split(sent).join("***") : text;
+}
+
 /** Protection in front of the API answers with a web page rather than an error. */
 const BLOCK_PAGE = /<html|cloudflare|cf-ray|attention required|access denied|just a moment|error code: \d/i;
 
-/** Failures that say "not you, try elsewhere" rather than "your settings are wrong". */
-const WORTH_A_SECOND_PROVIDER = (status: number) =>
-    status === -1 || status === 403 || status === 413 || status === 429 || status >= 500;
+/** A model taken away answers 400 at some providers: Groq's "decommissioned", Z.ai's "Unknown Model". */
+const MODEL_GONE = /decommission|deprecat|no longer supported|unknown model|not a valid model|model_not_found|does not exist/i;
+
+/**
+ * Failures another slot can answer for: everything but the request itself. A
+ * key refused, a model gone and an account out of credit are this slot's own,
+ * and a backup has a key, a model and an account of its own.
+ */
+const WORTH_A_SECOND_PROVIDER = (status: number, data: string) =>
+    status === -1 || status === 401 || status === 402 || status === 403 || status === 404
+    || status === 413 || status === 429 || status >= 500
+    || (status === 400 && MODEL_GONE.test(data));
+
+/** One provider's answer to one request, errors included. */
+interface Answer {
+    slot: string;
+    provider: string;
+    model: string;
+    status: number;
+    data: string;
+    retryMs?: number;
+}
+
+/** What a person is told about an answer that is not a translation. */
+function refusal({ status, data, model, provider, retryMs }: Answer, name: string): Error {
+    if (status === -1) return fail("error.network", { details: data });
+    if (status === 401) return fail("error.badKey", { provider: name, status });
+    if (status === 403) {
+        // A 403 is three different things: a key the provider will not take,
+        // the provider itself refusing in its own words, and protection in
+        // front of it turning the request away before the model ever saw it.
+        if (/api.?key|unauthori[sz]|invalid.?auth/i.test(data)) return fail("error.badKey", { provider: name, status });
+
+        const said = providerSaid(data);
+        if (said) return fail("error.forbiddenSaid", { provider: name, details: said });
+        if (BLOCK_PAGE.test(data)) return fail("error.blocked", { provider: name });
+        return fail("error.forbidden", { provider: name });
+    }
+    if (status === 404) return fail("error.noSuchModel", { provider: name, model });
+    if (status === 429) {
+        const said = providerSaid(data);
+
+        // Z.ai answers 429 when the key simply cannot pay for the model it
+        // was given, which is neither a rate limit nor something waiting
+        // fixes: the first short message of the day comes back "limit
+        // reached" and the person has no idea they picked a paid model.
+        // "Flash" in the name does not make a model free, so the free
+        // ones are named.
+        if (provider === "glm" && /insufficient|balance|no credit|\u6b20\u8d39|\u4f59\u989d/i.test(data))
+            // The sentence goes on after it, so the full stop the
+            // provider ended on would be doubled.
+            return fail("error.noBalance", {
+                provider: name,
+                model,
+                details: (said || data.slice(0, 120)).replace(/[.\u3002\uff61]+$/, ""),
+                free: FREE_MODELS.glm.join(", ")
+            });
+
+        // Which limit it was decides what helps: a short wait, or another
+        // model for the rest of the day.
+        const limit = readLimit(data, retryMs);
+        if (limit.scope === "day")
+            return limit.waitMs
+                ? fail("error.dailyLimit", { provider: name, model, wait: humanWait(limit.waitMs) })
+                : fail("error.dailyLimitNoWait", { provider: name, model });
+        if (limit.waitMs) return fail("error.rateLimitWait", { provider: name, wait: humanWait(limit.waitMs) });
+
+        // "Too many requests" on the first message of the day is usually
+        // something else — a spent quota — and the provider says so.
+        return said
+            ? fail("error.rateLimitSaid", { provider: name, details: said })
+            : fail("error.rateLimit", { provider: name });
+    }
+    if (status === 413) return fail("error.tooLarge", { provider: name });
+    if (status >= 500) return fail("error.overloaded", { provider: name });
+    return fail("error.http", { status, details: data.slice(0, 300) });
+}
+
+/**
+ * What each first slot has been passed over for. While a reason lasts a backup
+ * carries every message, and saying it with each of them is noise: each is
+ * said once, and forgotten when the first slot answers again.
+ */
+const passedOver = new Map<string, Set<string>>();
 
 // --- where a request goes ---
 //
@@ -1411,19 +1559,20 @@ const PACE_UNKNOWN: Pace = { base: 1000, perChar: 1.5 };
 
 const paces = new Map<string, Pace>();
 
-const paceOf = (id: string) => paces.get(id) ?? PACE_START[id] ?? PACE_UNKNOWN;
+/** Learnt by the slot and started from its provider: a slot made on the settings page has an id of its own. */
+const paceOf = (slot: Slot) => paces.get(slot.id) ?? PACE_START[slot.provider] ?? PACE_UNKNOWN;
 
-function notePace(id: string, chars: number, ms: number) {
-    const pace = { ...paceOf(id) };
+function notePace(slot: Slot, chars: number, ms: number) {
+    const pace = { ...paceOf(slot) };
 
     // A short message shows the fixed part, a long one what each character adds.
     if (chars < 400) pace.base += (Math.max(0, ms - pace.perChar * chars) - pace.base) / 2;
     else pace.perChar += (Math.max(0, (ms - pace.base) / chars) - pace.perChar) / 2;
 
-    paces.set(id, pace);
+    paces.set(slot.id, pace);
 }
 
-const expectedMs = (id: string, chars: number) => paceOf(id).base + paceOf(id).perChar * chars;
+const expectedMs = (slot: Slot, chars: number) => paceOf(slot).base + paceOf(slot).perChar * chars;
 
 export async function aiTranslate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
     // Code, and whatever the writer fenced off with backslashes, never reaches
@@ -1450,12 +1599,17 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // A correction is written in the language the person is writing in, which
     // is the one they translate into, not the one they read in.
     const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
+    /** How much of an answer is in the target's alphabet, the names the message already had left out. */
+    const shareOf = (answer: string) => scriptShare(answer, target, text);
     // Every setting that can change the wording belongs in the key, or a
-    // cached answer from before the change would be served.
+    // cached answer from before the change would be served. So does the chat
+    // the host is in: its name is in the prompt and its dialect in the answer.
+    // A correction's reason is written in the language the person reads.
     const { extraInstructions, formality } = config();
     const cacheKey = [
-        kind, first.provider, model, target, extraInstructions,
-        formality, config().gender, config().glossary, context, mine, typed
+        kind, appName(), dialect().name, first.provider, model, target, extraInstructions,
+        formality, config().gender, config().glossary, context, mine,
+        kind === "correct" ? config().receivedLanguage : "", typed
     ].join("|");
     const hit = cache.get(cacheKey);
     if (hit !== undefined) return hit;
@@ -1479,7 +1633,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const backups = slots.slice(1).filter(isReady);
 
     /** One request to one slot. Returns the raw answer, errors included. */
-    const callProvider = async (slot: Slot, system: string, roomy = false) => {
+    const callProvider = async (slot: Slot, system: string, roomy = false): Promise<Answer> => {
         if (signal?.aborted) throw new Error(CANCELLED);
 
         const id = slot.id;
@@ -1490,16 +1644,17 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         reserve(id, estimateTokens(`${id}|${kind}`, chars));
         const started = Date.now();
 
-        const { status, data, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
+        const { status, data: answered, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
             provider: slot.provider, apiKey: key, model: chosen, baseUrl: baseUrlOf(slot),
             thinkingLevel: THINKING, system, text, roomy
         }));
+        const data = withoutKey(answered, key);
 
         noteBudget(id, budget);
         let billed = 0;
         let cached: number | undefined;
         if (status === 200) {
-            notePace(id, text.length, Date.now() - started);
+            notePace(slot, text.length, Date.now() - started);
             billed = promptTokens(data);
             if (billed) billedPerChar.set(`${id}|${kind}`, billed / chars);
             cached = cachedTokens(data);
@@ -1580,9 +1735,11 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             !tried.has(slot.id)
             && waitFor(slot.id, modelOf(slot), cost(slot)) === 0
             && (waited + wait > MAX_WAIT_MS
-                || expectedMs(slot.id, text.length) < wait + expectedMs(first.id, text.length)));
+                || expectedMs(slot, text.length) < wait + expectedMs(first, text.length)));
 
-        let answer: Awaited<ReturnType<typeof callProvider>> | undefined;
+        let answer: Answer | undefined;
+        /** The first slot's own answer, where a backup answered in its place. */
+        let firstRefused: Answer | undefined;
 
         // Known to be short of tokens for this one: hand it over at once, or
         // wait for the budget, whichever ends sooner.
@@ -1618,70 +1775,31 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
             // A provider can refuse for reasons that have nothing to do with the
             // user — an overload, a rate limit, its bot protection misfiring on a
-            // VPN address. If a second provider is set up, it takes over quietly.
-            if (WORTH_A_SECOND_PROVIDER(answer.status)) {
+            // VPN address — or for this slot's own: its key, its model, its
+            // credit. If a second provider is set up, it takes over.
+            if (WORTH_A_SECOND_PROVIDER(answer.status, answer.data)) {
                 const second = await askBackups();
-                if (second) answer = second;
+                if (second) {
+                    firstRefused = answer;
+                    answer = second;
+                }
             }
         }
 
-        if (answer.slot !== first.id)
-            notify(t("message.switchedProvider", { provider: providerName(answer.provider) }), "message");
+        // The first slot's own reason is news when it happens, not with every
+        // message after it: "Main provider unavailable" came with each of them.
+        if (firstRefused) {
+            const why = [first.provider, model, firstRefused.status,
+                firstRefused.status === 429 ? readLimit(firstRefused.data).scope : ""].join("|");
+            const said = passedOver.get(first.id) ?? new Set<string>();
+            if (!said.has(why)) {
+                passedOver.set(first.id, said.add(why));
+                notify(refusal(firstRefused, firstName), "message");
+            }
+        } else if (answer.slot === first.id && answer.status === 200) passedOver.delete(first.id);
 
-        const { status, data, model: usedModel, provider: usedProvider } = answer;
-        const name = answer.slot === first.id ? firstName : providerName(usedProvider);
-
-        if (status === -1) throw fail("error.network", { details: data });
-        if (status === 401) throw fail("error.badKey", { provider: name, status });
-        if (status === 403) {
-            // A 403 is three different things: a key the provider will not take,
-            // the provider itself refusing in its own words, and protection in
-            // front of it turning the request away before the model ever saw it.
-            if (/api.?key|unauthori[sz]|invalid.?auth/i.test(data)) throw fail("error.badKey", { provider: name, status });
-
-            const said = providerSaid(data);
-            if (said) throw fail("error.forbiddenSaid", { provider: name, details: said });
-            if (BLOCK_PAGE.test(data)) throw fail("error.blocked", { provider: name });
-            throw fail("error.forbidden", { provider: name });
-        }
-        if (status === 404) throw fail("error.noSuchModel", { provider: name, model: usedModel });
-        if (status === 429) {
-            const said = providerSaid(data);
-
-            // Z.ai answers 429 when the key simply cannot pay for the model it
-            // was given, which is neither a rate limit nor something waiting
-            // fixes: the first short message of the day comes back "limit
-            // reached" and the person has no idea they picked a paid model.
-            // "Flash" in the name does not make a model free, so the free
-            // ones are named.
-            if (usedProvider === "glm" && /insufficient|balance|no credit|\u6b20\u8d39|\u4f59\u989d/i.test(data))
-                // The sentence goes on after it, so the full stop the
-                // provider ended on would be doubled.
-                throw fail("error.noBalance", {
-                    provider: name,
-                    model: usedModel,
-                    details: (said || data.slice(0, 120)).replace(/[.\u3002\uff61]+$/, ""),
-                    free: FREE_MODELS.glm.join(", ")
-                });
-
-            // Which limit it was decides what helps: a short wait, or another
-            // model for the rest of the day.
-            const limit = readLimit(data, answer.retryMs);
-            if (limit.scope === "day")
-                throw limit.waitMs
-                    ? fail("error.dailyLimit", { provider: name, model: usedModel, wait: humanWait(limit.waitMs) })
-                    : fail("error.dailyLimitNoWait", { provider: name, model: usedModel });
-            if (limit.waitMs) throw fail("error.rateLimitWait", { provider: name, wait: humanWait(limit.waitMs) });
-
-            // "Too many requests" on the first message of the day is usually
-            // something else — a spent quota — and the provider says so.
-            throw said
-                ? fail("error.rateLimitSaid", { provider: name, details: said })
-                : fail("error.rateLimit", { provider: name });
-        }
-        if (status === 413) throw fail("error.tooLarge", { provider: name });
-        if (status >= 500) throw fail("error.overloaded", { provider: name });
-        if (status !== 200) throw fail("error.http", { status, details: data.slice(0, 300) });
+        const { status, data, provider: usedProvider } = answer;
+        if (status !== 200) throw refusal(answer, answer.slot === first.id ? firstName : providerName(usedProvider));
 
         let out = extractText(usedProvider, data);
 
@@ -1724,24 +1842,37 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // The model's word alone is not enough, since a slip would send a Russian
     // message untranslated, so the message's own alphabet has to agree.
     if (kind === "sent" && result.inTarget && scriptShare(kept ? kept.bare(text) : text, target) >= 0.97) {
-        const asTyped = { text: kept?.restore(text) ?? typed };
-        cache.set(cacheKey, asTyped);
-        return asTyped;
+        // Where both languages use that alphabet it agrees with anything: "[en]"
+        // over the English for "Hola a todos" sent the Spanish. So a changed
+        // message is asked about once more, and only one given back as it was
+        // goes as typed.
+        if (!sameMessage(text, result.text))
+            result = await ask(basePrompt + namedTheTarget(target), false, "the answer named the target language and changed the message");
+
+        if (result.inTarget && sameMessage(text, result.text)) {
+            const asTyped = { text: kept?.restore(text) ?? typed };
+            cache.set(cacheKey, asTyped);
+            return asTyped;
+        }
     }
 
     // Judge the answer by its alphabet rather than by comparing it to the input.
     // A model that gave up hands back the original, and against a target in a
     // different script that shows up immediately; a stray word left behind in
-    // the source language shows up the same way, only smaller. Length is no
-    // longer part of the test: a short message handed back untranslated used to
-    // go out as typed, silently, which is the one thing that must not happen.
+    // the source language shows up the same way, only smaller, unless it stands
+    // unchanged in the message: that is how a name is kept, as the model was
+    // told to, and from the outside it is the same word. So words that stand
+    // unchanged are not counted, except when nothing else is left, which is
+    // the original handed back. Length is no longer part of the test: a short
+    // message handed back untranslated used to go out as typed, silently, which
+    // is the one thing that must not happen.
     // A single word handed back as it was is how a model keeps a name, as it
     // was told to. For a message being read, that is the answer. For one being
     // sent it is not enough: "Привет" handed back would go out untranslated.
     const keptWhole = kind === "received" && /^\S+$/.test(lettersOf(text))
         && lettersOf(result.text) === lettersOf(text);
 
-    const share = keptWhole ? 1 : scriptShare(result.text, target);
+    const share = keptWhole ? 1 : shareOf(result.text);
 
     if (kind === "explain" || kind === "correct") {
         // An explanation quotes the words it is explaining, and a correction is
@@ -1759,16 +1890,17 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         let retried = result;
         for (const nudge of nudges) {
             retried = await ask(basePrompt + nudge, false, "the answer came back in the wrong language");
-            if (scriptShare(retried.text, target) >= 0.3) break;
+            if (shareOf(retried.text) >= 0.3) break;
         }
 
         // Still not in the target language after three tries: showing or
         // sending it would hand someone the text they could not read.
-        if (scriptShare(retried.text, target) < 0.3) throw fail("error.untranslated");
+        if (shareOf(retried.text) < 0.3) throw fail("error.untranslated");
         result = retried;
     } else if (share < 0.97) {
-        // Mostly right, but something stayed behind — a stray "и" among English
-        // words. Worth one quiet second attempt, and never worth an error.
+        // Mostly right, but a word stayed behind in another alphabet and not as
+        // the message had it: its other form, say, among English words. Worth
+        // one quiet second attempt, and never worth an error.
         const cleaner = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer still contained words in the original language.`
@@ -1777,7 +1909,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "part of the message stayed in its own language"
         );
 
-        if (scriptShare(cleaner.text, target) > share) result = cleaner;
+        if (shareOf(cleaner.text) > share) result = cleaner;
     }
 
     // Where the writer broke the line is part of what they wrote, so a
@@ -1792,7 +1924,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "the writer's line breaks were flattened"
         );
 
-        if (lineCount(rebroken.text) === lines && scriptShare(rebroken.text, target) >= 0.3) result = rebroken;
+        if (lineCount(rebroken.text) === lines && shareOf(rebroken.text) >= 0.3) result = rebroken;
     }
 
     // Capitals the writer typed are how a message is shouted, and an answer in
@@ -1809,7 +1941,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "the capitals the writer typed were lost"
         );
 
-        if (SHOUTED.test(louder.text) && scriptShare(louder.text, target) >= 0.3) result = louder;
+        if (SHOUTED.test(louder.text) && shareOf(louder.text) >= 0.3) result = louder;
     }
 
     if (kept?.pieces.length) {
