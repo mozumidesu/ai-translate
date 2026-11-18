@@ -57,6 +57,35 @@ await esbuild.build({
     logLevel: "error"
 });
 
+// The same core with one more row in the list of languages, and nothing else
+// changed, to show that a row is all a language takes.
+await esbuild.build({
+    stdin: {
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { aiTranslate, scriptShare } from "./core/translate";\n`
+            + `export * as languages from "./core/languages";\n`,
+        resolveDir: plugin,
+        loader: "ts"
+    },
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    outfile: join(out, "more.mjs"),
+    logLevel: "error",
+    plugins: [{
+        name: "one more row",
+        setup(build) {
+            build.onLoad({ filter: /core[\\/]languages\.ts$/ }, async ({ path }) => ({
+                loader: "ts",
+                contents: (await readFile(path, "utf8")).replace(
+                    "export const LANGUAGES: Language[] = ([\n",
+                    "export const LANGUAGES: Language[] = ([\n    [\"Konkani\", \"कोंकणी\", \"kok\", DEVANAGARI],\n"
+                )
+            }));
+        }
+    }]
+});
+
 // --- a provider that answers whatever it is told to, and keeps the questions
 let answers = ["[ru] перевод"];
 const asked = [];
@@ -753,6 +782,22 @@ lang("a language is found by the name the prompt writes",
 lang("and by a looser one a person might type",
     [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
 lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
+
+// A row is all a language takes. The core built with one more row, naming the
+// alphabet Konkani is written in, judges its answers by that and by nothing else
+// that was said anywhere.
+const more = await import(join(out, "more.mjs"));
+more.useHost(host);
+lang("one row adds a language: found, offered, and in its alphabet",
+    [more.languages.languageNamed("Konkani")?.code, more.languages.LANGUAGES.some(l => l.value === "Konkani"),
+        more.scriptShare("नमस्ते", "Konkani"), more.scriptShare("Hello", "Konkani")],
+    ["kok", true, 1, 0]);
+lang("and without capitals, and with the marks of its alphabet",
+    [more.languages.hasCase("न"), more.languages.closingOf("नमस्ते।", "Konkani").plain], [false, "."]);
+settings.sentLanguage = "Konkani";
+answers = ["[ru] मी घरी आहे।"];
+await behaves("and its answers are put right by them", more.aiTranslate("sent", "Я дома.").then(result => result.text), "मी घरी आहे।");
+settings.sentLanguage = "English";
 
 // --- a name in another alphabet is a name
 //
