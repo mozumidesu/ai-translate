@@ -754,6 +754,32 @@ lang("and by a looser one a person might type",
     [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
 lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
 
+// --- a name in another alphabet is a name
+//
+// An answer is judged by how many of its letters are in the alphabet it should
+// be in. The names a message holds, a game or an app, stand in the Latin
+// alphabet in an answer in Japanese or Russian as they stood in the message,
+// and each such name was counted as a failure to translate.
+
+settings.sentLanguage = "Japanese";
+await behaves("names in another alphabet are no reason to refuse the answer",
+    tried("sent", "Genshin Impact или Honkai Star Rail?", "[ru] Genshin Impact か Honkai Star Rail？"), "Genshin Impact か Honkai Star Rail？");
+counted("and it took one request", 1);
+await behaves("a name in a short sentence is not asked about again", tried("sent", "я сейчас в Discord", "[ru] 今 Discord にいる"), "今 Discord にいる");
+counted("one request", 1);
+settings.sentLanguage = "Russian";
+await behaves("nor is one in an answer in Russian", tried("sent", "I'm in Discord right now", "[en] Я сейчас в Discord"), "Я сейчас в Discord");
+counted("one request", 1);
+
+// What is changed still counts, and an answer with nothing changed in it is
+// the one that must.
+settings.sentLanguage = "Japanese";
+await failure("an answer that is the message word for word is still refused", "sent", "Привет Discord", "[ru] Привет Discord", "returned the text untranslated");
+counted("after three requests", 3);
+settings.sentLanguage = "English";
+await behaves("and a word left behind in another form is still asked about", tried("sent", "Привет другу", "[ru] Hello друг", "[ru] Hello to a friend"), "Hello to a friend");
+counted("once more", 2);
+
 // --- the marks a language closes a sentence with
 //
 // Whatever the writer closed with is what the translation closes with, and a

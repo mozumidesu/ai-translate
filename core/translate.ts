@@ -688,10 +688,27 @@ export function isNotWorthTranslating(text: string) {
     return stripped.length === 0;
 }
 
-/** Share of the letters that are written in the alphabet the target uses. */
-export function scriptShare(text: string, language: string) {
+/** What is writing in a text: not its code, its links, its mentions or its :shortcodes:. */
+const writingOf = (text: string) => text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "");
+
+/** A word as it is compared: without its case, and in the one form Unicode has for it. */
+const wordKey = (word: string) => word.normalize("NFC").toLowerCase();
+
+/**
+ * Share of the letters that are written in the alphabet the target uses. Given
+ * the message an answer is for, it leaves out the words that stand unchanged in
+ * it: a game, an app or a user's name, which the model was told to keep, is in
+ * the alphabet of the message and says nothing about whether the answer is in
+ * the target's. Only when nothing else is left is the whole answer counted, since
+ * an answer that repeats the message word for word is the one that has to be.
+ */
+export function scriptShare(text: string, language: string, source = "") {
     const pattern = scriptPattern(language);
-    const letters = text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "").match(/\p{L}/gu) ?? [];
+    const words = writingOf(text).match(/[\p{L}\p{M}]+/gu) ?? [];
+    const kept = new Set((writingOf(source).match(/[\p{L}\p{M}]+/gu) ?? []).map(wordKey));
+    const changed = words.filter(word => !kept.has(wordKey(word)));
+
+    const letters = (changed.length ? changed : words).join("").match(/\p{L}/gu) ?? [];
     if (!letters.length) return 1;
 
     return letters.filter(ch => pattern.test(ch)).length / letters.length;
@@ -1582,6 +1599,8 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // A correction is written in the language the person is writing in, which
     // is the one they translate into, not the one they read in.
     const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
+    /** How much of an answer is in the target's alphabet, the names the message already had left out. */
+    const shareOf = (answer: string) => scriptShare(answer, target, text);
     // Every setting that can change the wording belongs in the key, or a
     // cached answer from before the change would be served. So does the chat
     // the host is in: its name is in the prompt and its dialect in the answer.
@@ -1840,16 +1859,20 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // Judge the answer by its alphabet rather than by comparing it to the input.
     // A model that gave up hands back the original, and against a target in a
     // different script that shows up immediately; a stray word left behind in
-    // the source language shows up the same way, only smaller. Length is no
-    // longer part of the test: a short message handed back untranslated used to
-    // go out as typed, silently, which is the one thing that must not happen.
+    // the source language shows up the same way, only smaller, unless it stands
+    // unchanged in the message: that is how a name is kept, as the model was
+    // told to, and from the outside it is the same word. So words that stand
+    // unchanged are not counted, except when nothing else is left, which is
+    // the original handed back. Length is no longer part of the test: a short
+    // message handed back untranslated used to go out as typed, silently, which
+    // is the one thing that must not happen.
     // A single word handed back as it was is how a model keeps a name, as it
     // was told to. For a message being read, that is the answer. For one being
     // sent it is not enough: "Привет" handed back would go out untranslated.
     const keptWhole = kind === "received" && /^\S+$/.test(lettersOf(text))
         && lettersOf(result.text) === lettersOf(text);
 
-    const share = keptWhole ? 1 : scriptShare(result.text, target);
+    const share = keptWhole ? 1 : shareOf(result.text);
 
     if (kind === "explain" || kind === "correct") {
         // An explanation quotes the words it is explaining, and a correction is
@@ -1867,16 +1890,17 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         let retried = result;
         for (const nudge of nudges) {
             retried = await ask(basePrompt + nudge, false, "the answer came back in the wrong language");
-            if (scriptShare(retried.text, target) >= 0.3) break;
+            if (shareOf(retried.text) >= 0.3) break;
         }
 
         // Still not in the target language after three tries: showing or
         // sending it would hand someone the text they could not read.
-        if (scriptShare(retried.text, target) < 0.3) throw fail("error.untranslated");
+        if (shareOf(retried.text) < 0.3) throw fail("error.untranslated");
         result = retried;
     } else if (share < 0.97) {
-        // Mostly right, but something stayed behind — a stray "и" among English
-        // words. Worth one quiet second attempt, and never worth an error.
+        // Mostly right, but a word stayed behind in another alphabet and not as
+        // the message had it: its other form, say, among English words. Worth
+        // one quiet second attempt, and never worth an error.
         const cleaner = await ask(
             basePrompt
             + `\n\nIMPORTANT: your previous answer still contained words in the original language.`
@@ -1885,7 +1909,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "part of the message stayed in its own language"
         );
 
-        if (scriptShare(cleaner.text, target) > share) result = cleaner;
+        if (shareOf(cleaner.text) > share) result = cleaner;
     }
 
     // Where the writer broke the line is part of what they wrote, so a
@@ -1900,7 +1924,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "the writer's line breaks were flattened"
         );
 
-        if (lineCount(rebroken.text) === lines && scriptShare(rebroken.text, target) >= 0.3) result = rebroken;
+        if (lineCount(rebroken.text) === lines && shareOf(rebroken.text) >= 0.3) result = rebroken;
     }
 
     // Capitals the writer typed are how a message is shouted, and an answer in
@@ -1917,7 +1941,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             "the capitals the writer typed were lost"
         );
 
-        if (SHOUTED.test(louder.text) && scriptShare(louder.text, target) >= 0.3) result = louder;
+        if (SHOUTED.test(louder.text) && shareOf(louder.text) >= 0.3) result = louder;
     }
 
     if (kept?.pieces.length) {
