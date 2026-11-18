@@ -23,7 +23,7 @@ The full text behind the two file tables of CLAUDE.md.
 | `core/slots.ts` | Which providers this copy talks to and in what order: one to ask and up to four behind it, each with its own key, model and rate limits. The same provider may stand in two slots with two keys. Also what a provider is called: in the list, in a sentence and over its key, which for the generic one are three different things. Settings written before the list existed are still read, which is what the standalone `web/` build and the tests hand over |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn's half that needs no Discord: whether a message is the writer's own attempt at the language they are learning, what a correction changed word by word, splitting the model's answer from the "why:" line it ends with, and the last fifty corrections |
-| `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept |
+| `core/log.ts` | The last 200 things that happened, for the Logs panel. Written to be pasted in public, so a key-shaped run in a provider's answer is masked before it is kept, and the key a request was sent with is taken out of its answer by name in `translate.ts`, whatever its shape |
 
 These fifteen (`translate`, `host`, `dialect`, `bridge`, `builds`, `net`,
 `providers`, `keep`, `languages`, `locales`, `chats`, `log`, `version`, `learn`,

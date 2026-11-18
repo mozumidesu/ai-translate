@@ -14,6 +14,32 @@ when `release` moves.
 - **A slip of "знать" for "звать" before a name is read as the word you meant**
   in Russian: "все знали её Маша" goes out as what everyone called her, not as
   knowing someone of hers called Masha.
+- **A message in a language that shares an alphabet with the one you translate
+  into is not sent untranslated.** When the model labelled a translation with
+  the language it was going into, the plugin took the message to be in that
+  language already and sent it as you typed it: "Hola a todos" went out in
+  Spanish to an English chat. Now it asks once more, and only a message given
+  back exactly as you typed it goes out as typed.
+- **A backup provider answers when your main one refuses the key, no longer has
+  the model or has run out of credit.** Your message used to be held although
+  the backup worked. What went wrong with the main provider is shown once, in
+  its own words, instead of "Main provider unavailable" with every message.
+- **A link at the start of a line keeps its words.** "[FAQ](link)" was taken
+  for the plugin's own language label, so the words went missing, and an
+  incoming message could say it was translated from "FAQ".
+- **AI Learn's explanation follows a change of the language you read in.**
+  After that language changed, a correction asked for again came back with its
+  explanation in the old one.
+- **With conversation context on, other people's messages and names reach the
+  model as one line each**, and a name is cut at 64 characters. A line break in
+  someone else's message could make what followed read like the plugin's own
+  instructions.
+- **A key quoted back by a provider never reaches the logs or an error
+  message**, whatever its shape, and a masked key reads "***" rather than a
+  number in front of it.
+- **The speed measured for each provider is used for providers added on the
+  settings page too**, so a slow backup no longer takes a message from a main
+  provider that was about to answer it.
 
 ## 0.2.1a
 
