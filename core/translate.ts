@@ -1552,19 +1552,20 @@ const PACE_UNKNOWN: Pace = { base: 1000, perChar: 1.5 };
 
 const paces = new Map<string, Pace>();
 
-const paceOf = (id: string) => paces.get(id) ?? PACE_START[id] ?? PACE_UNKNOWN;
+/** Learnt by the slot and started from its provider: a slot made on the settings page has an id of its own. */
+const paceOf = (slot: Slot) => paces.get(slot.id) ?? PACE_START[slot.provider] ?? PACE_UNKNOWN;
 
-function notePace(id: string, chars: number, ms: number) {
-    const pace = { ...paceOf(id) };
+function notePace(slot: Slot, chars: number, ms: number) {
+    const pace = { ...paceOf(slot) };
 
     // A short message shows the fixed part, a long one what each character adds.
     if (chars < 400) pace.base += (Math.max(0, ms - pace.perChar * chars) - pace.base) / 2;
     else pace.perChar += (Math.max(0, (ms - pace.base) / chars) - pace.perChar) / 2;
 
-    paces.set(id, pace);
+    paces.set(slot.id, pace);
 }
 
-const expectedMs = (id: string, chars: number) => paceOf(id).base + paceOf(id).perChar * chars;
+const expectedMs = (slot: Slot, chars: number) => paceOf(slot).base + paceOf(slot).perChar * chars;
 
 export async function aiTranslate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
     // Code, and whatever the writer fenced off with backslashes, never reaches
@@ -1644,7 +1645,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         let billed = 0;
         let cached: number | undefined;
         if (status === 200) {
-            notePace(id, text.length, Date.now() - started);
+            notePace(slot, text.length, Date.now() - started);
             billed = promptTokens(data);
             if (billed) billedPerChar.set(`${id}|${kind}`, billed / chars);
             cached = cachedTokens(data);
@@ -1725,7 +1726,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             !tried.has(slot.id)
             && waitFor(slot.id, modelOf(slot), cost(slot)) === 0
             && (waited + wait > MAX_WAIT_MS
-                || expectedMs(slot.id, text.length) < wait + expectedMs(first.id, text.length)));
+                || expectedMs(slot, text.length) < wait + expectedMs(first, text.length)));
 
         let answer: Answer | undefined;
         /** The first slot's own answer, where a backup answered in its place. */

@@ -980,6 +980,22 @@ backed("and its refusal after that is news again", again.shown.map(text => text.
 again = await carried("запасной не нужен", refused(400, "Invalid value for 'temperature'"), "[ru] never asked");
 backed("a 400 that says nothing of the model is not handed on", [again.said.startsWith("threw: AI Translate: HTTP 400"), again.models], [true, ["main"]]);
 
+// A slot made on the settings page has an id of its own, and the paces measured
+// for each provider were looked up by that id, so none of them ever applied: a
+// backup as slow as Z.ai's free models took over from a Groq two seconds away.
+settings.providerSlots = JSON.stringify([
+    { id: "p4ce0ne", provider: "groq", keys: { groq: "pace-key" }, models: { groq: "quick" } },
+    { id: "p4cetw0", provider: "glm", keys: { glm: "pace-backup" }, models: { glm: "slow" } }
+]);
+const spent = {
+    status: 200,
+    headers: "x-ratelimit-limit-tokens: 8000\nx-ratelimit-remaining-tokens: 0\nx-ratelimit-reset-tokens: 5s\n",
+    body: JSON.stringify({ choices: [{ message: { content: "[ru] the budget is spent" }, finish_reason: "stop" }] })
+};
+await carried("бюджет кончился", spent);
+const paced = await carried("долгое сообщение ".repeat(60).trim(), "[ru] a long message");
+backed("a backup slower than the wait is not handed the message", paced.models, ["quick"]);
+
 settings.providerSlots = "";
 
 await rm(out, { recursive: true, force: true });
