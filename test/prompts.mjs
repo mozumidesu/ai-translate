@@ -470,6 +470,19 @@ await behaves(
 );
 counted("which took a second request", 2);
 
+// A link written as marks opens with a bracket, and "FAQ" has the letters of a
+// language code: at the start of a line it lost its words, and the reader was
+// told the message came from a language called FAQ.
+await behaves(
+    "a link at the start of a line is not taken for a language code",
+    translated("sent", "Всё есть в [FAQ](https://example.com/faq)", "[ru] [FAQ](https://example.com/faq) has it all"),
+    "[FAQ](https://example.com/faq) has it all"
+);
+answers = ["[FAQ](https://example.com/faq) — там всё есть"];
+const linkRead = await aiTranslate("received", "The [FAQ](https://example.com/faq) has it all");
+await behaves("nor in an answer that came without a code", linkRead.text, "[FAQ](https://example.com/faq) — там всё есть");
+await behaves("and the link is not the language the message came from", linkRead.sourceLanguage, undefined);
+
 // --- the context block: what the model is told about the conversation
 
 /** The system prompt for one translation, with the context block built in. */

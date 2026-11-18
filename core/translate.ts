@@ -1032,8 +1032,8 @@ function extractText(provider: string, raw: string): string {
     }
 }
 
-/** Anything in square brackets at the very start of a line. */
-const BRACKETED = /^[ \t]*\[([^\]\n]{1,24})\][ \t]*/;
+/** Anything in square brackets at the very start of a line, but a link's words: "[FAQ](…)" is no code. */
+const BRACKETED = /^[ \t]*\[([^\]\n]{1,24})\](?!\()[ \t]*/;
 
 /** A language code, or the English name of one: what the prompt asked for. */
 function looksLikeLanguage(token: string) {
