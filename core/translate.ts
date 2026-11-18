@@ -768,7 +768,7 @@ const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
 /** Links, mentions, custom emoji and timestamps are left alone. */
 const NOT_PROSE = /https?:\/\/\S+|www\.\S+|<[^>\s]+>/g;
 
-/** Runs `change` over the prose between those, which it never sees. */
+/** Runs `change` over the prose between links, mentions and the like, which it never sees. */
 function inProse(text: string, change: (prose: string) => string) {
     let out = "";
     let last = 0;
@@ -825,7 +825,7 @@ const SPACED_DASH = /[^\S\n]([-\u2013\u2014\u2015])[^\S\n]/;
 
 /**
  * A long dash however it is spaced, and a hyphen only where it stands between
- * spaces. A run of long dashes, a Chinese "\u2014\u2014", is one dash.
+ * spaces. A run of long dashes, a Chinese "——", is one dash.
  */
 const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015]+[^\S\n]*/g;
 

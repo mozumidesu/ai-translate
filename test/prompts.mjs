@@ -844,6 +844,9 @@ await behaves("Armenian's own full stop", tried("sent", "Я дома.", "[ru] Ե
 settings.sentLanguage = "Greek";
 await behaves("Greek's question mark is the writer's question mark", tried("sent", "Как дела?", "[ru] Τι κάνεις;"), "Τι κάνεις;");
 await behaves("and goes when the writer asked nothing", tried("sent", "как дела", "[ru] Τι κάνεις;"), "τι κάνεις");
+// Unicode folds the Greek question mark into the semicolon, so a model may write either.
+const GREEK_QUESTION = String.fromCharCode(0x37e);
+await behaves("and so is the one Unicode gives it", tried("sent", "Что делаешь?", `[ru] Τι κάνεις${GREEK_QUESTION}`), `Τι κάνεις${GREEK_QUESTION}`);
 // Greek has capitals, and the writer's own are kept.
 await behaves("Greek keeps the capital the writer typed", tried("sent", "Привет всем", "[ru] γεια σας"), "Γεια σας");
 

@@ -39,19 +39,19 @@ const CYRILLIC: Writing = { ...LATIN, script: ["Cyrillic"] };
 
 // U+037E is the Greek question mark proper, which Unicode folds into the semicolon,
 // so both are written. The semicolon is only that in Greek: see closingOf.
-const GREEK: Writing = { script: ["Greek"], cased: true, closing: { ";": "?", ";": "?" } };
+const GREEK: Writing = { script: ["Greek"], cased: true, closing: { ";": "?", "\u037e": "?" } };
 // U+0589, the Armenian full stop.
-const ARMENIAN: Writing = { script: ["Armenian"], cased: true, closing: { "։": "." } };
+const ARMENIAN: Writing = { script: ["Armenian"], cased: true, closing: { "\u0589": "." } };
 
 const GEORGIAN: Writing = { script: ["Georgian"], cased: false, closing: {} };
 const HEBREW: Writing = { script: ["Hebrew"], cased: false, closing: {} };
 
 // U+061F, the Arabic question mark; U+06D4, the full stop Urdu closes with.
-const ARABIC: Writing = { script: ["Arabic"], cased: false, closing: { "؟": "?" } };
-const URDU: Writing = { ...ARABIC, closing: { "؟": "?", "۔": "." } };
+const ARABIC: Writing = { script: ["Arabic"], cased: false, closing: { "\u061f": "?" } };
+const URDU: Writing = { ...ARABIC, closing: { "\u061f": "?", "\u06d4": "." } };
 
 // U+0964 and U+0965, the danda and the double danda: Hindi's and Bengali's full stop.
-const DANDA = { "।": ".", "॥": "." } as const;
+const DANDA = { "\u0964": ".", "\u0965": "." } as const;
 const DEVANAGARI: Writing = { script: ["Devanagari"], cased: false, closing: DANDA };
 const BENGALI: Writing = { script: ["Bengali"], cased: false, closing: DANDA };
 
@@ -60,7 +60,7 @@ const THAI: Writing = { script: ["Thai"], cased: false, closing: {} };
 const HANGUL: Writing = { script: ["Hangul"], cased: false, closing: {} };
 
 // The full stop and the full-width question and exclamation marks of Chinese and Japanese.
-const FULLWIDTH = { "。": ".", "｡": ".", "？": "?", "！": "!" } as const;
+const FULLWIDTH = { "\u3002": ".", "\uff61": ".", "\uff1f": "?", "\uff01": "!" } as const;
 const CHINESE: Writing = { script: ["Han"], cased: false, closing: FULLWIDTH };
 const JAPANESE: Writing = { script: ["Han", "Hiragana", "Katakana"], cased: false, closing: FULLWIDTH };
 
@@ -218,30 +218,51 @@ export const hasCase = (letter: string) => {
 /** The marks every text can close on, and what they stand for. */
 const COMMON: Record<string, string> = { ".": ".", "?": "?", "!": "!", "…": "..." };
 
+const marksOf = (keep: (mark: string) => boolean) =>
+    ALL.flatMap(l => Object.entries(l.closing).filter(([mark]) => keep(mark)).map(([mark, plain]) => ({ language: l, mark, plain })));
+
+/** Marks that no other language writes as anything else, so any text can close on them. */
+const ALWAYS = new Map([...Object.entries(COMMON), ...marksOf(mark => mark.charCodeAt(0) > 0x7f).map(m => [m.mark, m.plain] as const)]);
+
+/** Marks that are ordinary punctuation in the rest, the Greek ";": each closes a text only in its own language. */
+const ORDINARY = marksOf(mark => mark.charCodeAt(0) <= 0x7f);
+
 /**
  * How a text closes: the run of marks it ends on, and the same run in plain
  * marks, so that a full-width "。" and Hindi's "।" are both the full stop they
- * are. The marks are those of the languages: the ones no other language uses
- * are read in any text, but a mark that is ordinary punctuation elsewhere, the
- * Greek ";", is read only in its own. `language` is the one the text is in, when
- * that is known, as an answer's is; a text that is not says by its letters.
+ * are. `language` is the one the text is in, when that is known, as an answer's
+ * is; a text that is not says by its letters, which are only read when it ends
+ * on a mark that needs them.
  */
 export function closingOf(text: string, language?: string) {
     const own = language === undefined ? undefined : languageNamed(language);
-    const alphabet = own ? undefined : mostlyIn(text);
-    const marks = new Map(Object.entries(COMMON));
+    let alphabet: string | undefined;
 
-    for (const l of ALL)
-        for (const [mark, plain] of Object.entries(l.closing)) {
-            const here = own ? own === l : alphabet !== undefined && l.script.includes(alphabet);
-            if (mark.charCodeAt(0) > 0x7f || here) marks.set(mark, plain);
-        }
+    /** What a mark stands for as the end of this text, or nothing when it does not close it. */
+    const plainOf = (mark: string) => {
+        const always = ALWAYS.get(mark);
+        if (always !== undefined) return always;
+
+        const ours = ORDINARY.filter(m => m.mark === mark);
+        if (!ours.length) return undefined;
+
+        if (!own && alphabet === undefined) alphabet = mostlyIn(text) ?? "";
+        return ours.find(m => own ? own === m.language : m.language.script.includes(alphabet as Script))?.plain;
+    };
 
     const chars = [...text];
-    let run = "";
-    while (chars.length && marks.has(chars[chars.length - 1])) run = chars.pop() + run;
+    const run: string[] = [];
+    const plain: string[] = [];
 
-    return { run, plain: [...run].map(mark => marks.get(mark)).join("") };
+    for (let at = chars.length - 1; at >= 0; at--) {
+        const stands = plainOf(chars[at]);
+        if (stands === undefined) break;
+
+        run.unshift(chars[at]);
+        plain.unshift(stands);
+    }
+
+    return { run: run.join(""), plain: plain.join("") };
 }
 
 const PLAIN = new Map(ALL.flatMap(l => Object.entries(l.closing)));
