@@ -110,7 +110,17 @@ clear();
 record("error", "sent", "groq answered 401", '{"error":{"message":"Invalid API Key: gsk_abcdefghijklmnop1234"}}');
 check("a key quoted back by the provider is masked", !asText().includes("gsk_abcdefghijklmnop1234"));
 check("and the rest of what it said is kept", asText().includes("Invalid API Key"));
+// The mask used to come out with the match's offset in front of it: "37***".
+check("and nothing but the mask stands where the key was", asText().includes('Invalid API Key: ***"'));
 check("the line says when, how bad, and what was going on", /ERROR\s+sent\s+groq answered 401/.test(asText()));
+
+clear();
+record("error", "sent", "x", "csk-abcdefghijklmnopqrstuvwxyz123456 hf_AbCdEfGhIjKlMnOpQrStUvWxYz12345678"
+    + " Authorization: Bearer 0f1e2d3c4b5a69788796a5b4c3d2e1f0aa and 00112233445566778899aabbccddeeff");
+check("Cerebras's key shape is masked", !asText().includes("csk-abcdefghij"));
+check("and Hugging Face's", !asText().includes("hf_AbCdEf"));
+check("and a bearer token", !asText().includes("0f1e2d3c4b5a6978"));
+check("and a bare key of 32 hex digits", !asText().includes("00112233445566778899"));
 
 clear();
 record("info", "received", "ok", "sk-ant-THISLOOKSLIKEAKEY123 and AIzaSyAbCdEfGhIjKlMnOpQ");
@@ -180,6 +190,33 @@ clear();
 provider(undefined);
 await aiTranslate("sent", "спасибо");
 check("a provider that counts nothing leaves the line as it was", /answered 200 in \d+ ms$/m.test(asText()));
+
+// --- a key no mask knows ---
+//
+// The masks know the shapes providers hand out, and a provider that quotes the
+// key back can have any. The notice carries the provider's words too, and a
+// host may pass it on: Telegram's goes over a channel the page can read.
+
+const ODD_KEY = "zq9Lr2Wm8Xc4Vb7Np1Ks6Jd3";
+settings = { ...settings, groqApiKey: ODD_KEY };
+globalThis.GM_xmlhttpRequest = o => {
+    setImmediate(() => o.onload({
+        status: 400,
+        responseText: JSON.stringify({ error: { message: `This key is not allowed here: ${ODD_KEY}` } }),
+        responseHeaders: ""
+    }));
+    return { abort() { } };
+};
+
+clear();
+shown.length = 0;
+let refused;
+try { await aiTranslate("sent", "проверка ключа"); } catch (e) { refused = e; }
+notify(refused, "failure");
+check("a key of a shape no mask knows is taken out of what the provider said", !asText().includes(ODD_KEY));
+check("and out of the notice, which a host may pass on", shown.length > 0 && !shown.some(s => s.text.includes(ODD_KEY)));
+check("and out of the error itself", !!refused && !refused.message.includes(ODD_KEY));
+check("while the rest of what it said is still there", shown.some(s => s.text.includes("This key is not allowed here")));
 
 // --- why a message was asked about twice ---
 //

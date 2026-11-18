@@ -20,21 +20,26 @@ const KEPT = 200;
 const DETAIL_LIMIT = 600;
 
 /**
- * Key shapes the providers hand out, and any long unbroken token that could be
- * one. A provider that echoes the key back must not put it in a file the user
- * is about to attach to a public report.
+ * Key shapes the providers hand out, a bearer token and a bare run of hex. A
+ * provider that echoes the key back must not put it in a file the user is
+ * about to attach to a public report. The key a request was sent with is taken
+ * out by name before its answer gets here (translate.ts), whatever its shape.
  */
 const SECRETS = [
-    /\b(?:sk|gsk|xai|sk-ant|sk-proj)[-_][A-Za-z0-9_-]{8,}/g,
+    /\b(?:sk|gsk|xai|csk|hf|sk-ant|sk-proj)[-_][A-Za-z0-9_-]{8,}/g,
     /\bAIza[A-Za-z0-9_-]{10,}/g,
+    // Z.ai's, before the bare hex that would leave its tail behind.
     /\b[A-Fa-f0-9]{32}\.[A-Za-z0-9_-]{8,}/g,
+    /\b[A-Fa-f0-9]{32,}\b/g,
+    /(\bBearer\s+)[A-Za-z0-9._~+/=-]{8,}/gi,
     /("(?:api_?key|authorization|token)"\s*:\s*")[^"]+/gi
 ];
 
 function masked(text: string) {
     let out = text;
+    // With no group to keep, that argument is the match's offset: it once printed "37***".
     for (const pattern of SECRETS)
-        out = out.replace(pattern, (whole, keep) => (keep ? `${keep}***` : "***"));
+        out = out.replace(pattern, (whole, keep) => (typeof keep === "string" ? `${keep}***` : "***"));
 
     return out;
 }

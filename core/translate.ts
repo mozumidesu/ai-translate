@@ -1260,6 +1260,17 @@ function providerSaid(data: string) {
     return "";
 }
 
+/**
+ * The key a request was sent with, taken out of what came back. A provider can
+ * quote it in a shape no mask in log.ts knows, and its words reach the log and
+ * the notice, which a host may pass on. Shorter than any real key, it is left:
+ * taking out every "k" would only garble the rest.
+ */
+function withoutKey(text: string, key: string) {
+    const sent = key.trim();
+    return sent.length >= 8 ? text.split(sent).join("***") : text;
+}
+
 /** Protection in front of the API answers with a web page rather than an error. */
 const BLOCK_PAGE = /<html|cloudflare|cf-ray|attention required|access denied|just a moment|error code: \d/i;
 
@@ -1542,10 +1553,11 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         reserve(id, estimateTokens(`${id}|${kind}`, chars));
         const started = Date.now();
 
-        const { status, data, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
+        const { status, data: answered, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
             provider: slot.provider, apiKey: key, model: chosen, baseUrl: baseUrlOf(slot),
             thinkingLevel: THINKING, system, text, roomy
         }));
+        const data = withoutKey(answered, key);
 
         noteBudget(id, budget);
         let billed = 0;
