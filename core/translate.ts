@@ -18,7 +18,7 @@ import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { LANGUAGES, scriptPattern } from "./languages";
+import { LANGUAGES, scriptPattern, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record } from "./log";
@@ -816,8 +816,11 @@ const WRITERS_DASH = /[\u2013\u2014\u2015]|[^\S\n]-[^\S\n]/;
 /** The one they held two parts apart with, spaces on both sides of it. */
 const SPACED_DASH = /[^\S\n]([-\u2013\u2014\u2015])[^\S\n]/;
 
-/** A long dash however it is spaced, and a hyphen only where it stands between spaces. */
-const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015][^\S\n]*/g;
+/**
+ * A long dash however it is spaced, and a hyphen only where it stands between
+ * spaces. A run of long dashes, a Chinese "\u2014\u2014", is one dash.
+ */
+const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015]+[^\S\n]*/g;
 
 /**
  * "all—or almost all—of the problems", where the writer typed no dash at all:
@@ -827,7 +830,7 @@ const DASH_IN_ANSWER = /[^\S\n]+-[^\S\n]+|[^\S\n]*[\u2013\u2014\u2015][^\S\n]*/g
 function dropAddedDashes(source: string, translated: string) {
     if (WRITERS_DASH.test(source)) return translated;
 
-    return translated.replace(/\s*[\u2013\u2014\u2015]\s*/g, (run: string, at: number, whole: string) => {
+    return translated.replace(/\s*[\u2013\u2014\u2015]+\s*/g, (run: string, at: number, whole: string) => {
         const before = whole[at - 1] ?? "";
         const after = whole[at + run.length] ?? "";
 
@@ -879,8 +882,12 @@ function settleGender(text: string, target: string) {
     // this, a plural in brackets would quietly lose its ending.
     if (isLanguage(target, "english")) return text;
 
-    return text.replace(HEDGED_ENDING, (whole, stem: string, dash: string, ending: string) =>
-        gender === "male" ? stem : stem + ending.replace(/^-/, ""));
+    return text.replace(HEDGED_ENDING, (whole, stem: string, dash: string, ending: string) => {
+        // An ending continues its word in the language's own alphabet: "sin(x)"
+        // in a Russian answer is code, and "今日(きょう)" is a word and its reading.
+        if (!writtenIn(target, stem, ending)) return whole;
+        return gender === "male" ? stem : stem + ending.replace(/^-/, "");
+    });
 }
 
 /**

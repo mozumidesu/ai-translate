@@ -754,6 +754,37 @@ lang("and by a looser one a person might type",
     [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
 lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
 
+// --- a word that only looks like it has both endings
+//
+// An ending continues its word in the same alphabet, as the answer's language
+// writes it: "помог(ла)". "sin(x)" in a Russian answer is code, and a Japanese
+// word with its reading in brackets is neither.
+
+settings.gender = "female";
+await behaves("code in a Russian answer is not a hedged ending", tried("received", "use sin(x) and max(a)", "[en] используй sin(x) и max(a)"), "используй sin(x) и max(a)");
+await behaves("nor a length", tried("received", "the length is len(s)", "[en] длина равна len(s)"), "длина равна len(s)");
+await behaves("nor a Japanese word with its reading", tried("received", "the word for today", "[en] слово 今日(きょう) значит сегодня"), "слово 今日(きょう) значит сегодня");
+settings.gender = "male";
+await behaves("whichever the gender", tried("received", "count with len(s)", "[en] посчитай len(s)"), "посчитай len(s)");
+
+settings.gender = "female";
+settings.receivedLanguage = "Japanese";
+await behaves("nor is a reading in a Japanese answer", tried("received", "I am free today", "[en] 今日(きょう)は暇"), "今日(きょう)は暇");
+settings.receivedLanguage = "Spanish";
+await behaves("while a real ending is still settled in a Latin alphabet", tried("received", "i am tired", "[en] estoy cansad(a)"), "estoy cansada");
+settings.receivedLanguage = "Russian";
+settings.gender = "unset";
+
+// --- a run of dashes is one dash
+//
+// A model writes a Chinese dash as two characters, and each of them was
+// replaced on its own.
+
+settings.sentLanguage = "Chinese (Simplified)";
+await behaves("a doubled dash nobody typed is one comma", tried("sent", "I think it is him", "[en] 我想——是他"), "我想, 是他");
+await behaves("and one the writer typed is one dash", tried("sent", "I think - it is him", "[en] 我想——是他"), "我想 - 是他");
+settings.sentLanguage = "English";
+
 // --- the English "I", put right in prose and only there
 //
 // A lower-case "i" on its own is the pronoun whatever the model thinks. It is

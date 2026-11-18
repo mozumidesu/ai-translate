@@ -184,3 +184,23 @@ function lettersOf(scripts: readonly Script[]) {
  * list does not know is taken to be written in Latin letters.
  */
 export const scriptPattern = (language: string) => lettersOf(languageNamed(language)?.script ?? LATIN.script);
+
+const whole = new Map<Script, RegExp>();
+
+/** A pattern for a word written wholly in one alphabet. */
+function wholly(script: Script) {
+    let pattern = whole.get(script);
+    if (!pattern) whole.set(script, pattern = new RegExp(`^[\\p{Script=${script}}\\p{M}]+$`, "u"));
+    return pattern;
+}
+
+/**
+ * Whether these words are written in one and the same alphabet, and it is one
+ * the language is written in. An ending continues its word, so a Japanese word
+ * with its reading in brackets, which is two alphabets, has none, and nor does
+ * a Latin identifier in a Russian answer.
+ */
+export function writtenIn(language: string, ...words: string[]) {
+    return (languageNamed(language)?.script ?? LATIN.script)
+        .some(script => words.every(word => wholly(script).test(word)));
+}
