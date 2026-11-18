@@ -754,6 +754,28 @@ lang("and by a looser one a person might type",
     [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
 lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
 
+// --- the English "I", put right in prose and only there
+//
+// A lower-case "i" on its own is the pronoun whatever the model thinks. It is
+// not one in an address, in a query, or in "i.e.".
+
+await behaves("a lone i is the pronoun", tried("sent", "я думаю, что ты прав", "[ru] i think you are right"), "I think you are right");
+await behaves("and so is the one of a contraction", tried("sent", "я дома", "[ru] i'm home"), "I'm home");
+await behaves("and the one that follows a link", tried("sent", "смотри https://x.com/a я сказал", "[ru] look https://x.com/a i said"), "look https://x.com/a I said");
+await behaves("but not the i in a link's path", tried("sent", "смотри https://x.com/i/spaces/1abc", "[ru] look at https://x.com/i/spaces/1abc"), "look at https://x.com/i/spaces/1abc");
+await behaves("nor the one in its query", tried("sent", "вот https://x.com/watch?i=42", "[ru] here https://x.com/watch?i=42"), "here https://x.com/watch?i=42");
+await behaves("nor the i of i.e.", tried("sent", "т.е. завтра", "[ru] i.e. tomorrow"), "i.e. tomorrow");
+// An address with no scheme is not told from prose by what is around it, so it
+// is told by what is on either side of the letter: a pronoun is never glued to a slash or an equals sign.
+await behaves("nor in an address with no scheme", tried("sent", "смотри x.com/i/spaces/1abc", "[ru] look at x.com/i/spaces/1abc"), "look at x.com/i/spaces/1abc");
+await behaves("nor in the query of one", tried("sent", "вот x.com/watch?i=42", "[ru] here x.com/watch?i=42"), "here x.com/watch?i=42");
+
+useHost({ ...host, appName: () => "Telegram", dialect: () => "telegram" });
+await behaves("nor the address of a text link in Telegram",
+    tried("sent", "[смотри](https://x.com/i/spaces/1abc) тут", "[ru] [look](https://x.com/i/spaces/1abc) here"),
+    "[look](https://x.com/i/spaces/1abc) here");
+useHost(host);
+
 // --- AI Learn
 
 const CORRECT = { name: "correct", text: await promptFor("correct", "i have went there yesterday", "I went there yesterday") };

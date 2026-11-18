@@ -751,6 +751,20 @@ const SINGLE_WORD = /^\p{L}[\p{L}\p{M}'\u2019-]*$/u;
 /** Links, mentions, custom emoji and timestamps are left alone. */
 const NOT_PROSE = /https?:\/\/\S+|www\.\S+|<[^>\s]+>/g;
 
+/** Runs `change` over the prose between those, which it never sees. */
+function inProse(text: string, change: (prose: string) => string) {
+    let out = "";
+    let last = 0;
+
+    for (const match of text.matchAll(NOT_PROSE)) {
+        const at = match.index ?? 0;
+        out += change(text.slice(last, at)) + match[0];
+        last = at + match[0].length;
+    }
+
+    return out + change(text.slice(last));
+}
+
 /**
  * "yeah = yes" says which of the two words the user wants to see, and that
  * holds for the translation as well, not only for the message. The prompt says
@@ -778,16 +792,7 @@ function applyGlossary(text: string) {
             : to;
     }), part);
 
-    let out = "";
-    let last = 0;
-
-    for (const match of text.matchAll(NOT_PROSE)) {
-        const at = match.index ?? 0;
-        out += swap(text.slice(last, at)) + match[0];
-        last = at + match[0].length;
-    }
-
-    return out + swap(text.slice(last));
+    return inProse(text, swap);
 }
 
 /** The prompt asks for these; this enforces them. */
@@ -920,6 +925,16 @@ function oneAlphabet(text: string, target: string) {
     });
 }
 
+/**
+ * The English pronoun as a model writes it in lower case, on its own or in a
+ * contraction. A dot after it closes a sentence only when no letter follows it:
+ * that is what tells "so do i." from "i.e.". A slash or an equals sign beside it
+ * means a path or a query, in an address that no link span covers.
+ */
+const PRONOUN_I = /(^|[^\p{L}\p{N}/])i(?=$|[^\p{L}\p{N}'’./=]|\.(?!\p{L}))/gu;
+const CONTRACTED_I = /(^|[^\p{L}\p{N}/])i(?=['’](?:m|ve|ll|d|re)\b)/giu;
+const STARTS_WITH_I = /^I(?=$|[^\p{L}\p{N}.]|\.(?!\p{L}))/u;
+
 function postProcess(original: string, translated: string, target: string, kind: Kind) {
     let t = translated.trim();
     const source = original.trim();
@@ -969,10 +984,9 @@ function postProcess(original: string, translated: string, target: string, kind:
     }
 
     // A lower-case "i" is never the English pronoun, whatever the model thinks.
-    if (/^english/i.test(target)) {
-        t = t.replace(/(^|[^\p{L}\p{N}])i(?=$|[^\p{L}\p{N}'’])/gu, "$1I");
-        t = t.replace(/(^|[^\p{L}\p{N}])i(?=['’](?:m|ve|ll|d|re)\b)/giu, "$1I");
-    }
+    // In prose only: an address has its own letters, and "i.e." is no pronoun.
+    if (isLanguage(target, "english"))
+        t = inProse(t, prose => prose.replace(PRONOUN_I, "$1I").replace(CONTRACTED_I, "$1I"));
 
     // The writer's own capital at the start should survive, and so should its
     // absence: chat is typed in lower case on purpose. German is left alone,
@@ -982,8 +996,8 @@ function postProcess(original: string, translated: string, target: string, kind:
 
     // Two capitals are the language's own and not the writer's to drop: every
     // German noun, and the English pronoun "I".
-    const keepsCapital = /^german/i.test(target)
-        || (/^english/i.test(target) && /^I(?=$|[^\p{L}\p{N}])/u.test(t));
+    const keepsCapital = isLanguage(target, "german")
+        || (isLanguage(target, "english") && STARTS_WITH_I.test(t));
 
     if (cased && firstLetter === firstLetter!.toUpperCase())
         t = t.replace(/\p{L}/u, c => c.toUpperCase());
