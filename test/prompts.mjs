@@ -95,13 +95,16 @@ const settings = ({
         fallbackProvider: "none"
     });
 
+/** Every notice the core shows, for the tests that care which and how many. */
+const notices = [];
+
 // Says nothing about which chat it is, so it is Discord.
 const host = {
     config: () => settings,
     set: () => { },
     recent: () => history,
     meId: () => undefined,
-    notice: () => { }
+    notice: (text, kind) => notices.push({ text, kind })
 };
 
 useHost(host);
@@ -918,6 +921,66 @@ const gemini = {
 settings.groqModel = "m3";
 await failure("a refusal worded like Gemini's is read the same way", "sent", "как у джемини", gemini, "Try again in 2 min");
 settings.groqModel = "m";
+
+// --- the backup
+//
+// A first slot whose key is refused, whose model is gone or whose account has
+// no credit left cannot answer anything, and with a backup that works the
+// message was still held. The first slot's own reason is what the person needs
+// to hear, and once: "Main provider unavailable" came with every message.
+
+const backed = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `backup: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "wanted:", JSON.stringify(want));
+};
+
+/** What came of one message, which models were asked for it in order, and what was shown. */
+async function carried(text, ...replies) {
+    asked.length = 0;
+    notices.length = 0;
+    answers = replies;
+    let said;
+    try { said = (await aiTranslate("sent", text)).text; } catch (e) { said = `threw: ${e.message}`; }
+    return { said, models: asked.map(a => a.model), shown: notices.map(n => n.text) };
+}
+
+const refused = (status, message) => ({ status, body: JSON.stringify({ error: { message } }) });
+const OLD_NOTICE = "Main provider unavailable";
+
+settings.providerSlots = JSON.stringify([
+    { id: "f1rst5lot", provider: "groq", keys: { groq: "first-key" }, models: { groq: "main" } },
+    { id: "b4ckup5lot", provider: "glm", keys: { glm: "backup-key" }, models: { glm: "spare" } }
+]);
+
+const REFUSALS = [
+    [401, "Invalid API Key", "a key the provider refuses", "rejected the API key (401)"],
+    [402, "Insufficient credits. Add more at https://example.com/credits", "an account with no credit left", "HTTP 402"],
+    [404, "The model `main` does not exist or you do not have access to it.", "a model the provider does not have", "Model \"main\" is not available at Groq"],
+    [400, "The model `main` has been decommissioned and is no longer supported.", "a model the provider took away", "has been decommissioned"],
+    [403, "Invalid API Key provided", "a key refused with a 403", "rejected the API key (403)"]
+];
+
+for (const [status, message, what, reason] of REFUSALS) {
+    const got = await carried(`запасной ${status}`, refused(status, message), "[ru] the backup answered");
+    backed(`${what} (${status}) is answered by the backup`, [got.said, got.models], ["the backup answered", ["main", "spare"]]);
+    backed("and the first slot's own reason is what is shown", got.shown.map(text => text.includes(reason) && !text.includes(OLD_NOTICE)), [true]);
+}
+
+// The same reason again is not said again, until the first slot has answered.
+let again = await carried("запасной снова", refused(401, "Invalid API Key"), "[ru] the backup again");
+backed("the same refusal with the next message is not shown again", [again.said, again.shown], ["the backup again", []]);
+again = await carried("основной вернулся", "[ru] the first slot is back");
+backed("a first slot that answers again is asked first again", [again.said, again.models, again.shown], ["the first slot is back", ["main"], []]);
+again = await carried("запасной опять", refused(401, "Invalid API Key"), "[ru] the backup once more");
+backed("and its refusal after that is news again", again.shown.map(text => text.includes("rejected the API key (401)")), [true]);
+
+// A request the first slot calls malformed is malformed for any slot.
+again = await carried("запасной не нужен", refused(400, "Invalid value for 'temperature'"), "[ru] never asked");
+backed("a 400 that says nothing of the model is not handed on", [again.said.startsWith("threw: AI Translate: HTTP 400"), again.models], [true, ["main"]]);
+
+settings.providerSlots = "";
 
 await rm(out, { recursive: true, force: true });
 

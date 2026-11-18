@@ -1274,9 +1274,90 @@ function withoutKey(text: string, key: string) {
 /** Protection in front of the API answers with a web page rather than an error. */
 const BLOCK_PAGE = /<html|cloudflare|cf-ray|attention required|access denied|just a moment|error code: \d/i;
 
-/** Failures that say "not you, try elsewhere" rather than "your settings are wrong". */
-const WORTH_A_SECOND_PROVIDER = (status: number) =>
-    status === -1 || status === 403 || status === 413 || status === 429 || status >= 500;
+/** A model taken away answers 400 at some providers: Groq's "decommissioned", Z.ai's "Unknown Model". */
+const MODEL_GONE = /decommission|deprecat|no longer supported|unknown model|not a valid model|model_not_found|does not exist/i;
+
+/**
+ * Failures another slot can answer for: everything but the request itself. A
+ * key refused, a model gone and an account out of credit are this slot's own,
+ * and a backup has a key, a model and an account of its own.
+ */
+const WORTH_A_SECOND_PROVIDER = (status: number, data: string) =>
+    status === -1 || status === 401 || status === 402 || status === 403 || status === 404
+    || status === 413 || status === 429 || status >= 500
+    || (status === 400 && MODEL_GONE.test(data));
+
+/** One provider's answer to one request, errors included. */
+interface Answer {
+    slot: string;
+    provider: string;
+    model: string;
+    status: number;
+    data: string;
+    retryMs?: number;
+}
+
+/** What a person is told about an answer that is not a translation. */
+function refusal({ status, data, model, provider, retryMs }: Answer, name: string): Error {
+    if (status === -1) return fail("error.network", { details: data });
+    if (status === 401) return fail("error.badKey", { provider: name, status });
+    if (status === 403) {
+        // A 403 is three different things: a key the provider will not take,
+        // the provider itself refusing in its own words, and protection in
+        // front of it turning the request away before the model ever saw it.
+        if (/api.?key|unauthori[sz]|invalid.?auth/i.test(data)) return fail("error.badKey", { provider: name, status });
+
+        const said = providerSaid(data);
+        if (said) return fail("error.forbiddenSaid", { provider: name, details: said });
+        if (BLOCK_PAGE.test(data)) return fail("error.blocked", { provider: name });
+        return fail("error.forbidden", { provider: name });
+    }
+    if (status === 404) return fail("error.noSuchModel", { provider: name, model });
+    if (status === 429) {
+        const said = providerSaid(data);
+
+        // Z.ai answers 429 when the key simply cannot pay for the model it
+        // was given, which is neither a rate limit nor something waiting
+        // fixes: the first short message of the day comes back "limit
+        // reached" and the person has no idea they picked a paid model.
+        // "Flash" in the name does not make a model free, so the free
+        // ones are named.
+        if (provider === "glm" && /insufficient|balance|no credit|\u6b20\u8d39|\u4f59\u989d/i.test(data))
+            // The sentence goes on after it, so the full stop the
+            // provider ended on would be doubled.
+            return fail("error.noBalance", {
+                provider: name,
+                model,
+                details: (said || data.slice(0, 120)).replace(/[.\u3002\uff61]+$/, ""),
+                free: FREE_MODELS.glm.join(", ")
+            });
+
+        // Which limit it was decides what helps: a short wait, or another
+        // model for the rest of the day.
+        const limit = readLimit(data, retryMs);
+        if (limit.scope === "day")
+            return limit.waitMs
+                ? fail("error.dailyLimit", { provider: name, model, wait: humanWait(limit.waitMs) })
+                : fail("error.dailyLimitNoWait", { provider: name, model });
+        if (limit.waitMs) return fail("error.rateLimitWait", { provider: name, wait: humanWait(limit.waitMs) });
+
+        // "Too many requests" on the first message of the day is usually
+        // something else — a spent quota — and the provider says so.
+        return said
+            ? fail("error.rateLimitSaid", { provider: name, details: said })
+            : fail("error.rateLimit", { provider: name });
+    }
+    if (status === 413) return fail("error.tooLarge", { provider: name });
+    if (status >= 500) return fail("error.overloaded", { provider: name });
+    return fail("error.http", { status, details: data.slice(0, 300) });
+}
+
+/**
+ * What each first slot has been passed over for. While a reason lasts a backup
+ * carries every message, and saying it with each of them is noise: each is
+ * said once, and forgotten when the first slot answers again.
+ */
+const passedOver = new Map<string, Set<string>>();
 
 // --- where a request goes ---
 //
@@ -1542,7 +1623,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     const backups = slots.slice(1).filter(isReady);
 
     /** One request to one slot. Returns the raw answer, errors included. */
-    const callProvider = async (slot: Slot, system: string, roomy = false) => {
+    const callProvider = async (slot: Slot, system: string, roomy = false): Promise<Answer> => {
         if (signal?.aborted) throw new Error(CANCELLED);
 
         const id = slot.id;
@@ -1646,7 +1727,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             && (waited + wait > MAX_WAIT_MS
                 || expectedMs(slot.id, text.length) < wait + expectedMs(first.id, text.length)));
 
-        let answer: Awaited<ReturnType<typeof callProvider>> | undefined;
+        let answer: Answer | undefined;
+        /** The first slot's own answer, where a backup answered in its place. */
+        let firstRefused: Answer | undefined;
 
         // Known to be short of tokens for this one: hand it over at once, or
         // wait for the budget, whichever ends sooner.
@@ -1682,70 +1765,31 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
 
             // A provider can refuse for reasons that have nothing to do with the
             // user — an overload, a rate limit, its bot protection misfiring on a
-            // VPN address. If a second provider is set up, it takes over quietly.
-            if (WORTH_A_SECOND_PROVIDER(answer.status)) {
+            // VPN address — or for this slot's own: its key, its model, its
+            // credit. If a second provider is set up, it takes over.
+            if (WORTH_A_SECOND_PROVIDER(answer.status, answer.data)) {
                 const second = await askBackups();
-                if (second) answer = second;
+                if (second) {
+                    firstRefused = answer;
+                    answer = second;
+                }
             }
         }
 
-        if (answer.slot !== first.id)
-            notify(t("message.switchedProvider", { provider: providerName(answer.provider) }), "message");
+        // The first slot's own reason is news when it happens, not with every
+        // message after it: "Main provider unavailable" came with each of them.
+        if (firstRefused) {
+            const why = [first.provider, model, firstRefused.status,
+                firstRefused.status === 429 ? readLimit(firstRefused.data).scope : ""].join("|");
+            const said = passedOver.get(first.id) ?? new Set<string>();
+            if (!said.has(why)) {
+                passedOver.set(first.id, said.add(why));
+                notify(refusal(firstRefused, firstName), "message");
+            }
+        } else if (answer.slot === first.id && answer.status === 200) passedOver.delete(first.id);
 
-        const { status, data, model: usedModel, provider: usedProvider } = answer;
-        const name = answer.slot === first.id ? firstName : providerName(usedProvider);
-
-        if (status === -1) throw fail("error.network", { details: data });
-        if (status === 401) throw fail("error.badKey", { provider: name, status });
-        if (status === 403) {
-            // A 403 is three different things: a key the provider will not take,
-            // the provider itself refusing in its own words, and protection in
-            // front of it turning the request away before the model ever saw it.
-            if (/api.?key|unauthori[sz]|invalid.?auth/i.test(data)) throw fail("error.badKey", { provider: name, status });
-
-            const said = providerSaid(data);
-            if (said) throw fail("error.forbiddenSaid", { provider: name, details: said });
-            if (BLOCK_PAGE.test(data)) throw fail("error.blocked", { provider: name });
-            throw fail("error.forbidden", { provider: name });
-        }
-        if (status === 404) throw fail("error.noSuchModel", { provider: name, model: usedModel });
-        if (status === 429) {
-            const said = providerSaid(data);
-
-            // Z.ai answers 429 when the key simply cannot pay for the model it
-            // was given, which is neither a rate limit nor something waiting
-            // fixes: the first short message of the day comes back "limit
-            // reached" and the person has no idea they picked a paid model.
-            // "Flash" in the name does not make a model free, so the free
-            // ones are named.
-            if (usedProvider === "glm" && /insufficient|balance|no credit|\u6b20\u8d39|\u4f59\u989d/i.test(data))
-                // The sentence goes on after it, so the full stop the
-                // provider ended on would be doubled.
-                throw fail("error.noBalance", {
-                    provider: name,
-                    model: usedModel,
-                    details: (said || data.slice(0, 120)).replace(/[.\u3002\uff61]+$/, ""),
-                    free: FREE_MODELS.glm.join(", ")
-                });
-
-            // Which limit it was decides what helps: a short wait, or another
-            // model for the rest of the day.
-            const limit = readLimit(data, answer.retryMs);
-            if (limit.scope === "day")
-                throw limit.waitMs
-                    ? fail("error.dailyLimit", { provider: name, model: usedModel, wait: humanWait(limit.waitMs) })
-                    : fail("error.dailyLimitNoWait", { provider: name, model: usedModel });
-            if (limit.waitMs) throw fail("error.rateLimitWait", { provider: name, wait: humanWait(limit.waitMs) });
-
-            // "Too many requests" on the first message of the day is usually
-            // something else — a spent quota — and the provider says so.
-            throw said
-                ? fail("error.rateLimitSaid", { provider: name, details: said })
-                : fail("error.rateLimit", { provider: name });
-        }
-        if (status === 413) throw fail("error.tooLarge", { provider: name });
-        if (status >= 500) throw fail("error.overloaded", { provider: name });
-        if (status !== 200) throw fail("error.http", { status, details: data.slice(0, 300) });
+        const { status, data, provider: usedProvider } = answer;
+        if (status !== 200) throw refusal(answer, answer.slot === first.id ? firstName : providerName(usedProvider));
 
         let out = extractText(usedProvider, data);
 
