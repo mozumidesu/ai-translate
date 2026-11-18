@@ -1120,6 +1120,17 @@ const CUT_OFF = /"finish_reason"\s*:\s*"length"|"finishReason"\s*:\s*"MAX_TOKENS
 const CONTEXT_MESSAGES = 4;
 
 /**
+ * Other people's text goes into the rules, where a line break of theirs would
+ * start a paragraph that reads like one of ours. Every kind of break goes.
+ */
+const oneLine = (text: string) => text.replace(/[\p{White_Space}\p{Cc}]+/gu, " ").trim();
+
+/** Discord stops a name at 32 characters and Telegram a first name at 64. */
+const NAME_LIMIT = 64;
+
+const asName = (name: unknown) => Array.from(oneLine(String(name ?? ""))).slice(0, NAME_LIMIT).join("").trim();
+
+/**
  * A chat may write a mention, a custom emoji, a channel or a timestamp as a raw
  * id, which tells a model nothing and costs real tokens: twelve for one emoji,
  * nine for one mention, twenty-eight for an attachment's address. The message
@@ -1127,11 +1138,9 @@ const CONTEXT_MESSAGES = 4;
  * lines, which are read once and thrown away, are cleaned.
  */
 function readable(text: string, names: Map<string, string>) {
-    return dialect().readIds(text, names)
+    return oneLine(dialect().readIds(text, names)
         // A link cannot be followed from here; that one was shared is enough.
-        .replace(/https?:\/\/\S+|www\.\S+/g, "(link)")
-        .replace(/[^\S\n]{2,}/g, " ")
-        .trim();
+        .replace(/https?:\/\/\S+|www\.\S+/g, "(link)"));
 }
 
 /**
@@ -1163,20 +1172,24 @@ export function collectContext(channelId: string, beforeId?: string): string {
         // have spoken earlier than the lines that are handed over.
         const names = new Map<string, string>();
         if (me) names.set(me, "Me");
-        for (const m of said)
-            if (m.authorId && m.authorName) names.set(m.authorId, m.authorName);
+        for (const m of said) {
+            const name = asName(m.authorName);
+            if (m.authorId && name) names.set(m.authorId, name);
+        }
 
         const lines: string[] = [];
         for (const m of said.slice(-CONTEXT_MESSAGES)) {
+            const name = asName(m.authorName);
+
             // Whoever is talking here is a person the message may name.
-            if (m.authorName) protectedWords.add(m.authorName);
+            if (name) protectedWords.add(name);
 
             // A message that was nothing but an emoji or a mention is empty
             // once cleaned, and an empty line only costs tokens.
             const content = readable(m.content, names).slice(0, 300);
             if (!content) continue;
 
-            lines.push(`${m.authorId === me ? "Me" : (m.authorName || "Them")}: ${content}`);
+            lines.push(`${m.authorId === me ? "Me" : (name || "Them")}: ${content}`);
         }
 
         if (lines.length)
