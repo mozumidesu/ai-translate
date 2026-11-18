@@ -121,7 +121,7 @@ from the older name `AiTranslate`.
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule works, asked of a real provider several times a case. Costs tokens, so never part of the robot. A count from before 7 November is one answer counted several times |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
-| `.github/workflows/build.yml` | When the robot runs: hourly at minute 17, plus a manual run, with one issue open while the build fails |
+| `.github/workflows/build.yml` | When the robot runs: on every move of `release`, hourly at minute 17 for a new Vencord, plus a manual run, one run at a time, with one issue open while the build fails |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request |
 | `CHANGELOG.md` | What changed in each version, under Added, Changed and Fixed; the robot puts the matching section into the release on GitHub |
 | `docs/` | The 15 translated READMEs and the banner |

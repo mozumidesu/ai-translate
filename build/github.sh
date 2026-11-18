@@ -3,10 +3,11 @@
 #
 # Vencord only runs plugins built into it, so people get Vencord with AI
 # Translate already inside, built here rather than on their own computers.
-# This runs on GitHub Actions every hour and on demand. When Vencord has moved
-# on, or release.cmd has pointed the "release" branch somewhere new, it builds
-# the two together and publishes the finished files on builds.zolatau.com,
-# where the install command and the plugin's updater download them.
+# This runs on GitHub Actions whenever "release" moves, every hour and on
+# demand. When Vencord has moved on, or release.cmd has pointed the "release"
+# branch somewhere new, it builds the two together and publishes the finished
+# files on builds.zolatau.com, where the install command and the plugin's
+# updater download them.
 #
 # Publishing is a Cloudflare Worker of its own that hands out files and does
 # nothing else: a build is uploaded as that Worker's static assets. The newest

@@ -18,10 +18,16 @@ versions of the plugin, which is why no build ever touches this.
 `main` is the working branch, and it is where work is committed and pushed, in a
 cloud session too: no `claude/...` branch of its own. `release` is what users
 get. The robot in `.github/workflows/build.yml` fetches `build/github.sh`
-**from `release`** every hour, builds Vencord with the plugin inside, and
-publishes the result on `builds.zolatau.com`; installed copies pick it up on
-their next check. Moving `release` is a deliberate act, never a side effect of
-a commit.
+**from `release`** as soon as `release` moves and every hour, builds Vencord
+with the plugin inside, and publishes the result on `builds.zolatau.com`;
+installed copies pick it up on their next check. Moving `release` is a
+deliberate act, never a side effect of a commit.
+
+The schedule runs `build.yml` as it is on `main`, a push to `release` as it is
+on `release`, and both share one concurrency group, so a run waits for the one
+before it rather than cancelling it. A change to the robot itself therefore
+reaches `release` by the same merge from `main`, without raising the version:
+the build it starts is like one made because Vencord moved.
 
 The same run also makes a **GitHub release**, tagged `v` and the version, with
 the four files Discord loads and the userscript attached, and marked a
