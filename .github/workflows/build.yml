@@ -1,11 +1,12 @@
 # AI Translate - the build robot.
 #
-# Every hour, and on demand from Actions > Build > Run workflow, this fetches
-# build/github.sh from the plugin's release branch and runs it, and that
-# script decides whether there is anything new to build. It takes the copy on
-# release rather than the one on main, so a build only ever follows what has
-# been released. It uses no ready-made GitHub actions, only what every GitHub
-# runner already has, so nothing in it goes out of date.
+# Whenever the release branch moves, every hour for a new Vencord, and on
+# demand from Actions > Build > Run workflow, this fetches build/github.sh from
+# the plugin's release branch and runs it, and that script decides whether
+# there is anything new to build. It takes the copy on release rather than the
+# one on main, so a build only ever follows what has been released. It uses no
+# ready-made GitHub actions, only what every GitHub runner already has, so
+# nothing in it goes out of date.
 #
 # The finished files go on builds.zolatau.com rather than into a release here.
 # That needs two secrets, under Settings > Secrets and variables > Actions:
@@ -13,7 +14,14 @@
 
 name: Build
 
+# The schedule runs this file as it is on main, a push as it is on release, so
+# a change here has to reach release too.
 on:
+  # GitHub fires the hourly schedule hours apart, so a moved release does not
+  # wait for it.
+  push:
+    branches: [release]
+  # Vencord moves without telling anyone.
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
@@ -26,8 +34,13 @@ permissions:
   # Opens an issue when the build starts failing, and closes it when it stops.
   issues: write
 
+# One run at a time, whatever started it: each deploys the whole site, so two
+# at once would undo each other. A new run waits instead of cancelling the one
+# that is going. GitHub keeps only the newest waiting run, which is enough,
+# since a run reads both branches when it starts.
 concurrency:
   group: build
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -40,8 +53,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           WRANGLER_SEND_METRICS: "false"
+        # By commit, not by branch: raw.githubusercontent.com keeps a branch's
+        # file for five minutes, and a release that has just moved must not
+        # build with the script it had before.
         run: |
-          curl -fsSL https://raw.githubusercontent.com/mozumidesu/ai-translate/release/build/github.sh -o github.sh
+          commit=$(git ls-remote https://github.com/mozumidesu/ai-translate.git refs/heads/release | cut -f1)
+          [ -n "$commit" ] || { echo "Could not read the release branch."; exit 1; }
+          curl -fsSL "https://raw.githubusercontent.com/mozumidesu/ai-translate/$commit/build/github.sh" -o github.sh
           bash github.sh
 
       # A robot that fails silently is how Forms and Text left the plugin
@@ -66,7 +84,7 @@ jobs:
           fi
 
           gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body \
-              "The hourly build failed and nothing new was published. Installed
+              "The build failed and nothing new was published. Installed
           copies keep running the build that is already out, so nothing is
           broken for anyone, but no change reaches users until this is fixed.
 
