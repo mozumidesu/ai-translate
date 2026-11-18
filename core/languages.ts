@@ -185,6 +185,78 @@ function lettersOf(scripts: readonly Script[]) {
  */
 export const scriptPattern = (language: string) => lettersOf(languageNamed(language)?.script ?? LATIN.script);
 
+const SCRIPTS = [...new Set(ALL.flatMap(l => l.script))];
+
+/** The alphabet a letter is in, if some language here is written in it. */
+const scriptOf = (letter: string) => SCRIPTS.find(script => lettersOf([script]).test(letter));
+
+/** The alphabet most of a text's letters are in. */
+function mostlyIn(text: string) {
+    const counted = new Map<Script, number>();
+
+    for (const letter of text.match(/\p{L}/gu) ?? []) {
+        const script = scriptOf(letter);
+        if (script) counted.set(script, (counted.get(script) ?? 0) + 1);
+    }
+
+    return [...counted].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+const CASED = new Set(ALL.filter(l => l.cased).flatMap(l => l.script));
+
+/**
+ * Whether a letter is in an alphabet whose capitals people type. Unicode
+ * gives Georgian some, so upper-casing a Georgian letter makes one that
+ * nobody has on a keyboard; that is not a capital, and nor is a letter of an
+ * alphabet no language here is written in.
+ */
+export const hasCase = (letter: string) => {
+    const script = scriptOf(letter);
+    return !!script && CASED.has(script);
+};
+
+/** The marks every text can close on, and what they stand for. */
+const COMMON: Record<string, string> = { ".": ".", "?": "?", "!": "!", "…": "..." };
+
+/**
+ * How a text closes: the run of marks it ends on, and the same run in plain
+ * marks, so that a full-width "。" and Hindi's "।" are both the full stop they
+ * are. The marks are those of the languages: the ones no other language uses
+ * are read in any text, but a mark that is ordinary punctuation elsewhere, the
+ * Greek ";", is read only in its own. `language` is the one the text is in, when
+ * that is known, as an answer's is; a text that is not says by its letters.
+ */
+export function closingOf(text: string, language?: string) {
+    const own = language === undefined ? undefined : languageNamed(language);
+    const alphabet = own ? undefined : mostlyIn(text);
+    const marks = new Map(Object.entries(COMMON));
+
+    for (const l of ALL)
+        for (const [mark, plain] of Object.entries(l.closing)) {
+            const here = own ? own === l : alphabet !== undefined && l.script.includes(alphabet);
+            if (mark.charCodeAt(0) > 0x7f || here) marks.set(mark, plain);
+        }
+
+    const chars = [...text];
+    let run = "";
+    while (chars.length && marks.has(chars[chars.length - 1])) run = chars.pop() + run;
+
+    return { run, plain: [...run].map(mark => marks.get(mark)).join("") };
+}
+
+const PLAIN = new Map(ALL.flatMap(l => Object.entries(l.closing)));
+
+/**
+ * A run of closing marks as it is written into a text in `language`. A mark
+ * every text has stays, and so does one that language has of its own; any other
+ * is the plain mark it stands for, since a danda has no place in an English
+ * sentence and nor has a full-width full stop.
+ */
+export function closeIn(language: string, run: string) {
+    const own = languageNamed(language)?.closing ?? {};
+    return [...run].map(mark => (mark in COMMON || mark in own ? mark : PLAIN.get(mark) ?? mark)).join("");
+}
+
 const whole = new Map<Script, RegExp>();
 
 /** A pattern for a word written wholly in one alphabet. */

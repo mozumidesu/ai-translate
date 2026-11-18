@@ -18,7 +18,7 @@ import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { LANGUAGES, scriptPattern, writtenIn } from "./languages";
+import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record } from "./log";
@@ -795,17 +795,7 @@ function applyGlossary(text: string) {
     return inProse(text, swap);
 }
 
-/** The prompt asks for these; this enforces them. */
-/** The same mark is drawn differently in different writing systems. */
-/** The run of marks a message closes on: "?..", "!!", "...", "?!", ".". */
-const CLOSING = /[.?!…。？！｡؟]+$/;
-
-/** The same marks written the Western way, so "？" and "?" count as one. */
-const plainMarks = (run: string) => run
-    .replace(/[。｡]/g, ".")
-    .replace(/[？؟]/g, "?")
-    .replace(/！/g, "!")
-    .replace(/…/g, "...");
+// The prompt asks for these; this enforces them.
 
 /**
  * A dash the writer typed: any em or en dash, or a hyphen standing between
@@ -978,16 +968,17 @@ function postProcess(original: string, translated: string, target: string, kind:
         // what the translation closes with. Checking only for a question mark
         // is how "?.." once went out bare: the model shortened it to "?", and
         // a source that did not end on "?" had that stripped too.
-        const theirs = source.match(CLOSING)?.[0] ?? "";
-        const ours = t.match(CLOSING)?.[0] ?? "";
+        // Each is read in the marks of the language it is written in.
+        const theirs = closingOf(source);
+        const ours = closingOf(t, target);
 
-        if (plainMarks(ours) !== plainMarks(theirs))
-            t = t.slice(0, t.length - ours.length).trimEnd() + theirs;
+        if (ours.plain !== theirs.plain)
+            t = t.slice(0, t.length - ours.run.length).trimEnd() + closeIn(target, theirs.run);
 
         // Spanish opens questions and exclamations as well; those go when the
         // matching closing mark is not there.
-        if (!plainMarks(theirs).includes("?")) t = t.replace(/^¿\s*/, "");
-        if (!plainMarks(theirs).includes("!")) t = t.replace(/^¡\s*/, "");
+        if (!theirs.plain.includes("?")) t = t.replace(/^¿\s*/, "");
+        if (!theirs.plain.includes("!")) t = t.replace(/^¡\s*/, "");
     }
 
     // A lower-case "i" is never the English pronoun, whatever the model thinks.
@@ -999,17 +990,18 @@ function postProcess(original: string, translated: string, target: string, kind:
     // absence: chat is typed in lower case on purpose. German is left alone,
     // because there every noun is capitalised whatever the original did.
     const firstLetter = source.match(/\p{L}/u)?.[0];
-    const cased = !!firstLetter && firstLetter.toUpperCase() !== firstLetter.toLowerCase();
+    const cased = !!firstLetter && hasCase(firstLetter) && firstLetter.toUpperCase() !== firstLetter.toLowerCase();
 
     // Two capitals are the language's own and not the writer's to drop: every
     // German noun, and the English pronoun "I".
     const keepsCapital = isLanguage(target, "german")
         || (isLanguage(target, "english") && STARTS_WITH_I.test(t));
 
+    // An alphabet with no capitals people type has no case to change.
     if (cased && firstLetter === firstLetter!.toUpperCase())
-        t = t.replace(/\p{L}/u, c => c.toUpperCase());
+        t = t.replace(/\p{L}/u, c => (hasCase(c) ? c.toUpperCase() : c));
     else if (cased && !keepsCapital)
-        t = t.replace(/\p{L}/u, c => c.toLowerCase());
+        t = t.replace(/\p{L}/u, c => (hasCase(c) ? c.toLowerCase() : c));
 
     return restoreLinePrefixes(source, keepBlankLines(source, t));
 }

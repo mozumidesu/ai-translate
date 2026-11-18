@@ -754,6 +754,61 @@ lang("and by a looser one a person might type",
     [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
 lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
 
+// --- the marks a language closes a sentence with
+//
+// Whatever the writer closed with is what the translation closes with, and a
+// mark that is the same mark in another script counts as it: the full-width
+// "。" is a full stop, and so is Hindi's "।".
+
+settings.sentLanguage = "Hindi";
+await behaves("Hindi's own full stop is the writer's full stop", tried("sent", "Я дома.", "[ru] मैं घर पर हूँ।"), "मैं घर पर हूँ।");
+await behaves("and is replaced by the mark the writer typed", tried("sent", "Привет!", "[ru] नमस्ते।"), "नमस्ते!");
+await behaves("and goes when the writer typed none", tried("sent", "привет", "[ru] नमस्ते।"), "नमस्ते");
+settings.sentLanguage = "Bengali";
+await behaves("Bengali's is the same", tried("sent", "Я дома.", "[ru] আমি বাড়িতে আছি।"), "আমি বাড়িতে আছি।");
+settings.sentLanguage = "Urdu";
+await behaves("Urdu's own full stop", tried("sent", "Я дома.", "[ru] میں گھر پر ہوں۔"), "میں گھر پر ہوں۔");
+settings.sentLanguage = "Armenian";
+await behaves("Armenian's own full stop", tried("sent", "Я дома.", "[ru] Ես տանն եմ։"), "Ես տանն եմ։");
+settings.sentLanguage = "Greek";
+await behaves("Greek's question mark is the writer's question mark", tried("sent", "Как дела?", "[ru] Τι κάνεις;"), "Τι κάνεις;");
+await behaves("and goes when the writer asked nothing", tried("sent", "как дела", "[ru] Τι κάνεις;"), "τι κάνεις");
+// Greek has capitals, and the writer's own are kept.
+await behaves("Greek keeps the capital the writer typed", tried("sent", "Привет всем", "[ru] γεια σας"), "Γεια σας");
+
+// The marks this already read, and the one that is only sometimes a mark.
+settings.sentLanguage = "Japanese";
+await behaves("a full-width full stop is the writer's full stop", tried("sent", "Я дома.", "[ru] 家にいます。"), "家にいます。");
+await behaves("and is replaced by the mark the writer typed", tried("sent", "Привет!", "[ru] こんにちは。"), "こんにちは!");
+settings.sentLanguage = "Arabic";
+await behaves("Arabic's question mark is the writer's question mark", tried("sent", "Как дела?", "[ru] كيف حالك؟"), "كيف حالك؟");
+settings.sentLanguage = "English";
+
+settings.receivedLanguage = "English";
+await behaves("a Greek question keeps its question mark in English", tried("received", "Τι κάνεις;", "[el] How are you?"), "How are you?");
+await behaves("and a Japanese statement its full stop", tried("received", "家にいます。", "[ja] I am home."), "I am home.");
+await behaves("a Hindi full stop reaches English as a full stop", tried("received", "मैं घर पर हूँ।", "[hi] I am at home"), "I am at home.");
+await behaves("an Armenian one too", tried("received", "Ես տանն եմ։", "[hy] I am at home"), "I am at home.");
+await behaves("a Greek question mark as a question mark", tried("received", "Που είσαι;", "[el] Where are you"), "Where are you?");
+await behaves("and a full-width one as the mark it stands for", tried("received", "学校にいます。", "[ja] I am at school"), "I am at school.");
+settings.sentLanguage = "English";
+await behaves("a writer's full-width mark is theirs only where the answer has it too", tried("sent", "ありがとう！", "[ja] Thanks."), "Thanks!");
+settings.receivedLanguage = "Russian";
+await behaves("a semicolon after Latin letters is only a semicolon", tried("received", "done;", "[en] готово;"), "готово;");
+
+// --- capitals, where there are any
+//
+// Georgian has capitals in Unicode and nobody types them, so a capital the
+// writer typed has nothing to become in it, and a Georgian message has no
+// lower case for the answer to keep.
+
+settings.sentLanguage = "Georgian";
+await behaves("a capital the writer typed is not made one nobody types", tried("sent", "Привет, как дела?", "[ru] გამარჯობა, როგორ ხარ?"), "გამარჯობა, როგორ ხარ?");
+settings.sentLanguage = "English";
+settings.receivedLanguage = "English";
+await behaves("a Georgian message has no lower case to keep", tried("received", "გამარჯობა, როგორ ხარ?", "[ka] Hello, how are you?"), "Hello, how are you?");
+settings.receivedLanguage = "Russian";
+
 // --- a word that only looks like it has both endings
 //
 // An ending continues its word in the same alphabet, as the answer's language
