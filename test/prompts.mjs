@@ -42,7 +42,8 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext, isJustAName, isNotWorthTranslating } from "./core/translate";\n`
+            + `export { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, scriptShare } from "./core/translate";\n`
+            + `export * as languages from "./core/languages";\n`
             + `export { keepPieces, literalBackslashes } from "./core/keep";\n`
             + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
             + `export { isReady, keyOf, modelOf, readSlots } from "./core/slots";\n`,
@@ -78,7 +79,7 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext, isJustAName, isNotWorthTranslating,
+const { useHost, aiTranslate, collectContext, isJustAName, isNotWorthTranslating, scriptShare, languages,
     keepPieces, literalBackslashes,
     changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
     isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
@@ -697,6 +698,61 @@ await behaves("nothing is guessed when the gender is not known", translated("rec
 settings.gender = "female";
 await behaves("a plural in brackets survives a translation into English", translated("sent", "сколько файлов", "[ru] how many file(s)"), "how many file(s)");
 settings.gender = "unset";
+
+// --- how each language is written
+//
+// One record for each language, in core/languages.ts: the alphabet it is
+// written in, whether it has capitals, the marks it closes a sentence with.
+// The core reads those and does not guess from the language's English name, so
+// a record that is wrong or missing means a language judged by another's rules.
+
+const lang = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `language: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "wanted:", JSON.stringify(want));
+};
+
+/** What came of a translation: the text, or the error that stood in for it. */
+const tried = (kind, text, ...replies) => translated(kind, text, ...replies).catch(error => `threw: ${error.message}`);
+
+const { LANGUAGES, UNLISTED = [], languageNamed = () => undefined } = languages;
+const RECORDS = [...LANGUAGES, ...UNLISTED];
+
+/** An alphabet Unicode has a name for: \p{Script=…} throws on one it has not. */
+const isScript = name => { try { return !!new RegExp(`\\p{Script=${name}}`, "u"); } catch { return false; } };
+const complete = l => Array.isArray(l.script) && l.script.length > 0 && l.script.every(isScript)
+    && typeof l.cased === "boolean"
+    && !!l.closing && Object.entries(l.closing).every(([mark, plain]) => [...mark].length === 1 && [".", "?", "!"].includes(plain));
+
+lang("every language has a record: its alphabet, its capitals, its closing marks", RECORDS.filter(l => !complete(l)).map(l => l.value), []);
+
+lang("no two languages share a name or a code",
+    [RECORDS.map(l => l.value), RECORDS.map(l => l.code)].map(all => all.filter((one, i) => all.indexOf(one) !== i)), [[], []]);
+
+// Whether an alphabet has capitals is the alphabet's, so two languages in one
+// of them cannot disagree about it.
+const casing = new Map();
+for (const l of RECORDS) for (const s of l.script ?? []) casing.set(s, new Set([...(casing.get(s) ?? []), l.cased]));
+lang("languages in one alphabet agree on whether it has capitals", [...casing].filter(([, says]) => says.size > 1).map(([s]) => s), []);
+
+// A record that forgot to say the alphabet is Latin, and every correct answer
+// in the real one would be refused. The language's own name shows which it is.
+const ownName = l => (l.label ?? l.value).split(" — ")[1] ?? l.value;
+lang("each language's own name is in the alphabet its record names",
+    RECORDS.filter(l => scriptShare(ownName(l), l.value) < 0.8).map(l => l.value), []);
+
+// The setting is free text, and these were judged before there was a record.
+const typedByHand = [["Привет", "Mongolian"], ["مرحبا", "Pashto"], ["שלום", "Yiddish"], ["नमस्ते", "Marathi"],
+    ["नमस्ते", "Nepali"], ["你好", "Chinese"], ["Hello", "English (UK)"], ["مرحبا", "Arabic (Egypt)"], ["مرحبا", "Arabic Egyptian"]];
+lang("a name typed by hand is judged by its own alphabet", typedByHand.map(([text, name]) => scriptShare(text, name)), typedByHand.map(() => 1));
+lang("and by that one only", [scriptShare("Hello", "Mongolian"), scriptShare("Привет", "English")], [0, 0]);
+
+lang("a language is found by the name the prompt writes",
+    [languageNamed("Chinese (Traditional)")?.code, languageNamed("Brazilian Portuguese")?.code], ["zh-Hant", "pt-BR"]);
+lang("and by a looser one a person might type",
+    [languageNamed("chinese")?.code, languageNamed("English (UK)")?.code, languageNamed("Arabic Egyptian")?.code], ["zh-Hans", "en", "ar"]);
+lang("but not by a name that only begins like one", [languageNamed("Malayalam"), languageNamed("Klingon")], [undefined, undefined]);
 
 // --- AI Learn
 

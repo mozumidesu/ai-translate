@@ -18,7 +18,7 @@ import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { LANGUAGES } from "./languages";
+import { LANGUAGES, scriptPattern } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record } from "./log";
@@ -688,33 +688,9 @@ export function isNotWorthTranslating(text: string) {
     return stripped.length === 0;
 }
 
-/** Expected alphabet per target language: the cheapest test for a translation that never happened. */
-const SCRIPTS: [RegExp, string[]][] = [
-    [/\p{Script=Cyrillic}/u, ["Russian", "Ukrainian", "Belarusian", "Bulgarian", "Serbian", "Macedonian", "Kazakh", "Mongolian"]],
-    [/\p{Script=Arabic}/u, ["Arabic", "Persian", "Urdu", "Pashto"]],
-    [/\p{Script=Hebrew}/u, ["Hebrew", "Yiddish"]],
-    [/\p{Script=Greek}/u, ["Greek"]],
-    [/\p{Script=Thai}/u, ["Thai"]],
-    [/\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}/u, ["Japanese"]],
-    [/\p{Script=Han}/u, ["Chinese (Simplified)", "Chinese (Traditional)", "Chinese"]],
-    [/\p{Script=Hangul}/u, ["Korean"]],
-    [/\p{Script=Devanagari}/u, ["Hindi", "Marathi", "Nepali"]],
-    [/\p{Script=Bengali}/u, ["Bengali"]],
-    [/\p{Script=Tamil}/u, ["Tamil"]],
-    [/\p{Script=Armenian}/u, ["Armenian"]],
-    [/\p{Script=Georgian}/u, ["Georgian"]]
-];
-
-function expectedScript(language: string) {
-    for (const [pattern, languages] of SCRIPTS)
-        if (languages.some(l => language.toLowerCase().startsWith(l.toLowerCase()))) return pattern;
-
-    return /\p{Script=Latin}/u;
-}
-
 /** Share of the letters that are written in the alphabet the target uses. */
 export function scriptShare(text: string, language: string) {
-    const pattern = expectedScript(language);
+    const pattern = scriptPattern(language);
     const letters = text.replace(/`[^`]*`|https?:\/\/\S+|<[^>]+>|:\w+:/g, "").match(/\p{L}/gu) ?? [];
     if (!letters.length) return 1;
 
@@ -929,7 +905,7 @@ const inTwoAlphabets = (word: string) => /\p{Script=Latin}/u.test(word) && /\p{S
  * only in a word mostly written in it, so "в Discordе" keeps its Russian ending.
  */
 function oneAlphabet(text: string, target: string) {
-    const script = expectedScript(target);
+    const script = scriptPattern(target);
     const cyrillic = script.test("\u0430");
     if (!cyrillic && !script.test("a")) return text;
 
