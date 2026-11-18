@@ -527,7 +527,7 @@
   },
   {
     "id": "a-code-naming-the-target-is-not-the-last-word",
-    "why": "\"Hola a todos, ¿cómo están hoy?\" answered \"[en] Hi everyone, how are you today?\" went out in Spanish, as typed: the code named the language it was translated into, and Spanish and English share the alphabet that was meant to back the code up",
+    "why": "\"Hola a todos, ¿cómo están hoy?\" answered \"[en] Hi everyone, how are you today?\" went out in Spanish, as typed: the code named the language it was translated into, and Spanish and English share the alphabet that was meant to back the code up. Through this runner none of Groq's three models did it: before the fix the code came back \"[es]\" in 10 runs of 10 for each of gpt-oss-120b, gpt-oss-20b and qwen3.8-27b, and after it the message was translated in every run, 10 of 10, 5 of 5 and 5 of 5. Gemini answered none of 10 that day. The answer that went out in Spanish came from a fake provider, so this case is kept for a model that does write the target's code",
     "kind": "sent",
     "to": "English",
     "text": "Hola a todos, ¿cómo están hoy?",
@@ -543,7 +543,7 @@
   },
   {
     "id": "a-message-already-in-the-target-goes-as-typed",
-    "why": "the other side: \"Yo everyone! Gll\" once went out as \"Heyyy\", English rewritten into other English under a code that said English. A message already in the target goes out exactly as typed",
+    "why": "the other side: \"Yo everyone! Gll\" once went out as \"Heyyy\", English rewritten into other English under a code that said English. A message already in the target goes out exactly as typed. Through this runner gpt-oss-120b and gpt-oss-20b take it for Spanish, for \"Yo\": all 25 of their answers read raw began \"[es]\", and \"I everyone! Gll\" or \"Hey everyone! Gll\" came back for the first in 2 and 3 runs of two tens with the fix and 3 of 10 without it, and for the second in 4 runs of 5. A code naming another language never reaches the question asked again, so this fails for a reason of its own that no rule answers yet. qwen3.8-27b: 5 of 5 as typed",
     "kind": "sent",
     "to": "English",
     "text": "Yo everyone! Gll",
@@ -554,7 +554,7 @@
   },
   {
     "id": "a-message-typed-loosely-in-the-target-goes-as-typed",
-    "why": "the same with a message a model is tempted to tidy: lower case, no apostrophes. Tidied, it is no longer what was typed, and it was already in the language it goes out in",
+    "why": "the same with a message a model is tempted to tidy: lower case, no apostrophes. Tidied, it is no longer what was typed, and it was already in the language it goes out in. With the fix it went as typed 10 runs of 10 for gpt-oss-120b and 5 of 5 for gpt-oss-20b and qwen3.8-27b",
     "kind": "sent",
     "to": "English",
     "text": "im gonna be late, dont wait for me",

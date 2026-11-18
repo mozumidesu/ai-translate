@@ -1222,6 +1222,7 @@ function isSameLanguage(reported: string, language: string) {
 }
 
 // "Hola a todos" answered "[en] Hi everyone" went out in Spanish: the code named the language it went into.
+// Groq's three models wrote "[es]" there 30 runs of 30: the second request is for a model that does not.
 const namedTheTarget = (target: string) =>
     `\n\nIMPORTANT: your previous answer began with the code of ${target}, as if the message were already written`
     + ` in ${target}, yet it did not give the message back as written. The code names the language the message is`
