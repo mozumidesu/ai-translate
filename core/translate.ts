@@ -1489,10 +1489,12 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     // Every setting that can change the wording belongs in the key, or a
     // cached answer from before the change would be served. So does the chat
     // the host is in: its name is in the prompt and its dialect in the answer.
+    // A correction's reason is written in the language the person reads.
     const { extraInstructions, formality } = config();
     const cacheKey = [
         kind, appName(), dialect().name, first.provider, model, target, extraInstructions,
-        formality, config().gender, config().glossary, context, mine, typed
+        formality, config().gender, config().glossary, context, mine,
+        kind === "correct" ? config().receivedLanguage : "", typed
     ].join("|");
     const hit = cache.get(cacheKey);
     if (hit !== undefined) return hit;

@@ -698,6 +698,15 @@ check("and a message with nothing wrong gets no reason", CORRECT, "When you chan
 absent("none of the translation rules come with it", CORRECT, "Never add a dash");
 absent("and nor does the answer format", CORRECT, "square-bracketed ISO 639-1 code");
 
+// The reason is in the language the person reads, so a correction kept from
+// before that language changed came back with its reason in the old one.
+await translated("correct", "i has a dog at home", "I have a dog at home\nwhy: «has» после «I» неверно");
+settings.receivedLanguage = "Spanish";
+await translated("correct", "i has a dog at home", "I have a dog at home\nwhy: «has» no va con «I»");
+counted("a correction is asked for again once the reading language changes", 1);
+check("and its reason is asked for in the new one", { name: "correct", text: asked[0]?.messages?.[0]?.content ?? "" }, 'one last line beginning "why:" and written in Spanish');
+settings.receivedLanguage = "Russian";
+
 const learn = (name, got, want) => {
     const ok = JSON.stringify(got) === JSON.stringify(want);
     ok ? pass++ : fail++;
