@@ -9,13 +9,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Bridge } from "../core/bridge";
 import { isChannelEnabled, toggleChannel } from "../core/chats";
 import { config, set } from "../core/host";
 import { LANGUAGES } from "../core/languages";
 import { LOCALES, t } from "../core/locales";
 import {
-    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
+    baseUrlOf, canRemove, checkKey, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
     readSlots, Slot, writeSlots
 } from "../core/slots";
 import { addStyle, ui } from "./toast";
@@ -457,26 +456,21 @@ function slotList() {
  * limit says nothing about it.
  */
 async function offerModels(slot: Slot, list: HTMLDataListElement, said: HTMLElement) {
-    const apiKey = keyOf(slot);
-    if (!apiKey) return;
+    if (!keyOf(slot)) return;
 
-    try {
-        const { status, models } = await Bridge.listAiModels(JSON.stringify({
-            provider: slot.provider, apiKey, baseUrl: baseUrlOf(slot)
-        }));
+    const { verdict, notAKey, models } = await checkKey(slot);
 
-        if (status === 401 || status === 403) {
-            said.textContent = t("apiKey.bad", { provider: providerName(slot.provider) });
-            return;
-        }
+    if (verdict === "bad" || verdict === "blocked") {
+        // A network turned away is not the key's fault, so not in red.
+        said.classList.toggle("bad", verdict === "bad");
+        said.textContent = t(verdict === "blocked" ? "apiKey.blocked" : notAKey ? "apiKey.notAKey" : "apiKey.bad", { provider: providerName(slot.provider) });
+        return;
+    }
 
-        for (const model of models) {
-            const item = document.createElement("option");
-            item.value = model;
-            list.append(item);
-        }
-    } catch {
-        // Suggestions are a convenience; the field works without them.
+    for (const model of models) {
+        const item = document.createElement("option");
+        item.value = model;
+        list.append(item);
     }
 }
 

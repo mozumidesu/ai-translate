@@ -132,6 +132,39 @@ record("info", "explain", "ok", '{"api_key": "supersecretvalue", "model": "m"}')
 check("a key named as one in JSON is masked", !asText().includes("supersecretvalue"));
 check("without taking the rest of the JSON with it", asText().includes("model"));
 
+// --- the time is UTC, and each line says so ---
+//
+// An event at 01:01 in a person's own time was logged as 22:01 with nothing to
+// say whose clock that was. A report is read in another zone than it was
+// written in, so every line carries the mark, wherever it is cut from.
+
+{
+    const { now } = Date;
+    const zone = process.env.TZ;
+    // Thirteen hours from UTC in November, so a local time and a UTC one cannot pass for each other.
+    process.env.TZ = "Pacific/Auckland";
+    Date.now = () => Date.UTC(2026, 10, 21, 22, 1, 39);
+
+    try {
+        check("this check runs in a zone that is not UTC, or it could not tell the two apart",
+            new Date(Date.now()).getHours() !== 22);
+
+        clear();
+        record("error", "key check", "glm answered 401", "token expired or incorrect");
+        record("info", "sent", "groq answered 200");
+        const [first, detail, second] = asText().split("\n");
+
+        check("a line carries its time as UTC, not as the clock here reads", first.startsWith("2026-11-21 22:01:39 UTC  ERROR  key check"), first);
+        check("a line with no detail is one line", second?.startsWith("2026-11-21 22:01:39 UTC  info "), second);
+        check("the provider's words stand under the level, where they did before the mark",
+            detail?.search(/\S/) === first.indexOf("ERROR") && detail.trim() === "token expired or incorrect", detail);
+    } finally {
+        Date.now = now;
+        if (zone === undefined) delete process.env.TZ;
+        else process.env.TZ = zone;
+    }
+}
+
 // --- the log stays small and can be emptied ---
 
 clear();

@@ -48,6 +48,9 @@ jobs:
       - name: The log, and what must never reach it
         run: ESBUILD=node_modules/esbuild node test/log.mjs
 
+      - name: A pasted key, and what a provider says about it
+        run: ESBUILD=node_modules/esbuild node test/keys.mjs
+
       - name: Whether the browser's defaults still match the settings page
         run: ESBUILD=node_modules/esbuild node test/defaults.mjs
 
@@ -56,6 +59,9 @@ jobs:
 
       - name: Whether the core still runs with nothing around it
         run: ESBUILD=node_modules/esbuild node test/bare.mjs
+
+      - name: Whether the desktop's requests take Discord's way out
+        run: ESBUILD=node_modules/esbuild node test/native.mjs
 
       - name: Whether the Vencord imports still exist
         run: ESBUILD=node_modules/esbuild node test/imports.mjs

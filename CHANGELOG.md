@@ -7,6 +7,60 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## 0.2.3a
+
+### Fixed
+
+- **On the desktop, requests go the way Discord's own do.** They were made by
+  Node inside Discord, which ignores the proxy Discord follows: the system proxy
+  set in GNOME, KDE or Windows, a `*_proxy` variable, a PAC file or
+  `--proxy-server`. Behind a VPN running as a system proxy, which is how most
+  VPN clients on Linux run, Discord went through the VPN and the plugin did
+  not, so Groq saw the real address and answered "Forbidden", or the request
+  failed with "fetch failed". Translations, the key check, feedback and updates
+  now go through Discord's own network stack, and take its proxy and route.
+- **A network failure says why in the Logs.** "fetch failed" now comes with its
+  reason, such as a name that did not resolve or a refused connection, and
+  Chromium's own name for it, such as `net::ERR_PROXY_CONNECTION_FAILED`.
+  A request that did not succeed also says which way it went, `DIRECT` or the
+  proxy it took, so a refusal shows whether it came through the VPN or round it.
+- **A key pasted with something invisible on it works now.** A space, a line
+  break or a zero-width character copied along with a key went to the provider
+  as part of it, and a good key came back "Groq did not accept this key". Keys
+  are cleaned as they are pasted, and keys saved before are cleaned when they
+  are used. The address of an OpenAI-compatible provider loses what a paste left
+  at its ends the same way.
+- **"Did not accept this key" means the key now.** Any 403 used to be called a
+  bad key, though providers answer a network or a country they do not serve
+  with a 403 as well. When the provider turns your network or region away, the
+  settings say so under the key and under the model list, with no red line. A
+  wrong Gemini key, which Gemini answers with a 400, is now called wrong, on the
+  settings page and when a translation fails.
+- **A translation says so when your network is the problem.** Groq answers a VPN
+  or proxy it does not like with a bare "Forbidden", and a translation reported
+  it as "refused the request, usually temporary", with nothing to say it would
+  happen again. It now says the provider stopped the request before the model
+  saw it and that another VPN server or a backup provider helps. Gemini's
+  "location is not supported" no longer comes up as raw text.
+
+### Added
+
+- **The key check is in the Logs**: which provider was asked, what it answered
+  and its own words, with the key taken out.
+- **Z.ai says when what you pasted is not an API key.** Z.ai answers "token
+  expired or incorrect" to a value it does not take for a key at all, such as
+  another value copied from its page, and the plugin could only say the key was
+  refused. The line under the key, the Logs and the notice of a translation now
+  say so, and say to copy the whole Standard API Key from z.ai, under API Keys.
+  A key Z.ai does not know is still "did not accept this key".
+
+### Changed
+
+- **The Logs say their times are UTC.** A line carried a time with nothing to
+  say whose clock it was, and an event at 01:01 in your own time showed as
+  22:01. Each line now ends its time with UTC, and the file Save .txt writes is
+  named in UTC the same way.
+
 ## 0.2.2a
 
 ### Fixed

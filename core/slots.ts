@@ -16,8 +16,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Bridge } from "./bridge";
 import { config, set } from "./host";
 import { t } from "./locales";
+import { record, withoutKey } from "./log";
+import { cleanAddress, cleanKey, KeyVerdict, keyVerdict, notAnApiKey } from "./providers";
 
 export const PROVIDERS = ["groq", "gemini", "glm", "anthropic", "openai"];
 
@@ -64,9 +67,20 @@ export interface Slot {
     baseUrls?: Record<string, string>;
 }
 
-export const keyOf = (slot: Slot) => slot.keys?.[slot.provider] ?? "";
+/** Cleaned where read as well as where saved, so a key saved before the cleaning is cleaned too. */
+export const keyOf = (slot: Slot) => cleanKey(slot.keys?.[slot.provider]);
 export const modelOf = (slot: Slot) => slot.models?.[slot.provider] ?? "";
-export const baseUrlOf = (slot: Slot) => slot.baseUrls?.[slot.provider] ?? "";
+export const baseUrlOf = (slot: Slot) => cleanAddress(slot.baseUrls?.[slot.provider]);
+
+const cleaned = <T>(values: Record<string, T> | undefined, clean: (value: T) => string) =>
+    values && Object.fromEntries(Object.entries(values).map(([id, value]) => [id, clean(value)]));
+
+/** Every key and address of a slot, as saved: what a paste brought along is gone. */
+export const cleanSlot = (slot: Slot): Slot => ({
+    ...slot,
+    keys: cleaned(slot.keys, cleanKey) ?? {},
+    ...(slot.baseUrls ? { baseUrls: cleaned(slot.baseUrls, cleanAddress) } : {})
+});
 
 /** Set up enough to be asked: something to send, and something to send it to. */
 export const isReady = (slot: Slot) => !!keyOf(slot) && !!modelOf(slot);
@@ -135,6 +149,61 @@ export function readSlots(): Slot[] {
     return fromOldSettings();
 }
 
+/** Saves the slots cleaned, and hands them back so the page shows what was saved. */
 export function writeSlots(slots: Slot[]) {
-    set("providerSlots", JSON.stringify(slots.slice(0, MOST_SLOTS)));
+    const clean = slots.slice(0, MOST_SLOTS).map(cleanSlot);
+    set("providerSlots", JSON.stringify(clean));
+    return clean;
+}
+
+/** How a verdict reads in the log. */
+const SAID: Record<KeyVerdict, string> = {
+    ok: "key accepted",
+    bad: "key refused",
+    blocked: "network or region refused, key not checked",
+    unknown: "nothing said about the key"
+};
+
+/** A "bad" that Z.ai says further: it did not take the value for an API key at all. */
+const NOT_A_KEY = "key refused, the value was not taken for an API key: copy the whole Standard API Key from z.ai, API Keys";
+
+export interface KeyCheck {
+    verdict: KeyVerdict;
+    /** Only with a "bad": the provider did not take the value for a key at all. */
+    notAKey: boolean;
+    status: number;
+    models: string[];
+}
+
+/**
+ * Asks the provider for its models, which is also its verdict on the key, and
+ * writes both down: a key that "did not take" is otherwise reported from
+ * memory, without the one line that says why.
+ */
+export async function checkKey(slot: Slot): Promise<KeyCheck> {
+    const apiKey = keyOf(slot);
+    let status = -1;
+    let models: string[] = [];
+    let data = "";
+    let route: string | undefined;
+
+    try {
+        ({ status, models, data, route } = await Bridge.listAiModels(JSON.stringify({
+            provider: slot.provider, apiKey, baseUrl: baseUrlOf(slot)
+        })));
+    } catch (e) {
+        // An answer that never arrives is a failure like any other.
+        data = String(e);
+    }
+
+    const verdict = keyVerdict(status, data);
+    const notAKey = verdict === "bad" && notAnApiKey(slot.provider, status, data);
+    record(
+        verdict === "ok" ? "info" : "error",
+        "key check",
+        `${slot.provider} answered ${status}: ${notAKey ? NOT_A_KEY : SAID[verdict]}${verdict === "ok" ? `, ${models.length} models` : ""}${route ? `, via ${route}` : ""}`,
+        verdict === "ok" ? undefined : withoutKey(data, apiKey)
+    );
+
+    return { verdict, notAKey, status, models };
 }

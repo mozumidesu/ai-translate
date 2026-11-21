@@ -59,13 +59,13 @@ effort level is set in `.claude/settings.json`.
 | `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes), what Telegram draws (marks around text, @username), and a plain dialect with none of that. The host chooses; Discord when it does not |
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
 | `core/builds.ts` | Where the build robot publishes, and what each channel hands out now |
-| `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`); and a deadline that works without `AbortSignal.timeout` |
-| `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, and every retry rule |
+| `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`, or any fetch made a Net by `netOf`); `failureOf`, a network failure with its cause; and a deadline that works without `AbortSignal.timeout` |
+| `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, every retry rule, the cleaning of a pasted key, and `keyVerdict`: what an answer says about a key |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
 | `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals. Finding a record by name, and reading a text by them |
 | `core/locales.ts` | Interface text in 16 languages |
 | `core/chats.ts` | Which chats have auto-translation on |
-| `core/slots.ts` | Which providers this copy asks, in what order, and what each is called |
+| `core/slots.ts` | Which providers this copy asks, in what order, and what each is called; keys saved and read clean, and `checkKey`, which asks and logs |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn without Discord: whether it is the writer's own attempt, what a correction changed, the `why:` line, the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel, with key-shaped runs masked |
@@ -94,7 +94,7 @@ which has it as a submodule pinned to a commit, uses it unchanged and speaks the
 |---|---|
 | `index.tsx` | The plugin as Vencord sees it: the chat-bar button, the block under a message, the right-click menu, `definePlugin` |
 | `vencord-host.ts` | Answers `core/host.ts` with Vencord's settings, message store, user and toasts, reading `Settings.plugins["AI Translate"]` directly |
-| `native.ts` | Electron's main process: provider requests, which CORS blocks in the renderer, and installing updates |
+| `native.ts` | Electron's main process: provider requests, which CORS blocks in the renderer, and installing updates, all through a session of its own on Chromium's network stack, so they take Discord's proxy and route |
 | `settings.ts` | The settings page and its migrations |
 | `updater.ts` | When a copy on a disk looks for an update, and which channel it follows |
 | `ui/modal.tsx` | The panel behind a left click on the button |
@@ -117,11 +117,11 @@ from the older name `AiTranslate`.
 
 | Path | Responsible for |
 |---|---|
-| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs` and `defaults.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
+| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs`, `keys.mjs`, `defaults.mjs` and `native.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule works, asked of a real provider several times a case. Costs tokens, so never part of the robot. A count from before 7 November is one answer counted several times |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
-| `.github/workflows/build.yml` | When the robot runs: on every move of `release`, hourly at minute 17 for a new Vencord, plus a manual run, one run at a time, with one issue open while the build fails |
+| `.github/workflows/build.yml` | When the robot runs: on every move of `release` or `main`, hourly at minute 17 for a new Vencord, plus a manual run, one run at a time, with one issue open while the build fails |
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request |
 | `CHANGELOG.md` | What changed in each version, under Added, Changed and Fixed; the robot puts the matching section into the release on GitHub |
 | `docs/` | The 15 translated READMEs and the banner |
@@ -133,10 +133,14 @@ from the older name `AiTranslate`.
 
 One slot is asked and up to four stand behind it, in order; each keeps its own
 key and model per provider. The same provider may stand in two slots, so rate
-limits are counted by the slot, never by the provider's name. A red line under
-a key appears only when the provider refused it, 401 or 403, once the field has
-been left. Settings from before the list are still read when no list exists,
-which is what `web/` and every test hand over.
+limits are counted by the slot, never by the provider's name. A key loses every
+space and invisible character when it is saved and again when it is read. A red
+line under a key appears only when the provider said the key is wrong, once the
+field has been left; a network or a country turned away gets a line of its own,
+not red. `keyVerdict` in `core/providers.ts` is the one rule for both, used by
+every settings page, by the Telegram panel and by the notice a translation shows. Settings from before the list
+are still read when no list exists, which is what `web/` and every test hand
+over.
 
 ## Prompt rules
 
@@ -173,10 +177,12 @@ menu, it always answers, "nothing to correct here" included.
 
 ```
 node test/prompts.mjs      # 353 checks; needs esbuild
-node test/log.mjs          # 32 checks on the log and on error notices; needs esbuild
+node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
+node test/keys.mjs         # 86 checks: a pasted key cleaned, each provider's answers judged, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
+node test/native.mjs       # 40 checks: native.ts beside a fake Electron, every request through the plugin's own session, failures with their cause and route; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs npm and that same checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment
@@ -196,7 +202,7 @@ no colour or margin, so `styles.css` names both and doubles the class.
 
 ## How a change reaches users
 
-- The version lives in `core/version.ts` and nowhere else, `0.2.2a` today. The
+- The version lives in `core/version.ts` and nowhere else, `0.2.3a` today. The
   third number counts fixes, the second anything new and puts the third back to
   zero, nine is the ceiling for both, and `1.0.0` drops the letter. Raising it
   is part of moving `release`, never of a commit; builds made because Vencord
@@ -204,8 +210,8 @@ no colour or margin, so `styles.css` names both and doubles the class.
 - `main` is the working branch, where work is committed and pushed, in a cloud
   session too: no `claude/...` branch. `release` is what users get, and moving
   it is a deliberate act, never a side effect of a commit.
-- `main` is also the testing channel: every push to it reaches whoever follows
-  that channel within the hour. Nothing advertises it.
+- `main` is also the testing channel: every push to it is built and published
+  there at once. Nothing advertises it.
 - The robot takes `build/github.sh` from `release` and makes a GitHub release
   only when the version changed. If it cannot carry over the channel it did not
   rebuild, nothing is published at all.
@@ -216,6 +222,8 @@ no colour or margin, so `styles.css` names both and doubles the class.
 
 - Comments are short. One line above a rule or a non-obvious decision, not a
   paragraph restating the code.
-- No em dashes in interface text; they make it read as machine-written.
+- No em dashes in interface text; they make it read as machine-written. One
+  is intended and stays: the line over a slot's key, "API key — Groq", which
+  `keyHeading` in `core/slots.ts` builds.
 - Interface strings are reviewed word by word. Keep agreed wording exactly as
   it is unless asked to change it.

@@ -66,11 +66,23 @@ const manifest = JSON.parse(readFileSync(join(modules, "typescript", "package.js
 const tsc = join(modules, "typescript", typeof manifest.bin === "string" ? manifest.bin : manifest.bin.tsc);
 console.log("TypeScript", manifest.version);
 
-// native.ts takes one thing from Electron, the event its functions are handed,
-// and a bare checkout has no node_modules to find Electron in. If it ever takes
-// more, this is where that is declared.
+// native.ts takes two things from Electron, the event its functions are handed
+// and the session its requests go out through, and a bare checkout has no
+// node_modules to find Electron in. If it ever takes more, this is where that
+// is declared, as Electron's own declaration has it.
 const electron = join(deps, "electron.d.ts");
-writeFileSync(electron, 'declare module "electron" {\n    export interface IpcMainInvokeEvent {}\n}\n');
+writeFileSync(electron, [
+    'declare module "electron" {',
+    "    export interface IpcMainInvokeEvent {}",
+    "    export const session: {",
+    "        fromPartition(partition: string): {",
+    "            fetch(input: string | Request, init?: RequestInit): Promise<Response>;",
+    "            resolveProxy(url: string): Promise<string>;",
+    "        };",
+    "    };",
+    "}",
+    ""
+].join("\n"));
 
 const config = join(deps, "tsconfig.check.json");
 writeFileSync(config, JSON.stringify({
