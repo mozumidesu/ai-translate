@@ -322,6 +322,39 @@ await behaves(
 );
 counted("and it cost one request", 1);
 
+// "Не знаю. Может, завтра. Посмотрим", typed on one line, went out as three lines, one a
+// sentence: the second chance for line breaks was only ever given to a message of several.
+await behaves(
+    "a message written on one line is not sent as one line a sentence",
+    translated("sent", "Не знаю. Может, завтра. Посмотрим", "[ru] I don't know.\nMaybe tomorrow.\nWe'll see"),
+    "I don't know. Maybe tomorrow. We'll see"
+);
+counted("joined without asking again", 1);
+await behaves("nor read as one", translated("received", "idk. maybe tomorrow", "[en] не знаю.\nможет, завтра"), "не знаю. может, завтра");
+await behaves("an empty line between them goes as well",
+    translated("sent", "Не знаю. Может, завтра", "[ru] I don't know.\n\nMaybe tomorrow"), "I don't know. Maybe tomorrow");
+settings.sentLanguage = "Japanese";
+await behaves("Japanese starts the next sentence straight after its mark",
+    translated("sent", "Не знаю. Может, завтра", "[ru] わからない。\nたぶん明日"), "わからない。たぶん明日");
+await behaves("and keeps a space where a line ended on no mark",
+    translated("sent", "Не знаю, может завтра", "[ru] わからない\nたぶん明日"), "わからない たぶん明日");
+settings.sentLanguage = "Thai";
+await behaves("Thai, with no space between its words, has one between sentences",
+    translated("sent", "Не знаю. Может, завтра", "[ru] ไม่รู้\nพรุ่งนี้มั้ง"), "ไม่รู้ พรุ่งนี้มั้ง");
+settings.sentLanguage = "English";
+
+// A message of several lines broken further: which of the answer's lines go together is
+// the writer's to know, so it is asked for once more, as a flattened one is.
+await behaves("a line the writer did not break is asked for again in a message of several",
+    translated("sent", "Не знаю. Может, завтра\nПосмотрим",
+        "[ru] I don't know.\nMaybe tomorrow\nWe'll see", "[ru] I don't know. Maybe tomorrow\nWe'll see"),
+    "I don't know. Maybe tomorrow\nWe'll see");
+counted("with a second request", 2);
+await behaves("and lines run together are asked for again, as before",
+    translated("sent", "Не знаю\nПосмотрим", "[ru] I don't know. We'll see", "[ru] I don't know\nWe'll see"),
+    "I don't know\nWe'll see");
+counted("with a second request", 2);
+
 // Capitals are asked for again, since which words they belong to cannot be
 // worked out from here.
 await behaves(
@@ -752,9 +785,11 @@ const RECORDS = [...LANGUAGES, ...UNLISTED];
 const isScript = name => { try { return !!new RegExp(`\\p{Script=${name}}`, "u"); } catch { return false; } };
 const complete = l => Array.isArray(l.script) && l.script.length > 0 && l.script.every(isScript)
     && typeof l.cased === "boolean"
-    && !!l.closing && Object.entries(l.closing).every(([mark, plain]) => [...mark].length === 1 && [".", "?", "!"].includes(plain));
+    && !!l.closing && Object.entries(l.closing).every(([mark, plain]) => [...mark].length === 1 && [".", "?", "!"].includes(plain))
+    && typeof l.spaced === "boolean";
 
-lang("every language has a record: its alphabet, its capitals, its closing marks", RECORDS.filter(l => !complete(l)).map(l => l.value), []);
+lang("every language has a record: its alphabet, its capitals, its closing marks, the space between its sentences",
+    RECORDS.filter(l => !complete(l)).map(l => l.value), []);
 
 lang("no two languages share a name or a code",
     [RECORDS.map(l => l.value), RECORDS.map(l => l.code)].map(all => all.filter((one, i) => all.indexOf(one) !== i)), [[], []]);
@@ -1004,6 +1039,10 @@ learn("a message of several lines keeps every one of them",
 learn("and a line that only looks like one is not the reason",
     splitCorrection("why: this is the message itself\nand this is its second line"),
     { native: "why: this is the message itself\nand this is its second line", why: "" });
+// A one-line message is put back on one line when it is translated, never when it is corrected.
+learn("a correction of a one-line message keeps its reason on a line of its own",
+    splitCorrection(await translated("correct", "i go there yesterday", "i went there yesterday\nwhy: yesterday puts it in the past")),
+    { native: "i went there yesterday", why: "yesterday puts it in the past" });
 
 // "well-known" written with U+2011 is two words to the comparison, so a message
 // with nothing wrong in it came back as a correction of the one word it had right.

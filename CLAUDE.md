@@ -43,7 +43,8 @@ effort level is set in `.claude/settings.json`.
 - **The README exists in 16 languages too**: `README.md` plus
   `docs/README.<code>.md`. Same rule.
 - **What a language is written in is its row in `core/languages.ts`**: its
-  alphabet, its closing marks, whether it has capitals. The core reads the
+  alphabet, its closing marks, whether it has capitals, whether a space stands
+  between its sentences. The core reads the
   record and never guesses from a prefix of the English name. Adding a language
   is adding one row, and `test/prompts.mjs` fails on a row that names the wrong
   alphabet or none.
@@ -62,7 +63,7 @@ effort level is set in `.claude/settings.json`.
 | `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`, or any fetch made a Net by `netOf`); `failureOf`, a network failure with its cause; and a deadline that works without `AbortSignal.timeout` |
 | `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, every retry rule, the cleaning of a pasted key, and `keyVerdict`: what an answer says about a key |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
-| `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals. Finding a record by name, and reading a text by them |
+| `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals, whether a space stands between its sentences. Finding a record by name, and reading a text by them |
 | `core/locales.ts` | Interface text in 16 languages |
 | `core/chats.ts` | Which chats have auto-translation on |
 | `core/slots.ts` | Which providers this copy asks, in what order, and what each is called; keys saved and read clean, and `checkKey`, which asks and logs |
@@ -176,7 +177,7 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 353 checks; needs esbuild
+node test/prompts.mjs      # 365 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
 node test/keys.mjs         # 86 checks: a pasted key cleaned, each provider's answers judged, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild

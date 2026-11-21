@@ -17,6 +17,17 @@ when `release` moves.
   Now an edit is never translated, in a chat with auto-translation on as well,
   on the desktop and in a browser alike. New messages are translated as before.
 
+### Fixed
+
+- **A message you write on one line goes out on one line.** Three sentences
+  typed on one line could arrive as three lines, one a sentence, however the
+  prompt asked: the plugin put line breaks right only in a message that had
+  some of its own. The lines are now joined back at once, with no second
+  request: with a space, or in Chinese and Japanese straight on after the
+  sentence's own mark. A message read in your language is put back the same
+  way. A message of several lines that comes back broken in more places is
+  asked for once more, as one that came back run together always was.
+
 ## 0.2.3a
 
 ### Fixed

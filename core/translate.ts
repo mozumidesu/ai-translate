@@ -18,7 +18,7 @@ import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from "./languages";
+import { closeIn, closingOf, hasCase, LANGUAGES, onOneLine, scriptPattern, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
@@ -969,6 +969,10 @@ function postProcess(original: string, translated: string, target: string, kind:
     // below — punctuation, capitals, line markers — have anything to say about it.
     if (kind === "explain" || kind === "correct") return t;
 
+    // A message written on one line stays on one. A line a sentence is the model's
+    // habit, not the writer's, and joining the lines loses nothing, so none is asked for.
+    if (!source.includes("\n") && t.includes("\n")) t = onOneLine(t, target);
+
     t = applyGlossary(t);
     t = settleGender(t, target);
 
@@ -1911,7 +1915,9 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
     }
 
     // Where the writer broke the line is part of what they wrote, so a
-    // flattened answer gets the same second chance as an untranslated one.
+    // flattened answer gets the same second chance as an untranslated one. So
+    // does one broken further than the writer did: one line was put back above,
+    // but which of these belong together cannot be told from here.
     if (lines > 1 && kind !== "explain" && kind !== "correct" && lineCount(result.text) !== lines) {
         const rebroken = await ask(
             basePrompt
@@ -1919,7 +1925,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
             + ` Give the same translation again on ${lines} lines, broken after the same words`
             + " as the original. Do not change the wording, only the line breaks.",
             false,
-            "the writer's line breaks were flattened"
+            lineCount(result.text) < lines ? "the writer's line breaks were flattened" : "the answer broke lines the writer did not"
         );
 
         if (lineCount(rebroken.text) === lines && shareOf(rebroken.text) >= 0.3) result = rebroken;

@@ -3,7 +3,8 @@
  *
  * One record for each: the names the dropdown shows, and what the core needs to
  * know about how the language is written, which is the alphabet it is in,
- * whether it has capitals and which marks it closes a sentence with. The core
+ * whether it has capitals, which marks it closes a sentence with and whether a
+ * space stands between two sentences. The core
  * reads those and never guesses from a language's English name. Adding a
  * language is adding one row below.
  *
@@ -25,6 +26,8 @@ export interface Writing {
     readonly cased: boolean;
     /** The marks it closes a sentence with besides . ? ! and …, each with the plain mark it stands for. */
     readonly closing: Readonly<Record<string, "." | "?" | "!">>;
+    /** Whether a space stands between two of its sentences. Thai has none between its words and one there. */
+    readonly spaced: boolean;
 }
 
 export interface Language extends Writing {
@@ -34,35 +37,36 @@ export interface Language extends Writing {
 }
 
 // What a row says when it names no writing: the Latin alphabet, which is most of them.
-const LATIN: Writing = { script: ["Latin"], cased: true, closing: {} };
+const LATIN: Writing = { script: ["Latin"], cased: true, closing: {}, spaced: true };
 const CYRILLIC: Writing = { ...LATIN, script: ["Cyrillic"] };
 
 // U+037E is the Greek question mark proper, which Unicode folds into the semicolon,
 // so both are written. The semicolon is only that in Greek: see closingOf.
-const GREEK: Writing = { script: ["Greek"], cased: true, closing: { ";": "?", "\u037e": "?" } };
+const GREEK: Writing = { script: ["Greek"], cased: true, closing: { ";": "?", "\u037e": "?" }, spaced: true };
 // U+0589, the Armenian full stop.
-const ARMENIAN: Writing = { script: ["Armenian"], cased: true, closing: { "\u0589": "." } };
+const ARMENIAN: Writing = { script: ["Armenian"], cased: true, closing: { "\u0589": "." }, spaced: true };
 
-const GEORGIAN: Writing = { script: ["Georgian"], cased: false, closing: {} };
-const HEBREW: Writing = { script: ["Hebrew"], cased: false, closing: {} };
+const GEORGIAN: Writing = { script: ["Georgian"], cased: false, closing: {}, spaced: true };
+const HEBREW: Writing = { script: ["Hebrew"], cased: false, closing: {}, spaced: true };
 
 // U+061F, the Arabic question mark; U+06D4, the full stop Urdu closes with.
-const ARABIC: Writing = { script: ["Arabic"], cased: false, closing: { "\u061f": "?" } };
+const ARABIC: Writing = { script: ["Arabic"], cased: false, closing: { "\u061f": "?" }, spaced: true };
 const URDU: Writing = { ...ARABIC, closing: { "\u061f": "?", "\u06d4": "." } };
 
 // U+0964 and U+0965, the danda and the double danda: Hindi's and Bengali's full stop.
 const DANDA = { "\u0964": ".", "\u0965": "." } as const;
-const DEVANAGARI: Writing = { script: ["Devanagari"], cased: false, closing: DANDA };
-const BENGALI: Writing = { script: ["Bengali"], cased: false, closing: DANDA };
+const DEVANAGARI: Writing = { script: ["Devanagari"], cased: false, closing: DANDA, spaced: true };
+const BENGALI: Writing = { script: ["Bengali"], cased: false, closing: DANDA, spaced: true };
 
-const TAMIL: Writing = { script: ["Tamil"], cased: false, closing: {} };
-const THAI: Writing = { script: ["Thai"], cased: false, closing: {} };
-const HANGUL: Writing = { script: ["Hangul"], cased: false, closing: {} };
+const TAMIL: Writing = { script: ["Tamil"], cased: false, closing: {}, spaced: true };
+const THAI: Writing = { script: ["Thai"], cased: false, closing: {}, spaced: true };
+const HANGUL: Writing = { script: ["Hangul"], cased: false, closing: {}, spaced: true };
 
-// The full stop and the full-width question and exclamation marks of Chinese and Japanese.
+// The full stop and the full-width question and exclamation marks of Chinese and Japanese,
+// which start the next sentence straight after them.
 const FULLWIDTH = { "\u3002": ".", "\uff61": ".", "\uff1f": "?", "\uff01": "!" } as const;
-const CHINESE: Writing = { script: ["Han"], cased: false, closing: FULLWIDTH };
-const JAPANESE: Writing = { script: ["Han", "Hiragana", "Katakana"], cased: false, closing: FULLWIDTH };
+const CHINESE: Writing = { script: ["Han"], cased: false, closing: FULLWIDTH, spaced: false };
+const JAPANESE: Writing = { script: ["Han", "Hiragana", "Katakana"], cased: false, closing: FULLWIDTH, spaced: false };
 
 type Row = [value: string, native: string, code: string, writing?: Writing];
 
@@ -276,6 +280,19 @@ const PLAIN = new Map(ALL.flatMap(l => Object.entries(l.closing)));
 export function closeIn(language: string, run: string) {
     const own = languageNamed(language)?.closing ?? {};
     return [...run].map(mark => (mark in COMMON || mark in own ? mark : PLAIN.get(mark) ?? mark)).join("");
+}
+
+/**
+ * A text's lines run into one, the way the language puts one sentence after
+ * another: with a space, or straight on after a mark where it has no space
+ * there. A line that ends on no mark keeps its space even then, since the break
+ * was all that parted it from the next.
+ */
+export function onOneLine(text: string, language: string) {
+    const spaced = languageNamed(language)?.spaced ?? LATIN.spaced;
+    const [first = "", ...rest] = text.split("\n").map(line => line.trim()).filter(Boolean);
+
+    return rest.reduce((joined, line) => joined + (spaced || !/[\p{P}\p{S}]$/u.test(joined) ? " " : "") + line, first);
 }
 
 const whole = new Map<Script, RegExp>();
