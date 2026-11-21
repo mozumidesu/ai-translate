@@ -48,10 +48,8 @@ export function Providers() {
     /** Which keys are being read back. Hidden again as soon as the page closes. */
     const [shown, setShown] = useState<Record<string, boolean>>({});
 
-    const save = (next: Slot[]) => {
-        writeSlots(next);
-        setSlots(next);
-    };
+    // The field shows the key as saved, with whatever a paste brought along taken out.
+    const save = (next: Slot[]) => setSlots(writeSlots(next));
 
     const change = (at: number, make: (slot: Slot) => Slot) =>
         save(slots.map((slot, i) => (i === at ? make(slot) : slot)));
@@ -153,6 +151,13 @@ export function Providers() {
                                 {verdicts[slot.id] === "bad" && (
                                     <Paragraph className={cl("warning")} defaultColor={false}>
                                         {t("apiKey.bad", { provider: providerName(slot.provider) })}
+                                    </Paragraph>
+                                )}
+
+                                {/* Not the key's fault, so not in red. */}
+                                {verdicts[slot.id] === "blocked" && (
+                                    <Paragraph className="vc-aitrans-quiet" defaultColor={false}>
+                                        {t("apiKey.blocked", { provider: providerName(slot.provider) })}
                                     </Paragraph>
                                 )}
 

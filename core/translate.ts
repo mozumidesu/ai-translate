@@ -21,8 +21,8 @@ import { keepPieces } from "./keep";
 import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
-import { record } from "./log";
-import { FREE_MODELS, readDuration, type TokenBudget } from "./providers";
+import { record, withoutKey } from "./log";
+import { BLOCK_PAGE, FREE_MODELS, keyVerdict, readDuration, type TokenBudget } from "./providers";
 import { baseUrlOf, isReady, keyOf, modelOf, providerName, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
@@ -1267,19 +1267,7 @@ function providerSaid(data: string) {
     return "";
 }
 
-/**
- * The key a request was sent with, taken out of what came back. A provider can
- * quote it in a shape no mask in log.ts knows, and its words reach the log and
- * the notice, which a host may pass on. Shorter than any real key, it is left:
- * taking out every "k" would only garble the rest.
- */
-function withoutKey(text: string, key: string) {
-    const sent = key.trim();
-    return sent.length >= 8 ? text.split(sent).join("***") : text;
-}
 
-/** Protection in front of the API answers with a web page rather than an error. */
-const BLOCK_PAGE = /<html|cloudflare|cf-ray|attention required|access denied|just a moment|error code: \d/i;
 
 /** A model taken away answers 400 at some providers: Groq's "decommissioned", Z.ai's "Unknown Model". */
 const MODEL_GONE = /decommission|deprecat|no longer supported|unknown model|not a valid model|model_not_found|does not exist/i;
@@ -1292,7 +1280,8 @@ const MODEL_GONE = /decommission|deprecat|no longer supported|unknown model|not 
 const WORTH_A_SECOND_PROVIDER = (status: number, data: string) =>
     status === -1 || status === 401 || status === 402 || status === 403 || status === 404
     || status === 413 || status === 429 || status >= 500
-    || (status === 400 && MODEL_GONE.test(data));
+    // Gemini refuses a key, and a country, with a 400.
+    || (status === 400 && (MODEL_GONE.test(data) || keyVerdict(status, data) !== "unknown"));
 
 /** One provider's answer to one request, errors included. */
 interface Answer {
@@ -1307,13 +1296,11 @@ interface Answer {
 /** What a person is told about an answer that is not a translation. */
 function refusal({ status, data, model, provider, retryMs }: Answer, name: string): Error {
     if (status === -1) return fail("error.network", { details: data });
-    if (status === 401) return fail("error.badKey", { provider: name, status });
+    if (keyVerdict(status, data) === "bad") return fail("error.badKey", { provider: name, status });
     if (status === 403) {
         // A 403 is three different things: a key the provider will not take,
         // the provider itself refusing in its own words, and protection in
         // front of it turning the request away before the model ever saw it.
-        if (/api.?key|unauthori[sz]|invalid.?auth/i.test(data)) return fail("error.badKey", { provider: name, status });
-
         const said = providerSaid(data);
         if (said) return fail("error.forbiddenSaid", { provider: name, details: said });
         if (BLOCK_PAGE.test(data)) return fail("error.blocked", { provider: name });

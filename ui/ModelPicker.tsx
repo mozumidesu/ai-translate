@@ -19,10 +19,9 @@ import { Paragraph } from "@components/Paragraph";
 import { Margins } from "@utils/margins";
 import { SearchableSelect, TextInput, useEffect, useState } from "@webpack/common";
 
-import { Bridge } from "../core/bridge";
 import { t } from "../core/locales";
-import { FREE_MODELS } from "../core/providers";
-import { baseUrlOf, keyOf, modelOf, Slot } from "../core/slots";
+import { FREE_MODELS, KeyVerdict } from "../core/providers";
+import { checkKey, keyOf, modelOf, Slot } from "../core/slots";
 
 /** Preferred models per provider, best first. Missing ones fall through. */
 const PREFERRED: Record<string, string[]> = {
@@ -54,10 +53,10 @@ export function suggestModel(provider: string, listed: string[]) {
     return models.find(m => FAST_HINT.test(m)) ?? models[0] ?? "";
 }
 
-type State = "noKey" | "loading" | "list" | "known" | "badKey" | "failed";
+type State = "noKey" | "loading" | "list" | "known" | "badKey" | "blocked" | "failed";
 
 /** What the provider said about the key, for whoever drew the field above. */
-export type Verdict = "unknown" | "ok" | "bad";
+export type Verdict = KeyVerdict;
 
 /** Only the newest request may change what is on screen. */
 let request = 0;
@@ -72,7 +71,6 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
     actions?: React.ReactNode;
 }) {
     const apiKey = keyOf(slot);
-    const baseUrl = baseUrlOf(slot);
     const current = modelOf(slot);
 
     const [models, setModels] = useState<string[]>([]);
@@ -89,16 +87,8 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
 
         setState("loading");
 
-        let status = 0;
-        let found: string[] = [];
-
-        try {
-            const answer = await Bridge.listAiModels(JSON.stringify({ provider: slot.provider, apiKey, baseUrl }));
-            status = answer.status;
-            if (status === 200) found = withUnlisted(slot.provider, answer.models);
-        } catch {
-            // An answer that never arrives is a failure like any other.
-        }
+        const { verdict, models: listed } = await checkKey(slot);
+        const found = verdict === "ok" ? withUnlisted(slot.provider, listed) : [];
 
         // The slot or the key changed while this was in the air.
         if (mine !== request) return;
@@ -106,7 +96,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
         // Only a refusal of the key itself is the key's fault. A timeout, a
         // rate limit or an outage say nothing about it, and a red line under
         // a key that is perfectly good is worse than no line at all.
-        onVerdict(status === 200 ? "ok" : status === 401 || status === 403 ? "bad" : "unknown");
+        onVerdict(verdict);
 
         if (found.length) {
             setModels(found);
@@ -119,7 +109,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
 
         const known = FREE_MODELS[slot.provider] ?? [];
         setModels(known);
-        setState(known.length ? "known" : status === 401 || status === 403 ? "badKey" : "failed");
+        setState(known.length ? "known" : verdict === "bad" ? "badKey" : verdict === "blocked" ? "blocked" : "failed");
     }
 
     useEffect(() => {
@@ -145,8 +135,9 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
     const note = state === "noKey" ? "model.needKey"
         : state === "known" ? "model.builtin"
             : state === "badKey" ? "model.failedKey"
-                : state === "failed" ? "model.failed"
-                    : "model.desc";
+                : state === "blocked" ? "model.blocked"
+                    : state === "failed" ? "model.failed"
+                        : "model.desc";
 
     return (
         <section>

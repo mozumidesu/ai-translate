@@ -48,6 +48,9 @@ jobs:
       - name: The log, and what must never reach it
         run: ESBUILD=node_modules/esbuild node test/log.mjs
 
+      - name: A pasted key, and what a provider says about it
+        run: ESBUILD=node_modules/esbuild node test/keys.mjs
+
       - name: Whether the browser's defaults still match the settings page
         run: ESBUILD=node_modules/esbuild node test/defaults.mjs
 

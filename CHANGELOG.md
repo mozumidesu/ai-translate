@@ -7,6 +7,28 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## Unreleased
+
+### Fixed
+
+- **A key pasted with something invisible on it works now.** A space, a line
+  break or a zero-width character copied along with a key went to the provider
+  as part of it, and a good key came back "Groq did not accept this key". Keys
+  are cleaned as they are pasted, and keys saved before are cleaned when they
+  are used. The address of an OpenAI-compatible provider loses what a paste left
+  at its ends the same way.
+- **"Did not accept this key" means the key now.** Any 403 used to be called a
+  bad key, though providers answer a network or a country they do not serve
+  with a 403 as well. When the provider turns your network or region away, the
+  settings say so under the key and under the model list, with no red line. A
+  wrong Gemini key, which Gemini answers with a 400, is now called wrong, on the
+  settings page and when a translation fails.
+
+### Added
+
+- **The key check is in the Logs**: which provider was asked, what it answered
+  and its own words, with the key taken out.
+
 ## 0.2.2a
 
 ### Fixed

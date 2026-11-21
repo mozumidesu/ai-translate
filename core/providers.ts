@@ -24,7 +24,72 @@ const OPENAI_STYLE_BASES: Record<string, string> = {
 };
 
 const openAiBase = (provider: string, baseUrl: string) =>
-    OPENAI_STYLE_BASES[provider] ?? baseUrl.replace(/\/+$/, "");
+    OPENAI_STYLE_BASES[provider] ?? cleanAddress(baseUrl).replace(/\/+$/, "");
+
+/**
+ * No provider's key has a space or an invisible character in it, and a paste
+ * can bring either along: a no-break space at the end went out as part of
+ * "Bearer <key>", and Groq refused a good key.
+ */
+export const cleanKey = (key: unknown) => String(key ?? "").replace(/[\s\p{Cf}]/gu, "");
+
+/** An address is only trimmed: what a paste left at either end, never inside. */
+export const cleanAddress = (url: unknown) => String(url ?? "").replace(/^[\s\p{Cf}]+|[\s\p{Cf}]+$/gu, "");
+
+/** What an answer says about the key it was sent with. */
+export type KeyVerdict = "ok" | "bad" | "blocked" | "unknown";
+
+/**
+ * A key refused in so many words. A 401 says it by its status alone; a 400 or
+ * a 403 only in these: Gemini answers a wrong key with 400 API_KEY_INVALID.
+ */
+const SAYS_BAD_KEY = /invalid_api_key|API_KEY_INVALID|authentication_error|invalid (?:x-)?api.?key|incorrect api key|api key not valid|api key expired|reported as leaked|unauthori[sz]ed|invalid.?auth/i;
+
+/**
+ * A country or a network the provider does not serve: OpenAI's 403, Gemini's
+ * 400 FAILED_PRECONDITION, and OpenAI's 401 for an address outside a key's
+ * allowlist, which is the one 401 that is not the key's fault.
+ */
+const REGION = /unsupported_country|country, region|territory not supported|location is not supported|not available in your (?:country|region)|ip not authorized|ip allowlist/i;
+
+/** Protection in front of the API answers with a web page rather than an error. */
+export const BLOCK_PAGE = /<html|cloudflare|cf-ray|attention required|access denied|check your network|just a moment|error code: \d/i;
+
+/** Groq's 403 for a network it turns away is the one word, bare or in an error object. */
+const onlyForbidden = (data: string) =>
+    /^(?:forbidden)?$/i.test(data.replace(/"(?:error|message|type|code)"\s*:/gi, "").replace(/[\W_]+/g, ""));
+
+/**
+ * One verdict for every page that checks a key. "bad" only when the status or
+ * the answer says the key is wrong: a 403 is just as often a network or a
+ * country turned away, and a red line under a good key sends people to fix the
+ * one thing that works.
+ */
+export function keyVerdict(status: number, data: string): KeyVerdict {
+    if (status === 200) return "ok";
+    if (status === 401) return REGION.test(data) ? "blocked" : "bad";
+    if (status !== 400 && status !== 403) return "unknown";
+    if (SAYS_BAD_KEY.test(data)) return "bad";
+    if (REGION.test(data) || BLOCK_PAGE.test(data)) return "blocked";
+    return status === 403 && onlyForbidden(data) ? "blocked" : "unknown";
+}
+
+/**
+ * A 403 that names neither the key nor a country is usually the protection in
+ * front of the API, and that often lets the next request through.
+ */
+const mayPassAgain = (status: number, data: string) =>
+    status === 403 && !/api.?key|unauthori[sz]|invalid.?auth/i.test(data) && !REGION.test(data);
+
+async function againAfter403<R extends { status: number; data: string; }>(send: () => Promise<R>, first: R) {
+    let result = first;
+    for (const delay of [800, 2000]) {
+        if (!mayPassAgain(result.status, result.data)) break;
+        await sleep(delay);
+        result = await send();
+    }
+    return result;
+}
 
 /**
  * Z.ai's free models. The list Z.ai answers with leaves them out, though any
@@ -53,7 +118,8 @@ export interface Req {
 
 /** Model ids a provider currently offers, so nobody has to type one by hand. */
 export async function listModels(net: Net, payload: string) {
-    const { provider, apiKey, baseUrl } = JSON.parse(payload) as { provider: string; apiKey: string; baseUrl: string; };
+    const { provider, apiKey: typed, baseUrl } = JSON.parse(payload) as { provider: string; apiKey: string; baseUrl: string; };
+    const apiKey = cleanKey(typed);
 
     let url: string;
     const headers: Record<string, string> = { "User-Agent": CLIENT };
@@ -74,7 +140,9 @@ export async function listModels(net: Net, payload: string) {
             break;
     }
 
-    const res = await net({ url, headers, signal: timeoutSignal(20_000) });
+    const signal = timeoutSignal(20_000);
+    const ask = () => net({ url, headers, signal });
+    const res = await againAfter403(ask, await ask());
     if (!ok(res.status)) return { status: res.status, models: [] as string[], data: res.data };
 
     try {
@@ -190,7 +258,8 @@ async function sendWithRetry(send: (payload: any) => Promise<Result>, body: any)
 }
 
 export async function sendChat(net: Net, payload: string): Promise<Result> {
-    const { provider, apiKey, model, baseUrl, system, text, thinkingLevel, roomy }: Req = JSON.parse(payload);
+    const { provider, apiKey: typed, model, baseUrl, system, text, thinkingLevel, roomy }: Req = JSON.parse(payload);
+    const apiKey = cleanKey(typed);
 
     let url: string;
     const headers: Record<string, string> = { "Content-Type": "application/json", "User-Agent": CLIENT };
@@ -301,15 +370,7 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
         };
     };
 
-    let result = await sendWithRetry(send, body);
-
-    // A 403 that says nothing about the key is usually the protection in front
-    // of the API, and that often lets the next request through.
-    for (const delay of [800, 2000]) {
-        if (result.status !== 403 || /api.?key|unauthori[sz]|invalid.?auth/i.test(result.data)) break;
-        await sleep(delay);
-        result = await send(body);
-    }
+    let result = await againAfter403(() => send(body), await sendWithRetry(send, body));
 
     // Some models reject the reasoning settings outright.
     if (result.status === 400 && /thinking|reasoning/i.test(result.data)) {

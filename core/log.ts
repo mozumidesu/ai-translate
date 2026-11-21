@@ -23,7 +23,7 @@ const DETAIL_LIMIT = 600;
  * Key shapes the providers hand out, a bearer token and a bare run of hex. A
  * provider that echoes the key back must not put it in a file the user is
  * about to attach to a public report. The key a request was sent with is taken
- * out by name before its answer gets here (translate.ts), whatever its shape.
+ * out by name before its answer gets here (withoutKey), whatever its shape.
  */
 const SECRETS = [
     /\b(?:sk|gsk|xai|csk|hf|sk-ant|sk-proj)[-_][A-Za-z0-9_-]{8,}/g,
@@ -42,6 +42,17 @@ function masked(text: string) {
         out = out.replace(pattern, (whole, keep) => (typeof keep === "string" ? `${keep}***` : "***"));
 
     return out;
+}
+
+/**
+ * The key a request was sent with, taken out of what came back. A provider can
+ * quote it in a shape no mask here knows, and its words reach the log and
+ * the notice, which a host may pass on. Shorter than any real key, it is left:
+ * taking out every "k" would only garble the rest.
+ */
+export function withoutKey(text: string, key: string) {
+    const sent = key.trim();
+    return sent.length >= 8 ? text.split(sent).join("***") : text;
 }
 
 export interface Entry {

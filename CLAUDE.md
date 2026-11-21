@@ -60,12 +60,12 @@ effort level is set in `.claude/settings.json`.
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
 | `core/builds.ts` | Where the build robot publishes, and what each channel hands out now |
 | `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`); and a deadline that works without `AbortSignal.timeout` |
-| `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, and every retry rule |
+| `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, every retry rule, the cleaning of a pasted key, and `keyVerdict`: what an answer says about a key |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
 | `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals. Finding a record by name, and reading a text by them |
 | `core/locales.ts` | Interface text in 16 languages |
 | `core/chats.ts` | Which chats have auto-translation on |
-| `core/slots.ts` | Which providers this copy asks, in what order, and what each is called |
+| `core/slots.ts` | Which providers this copy asks, in what order, and what each is called; keys saved and read clean, and `checkKey`, which asks and logs |
 | `core/version.ts` | The version people see, and the only place it is written down |
 | `core/learn.ts` | AI Learn without Discord: whether it is the writer's own attempt, what a correction changed, the `why:` line, the last fifty corrections |
 | `core/log.ts` | The last 200 things that happened, for the Logs panel, with key-shaped runs masked |
@@ -117,7 +117,7 @@ from the older name `AiTranslate`.
 
 | Path | Responsible for |
 |---|---|
-| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs` and `defaults.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
+| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs`, `keys.mjs` and `defaults.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule works, asked of a real provider several times a case. Costs tokens, so never part of the robot. A count from before 7 November is one answer counted several times |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
@@ -133,10 +133,14 @@ from the older name `AiTranslate`.
 
 One slot is asked and up to four stand behind it, in order; each keeps its own
 key and model per provider. The same provider may stand in two slots, so rate
-limits are counted by the slot, never by the provider's name. A red line under
-a key appears only when the provider refused it, 401 or 403, once the field has
-been left. Settings from before the list are still read when no list exists,
-which is what `web/` and every test hand over.
+limits are counted by the slot, never by the provider's name. A key loses every
+space and invisible character when it is saved and again when it is read. A red
+line under a key appears only when the provider said the key is wrong, once the
+field has been left; a network or a country turned away gets a line of its own,
+not red. `keyVerdict` in `core/providers.ts` is the one rule for both, used by
+every settings page and by the Telegram panel. Settings from before the list
+are still read when no list exists, which is what `web/` and every test hand
+over.
 
 ## Prompt rules
 
@@ -174,6 +178,7 @@ menu, it always answers, "nothing to correct here" included.
 ```
 node test/prompts.mjs      # 353 checks; needs esbuild
 node test/log.mjs          # 32 checks on the log and on error notices; needs esbuild
+node test/keys.mjs         # 58 checks: a pasted key cleaned, each provider's answers judged, the check logged; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
