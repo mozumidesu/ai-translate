@@ -55,8 +55,11 @@ export function suggestModel(provider: string, listed: string[]) {
 
 type State = "noKey" | "loading" | "list" | "known" | "badKey" | "blocked" | "failed";
 
-/** What the provider said about the key, for whoever drew the field above. */
-export type Verdict = KeyVerdict;
+/**
+ * What the provider said about the key, for whoever drew the field above.
+ * "notAKey" is a "bad" that is said further, in red like it.
+ */
+export type Verdict = KeyVerdict | "notAKey";
 
 /** Only the newest request may change what is on screen. */
 let request = 0;
@@ -87,7 +90,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
 
         setState("loading");
 
-        const { verdict, models: listed } = await checkKey(slot);
+        const { verdict, notAKey, models: listed } = await checkKey(slot);
         const found = verdict === "ok" ? withUnlisted(slot.provider, listed) : [];
 
         // The slot or the key changed while this was in the air.
@@ -96,7 +99,7 @@ export function ModelPicker({ slot, revision, onChoose, onVerdict, actions }: {
         // Only a refusal of the key itself is the key's fault. A timeout, a
         // rate limit or an outage say nothing about it, and a red line under
         // a key that is perfectly good is worse than no line at all.
-        onVerdict(verdict);
+        onVerdict(notAKey ? "notAKey" : verdict);
 
         if (found.length) {
             setModels(found);

@@ -20,7 +20,7 @@ import { Bridge } from "./bridge";
 import { config, set } from "./host";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
-import { cleanAddress, cleanKey, KeyVerdict, keyVerdict } from "./providers";
+import { cleanAddress, cleanKey, KeyVerdict, keyVerdict, notAnApiKey } from "./providers";
 
 export const PROVIDERS = ["groq", "gemini", "glm", "anthropic", "openai"];
 
@@ -164,8 +164,13 @@ const SAID: Record<KeyVerdict, string> = {
     unknown: "nothing said about the key"
 };
 
+/** A "bad" that Z.ai says further: it did not take the value for an API key at all. */
+const NOT_A_KEY = "key refused, the value was not taken for an API key: copy the whole Standard API Key from z.ai, API Keys";
+
 export interface KeyCheck {
     verdict: KeyVerdict;
+    /** Only with a "bad": the provider did not take the value for a key at all. */
+    notAKey: boolean;
     status: number;
     models: string[];
 }
@@ -192,12 +197,13 @@ export async function checkKey(slot: Slot): Promise<KeyCheck> {
     }
 
     const verdict = keyVerdict(status, data);
+    const notAKey = verdict === "bad" && notAnApiKey(slot.provider, status, data);
     record(
         verdict === "ok" ? "info" : "error",
         "key check",
-        `${slot.provider} answered ${status}: ${SAID[verdict]}${verdict === "ok" ? `, ${models.length} models` : ""}${route ? `, via ${route}` : ""}`,
+        `${slot.provider} answered ${status}: ${notAKey ? NOT_A_KEY : SAID[verdict]}${verdict === "ok" ? `, ${models.length} models` : ""}${route ? `, via ${route}` : ""}`,
         verdict === "ok" ? undefined : withoutKey(data, apiKey)
     );
 
-    return { verdict, status, models };
+    return { verdict, notAKey, status, models };
 }

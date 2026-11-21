@@ -87,13 +87,17 @@ export function clear() {
     kept.length = 0;
 }
 
+/** The time a report is read in is not the time it was written in, so each line says UTC itself. */
+const utc = (at: number) => `${new Date(at).toISOString().replace("T", " ").slice(0, 19)} UTC`;
+
 /** One line per entry, oldest first, ready to paste or to save. */
 export function asText() {
     if (!kept.length) return "";
 
     return kept.map(e => {
-        const when = new Date(e.at).toISOString().replace("T", " ").slice(0, 19);
+        const when = utc(e.at);
         const head = `${when}  ${e.level === "error" ? "ERROR" : "info "}  ${e.what}  ${e.text}`;
-        return e.detail ? `${head}\n${" ".repeat(21)}${e.detail}` : head;
+        // Under the level, wherever the time ends.
+        return e.detail ? `${head}\n${" ".repeat(when.length + 2)}${e.detail}` : head;
     }).join("\n");
 }

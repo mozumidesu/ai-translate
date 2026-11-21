@@ -34,6 +34,14 @@ an empty key, a timeout, a rate limit or an outage, because none of those is the
 key's fault. A translation that meets the same answers uses the same verdict: a
 wrong key is said as one, a refused network is said as the network (the provider's
 own words when it has any beyond "Forbidden"), and never as "usually temporary".
+One 401 is said further, and stays a bad key and red: Z.ai answers a value it
+does not take for an API key at all, such as another value copied from its page,
+with "token expired or incorrect", where a key of the right shape that it does
+not know gets a numbered failure. `notAnApiKey` in `core/providers.ts` tells the
+first, and the line under the key, the key check's line in the Logs and a
+translation's notice say to copy the whole Standard API Key from z.ai, API Keys.
+Nothing refuses a key locally for its shape: z.ai documents no key format, so no
+length is stated either.
 `test/keys.mjs` holds each provider's real answer to a wrong key.
 
 The check is the same request the model list needs, so it costs one request, not

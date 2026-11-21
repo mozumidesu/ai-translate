@@ -75,6 +75,15 @@ export function keyVerdict(status: number, data: string): KeyVerdict {
 }
 
 /**
+ * Z.ai answers a value it does not take for an API key at all, whatever it is,
+ * with 401 "token expired or incorrect". A key of the right shape it does not
+ * know gets code 1000 instead. Both are a bad key, and the first is a different
+ * mistake: the wrong thing copied from z.ai's page, which no retyping mends.
+ */
+export const notAnApiKey = (provider: string, status: number, data: string) =>
+    provider === "glm" && status === 401 && /token expired or incorrect/i.test(data);
+
+/**
  * A 403 that names neither the key nor a country is usually the protection in
  * front of the API, and that often lets the next request through.
  */

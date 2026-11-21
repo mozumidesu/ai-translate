@@ -47,6 +47,19 @@ when `release` moves.
 
 - **The key check is in the Logs**: which provider was asked, what it answered
   and its own words, with the key taken out.
+- **Z.ai says when what you pasted is not an API key.** Z.ai answers "token
+  expired or incorrect" to a value it does not take for a key at all, such as
+  another value copied from its page, and the plugin could only say the key was
+  refused. The line under the key, the Logs and the notice of a translation now
+  say so, and say to copy the whole Standard API Key from z.ai, under API Keys.
+  A key Z.ai does not know is still "did not accept this key".
+
+### Changed
+
+- **The Logs say their times are UTC.** A line carried a time with nothing to
+  say whose clock it was, and an event at 01:01 in your own time showed as
+  22:01. Each line now ends its time with UTC, and the file Save .txt writes is
+  named in UTC the same way.
 
 ## 0.2.2a
 

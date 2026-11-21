@@ -148,9 +148,9 @@ export function Providers() {
                                     </Button>
                                 </div>
 
-                                {verdicts[slot.id] === "bad" && (
+                                {(verdicts[slot.id] === "bad" || verdicts[slot.id] === "notAKey") && (
                                     <Paragraph className={cl("warning")} defaultColor={false}>
-                                        {t("apiKey.bad", { provider: providerName(slot.provider) })}
+                                        {t(verdicts[slot.id] === "notAKey" ? "apiKey.notAKey" : "apiKey.bad", { provider: providerName(slot.provider) })}
                                     </Paragraph>
                                 )}
 

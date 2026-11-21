@@ -53,7 +53,7 @@ await esbuild.build({
         contents: `export { useHost } from "./core/host";\n`
             + `export { useNet } from "./core/net";\n`
             + `export { aiTranslate, forgetAnswers } from "./core/translate";\n`
-            + `export { cleanAddress, cleanKey, keyVerdict } from "./core/providers";\n`
+            + `export { cleanAddress, cleanKey, keyVerdict, notAnApiKey } from "./core/providers";\n`
             + `export { baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots } from "./core/slots";\n`
             + `export { asText, clear, entries } from "./core/log";\n`
             + `export { t } from "./core/locales";\n`,
@@ -68,7 +68,7 @@ await esbuild.build({
 });
 
 const {
-    useHost, useNet, aiTranslate, forgetAnswers, cleanAddress, cleanKey, keyVerdict,
+    useHost, useNet, aiTranslate, forgetAnswers, cleanAddress, cleanKey, keyVerdict, notAnApiKey,
     baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots, asText, clear, entries, t
 } = await import(join(out, "core.mjs"));
 
@@ -189,16 +189,27 @@ for (const [provider, [status, data]] of Object.entries(WRONG))
 check("as is Gemini's for a key it was told had leaked (403)",
     keyVerdict(403, `{"error":{"code":403,"message":"Your API key was reported as leaked. Please use another API key.","status":"PERMISSION_DENIED"}}`) === "bad");
 
-// Z.ai also numbers its authentication failures. Not seen today, and no claim of a document behind it:
-// a 401 is a bad key by its status, so the body does not matter.
-check("glm's numbered authentication failure (401) is a bad key too",
-    keyVerdict(401, `{"error":{"code":"1000","message":"身份验证失败。"}}`) === "bad");
+// Z.ai answers twice over to a key it refuses, both measured in November 2026 and both a 401. A value that
+// is no API key at all, a random run of 32 hex digits included, gets WRONG.glm above, on every one of its
+// endpoints; a key of the right shape that it does not know gets a numbered failure ("Authentication Failed").
+const ZAI_UNKNOWN_KEY = `{"error":{"code":"1000","message":"身份验证失败。"}}`;
+check("glm's numbered authentication failure (401) is a bad key too", keyVerdict(401, ZAI_UNKNOWN_KEY) === "bad");
+
+// Only the first is a different mistake, the wrong thing copied from z.ai's page, and gets a line of its own.
+check("glm's \"token expired or incorrect\" is said as a value that is no API key", notAnApiKey("glm", 401, WRONG.glm[1]));
+check("and its numbered failure is not: that one is a key it does not know", !notAnApiKey("glm", 401, ZAI_UNKNOWN_KEY));
+for (const [provider, [status, data]] of Object.entries(WRONG).filter(([id]) => id !== "glm"))
+    check(`${provider}'s wrong key is not mistaken for it`, !notAnApiKey(provider, status, data));
+check("nor is a 200 from glm, or a 403", !notAnApiKey("glm", 200, WRONG.glm[1]) && !notAnApiKey("glm", 403, WRONG.glm[1]));
 
 // A network or a country turned away, in the words the provider and its documentation give.
 const BLOCKED = {
     "Groq's bare Forbidden (403)": [403, "Forbidden"],
+    // Measured on one evening: this body came from a region Groq does not serve.
     "Groq's Forbidden in an error object (403)": [403, `{"error":{"message":"Forbidden"}}`],
     "the protection in front of Groq (403)": [403, "Access denied. Please check your network settings"],
+    // And this one, from Cloudflare's front, for a VPN exit Groq refuses. Nothing here tells the two apart.
+    "the same protection in an error object (403)": [403, `{"error":{"message":"Access denied. Please check your network settings."}}`],
     "a block page (403)": [403, "<!DOCTYPE html><html><head><title>Attention Required! | Cloudflare</title>"],
     "OpenAI's unsupported country (403)": [403, `{"error":{"code":"unsupported_country_region_territory","message":"Country, region, or territory not supported","param":null,"type":"request_forbidden"}}`],
     "OpenAI's address outside a key's allowlist (401)": [401, `{"error":{"message":"IP not authorized","code":"ip_not_authorized"}}`],
@@ -262,6 +273,36 @@ answer({ status: -1, data: "TypeError: fetch failed" });
 said = await checkKey(readSlots()[0]);
 check("no answer is logged too, and says nothing of the key", said.verdict === "unknown" && /answered -1: nothing said about the key/.test(entries().at(-1)?.text), entries().at(-1)?.text);
 
+// --- Z.ai's two refusals, in the log
+
+// What the owner had copied from z.ai's page: 32 hex digits, no dot. Nothing here refuses it for that, since
+// z.ai documents no key format; it goes out as pasted and Z.ai answers.
+const HEX = "0123456789abcdef".repeat(2);
+fresh({ providerSlots: JSON.stringify([{ id: "z", provider: "glm", keys: { glm: HEX }, models: { glm: "glm-4.5-flash" } }]) });
+check("a key with no dot is ready to be asked with, not turned down here", isReady(readSlots()[0]));
+
+clear();
+answer({ status: WRONG.glm[0], data: WRONG.glm[1] });
+said = await checkKey(readSlots()[0]);
+line = entries().at(-1);
+check("and is sent as it was pasted", seen[0]?.headers.Authorization === `Bearer ${HEX}`, JSON.stringify(seen[0]?.headers));
+check("Z.ai's \"token expired or incorrect\" is checked as a bad key, said further",
+    said.verdict === "bad" && said.notAKey === true && said.status === 401, JSON.stringify(said));
+check("the log line says what it means and what to copy",
+    line?.text === "glm answered 401: key refused, the value was not taken for an API key: copy the whole Standard API Key from z.ai, API Keys", line?.text);
+check("with Z.ai's own words under it, as an error", line?.level === "error" && line.detail?.includes("token expired or incorrect"), JSON.stringify(line));
+
+answer({ status: 401, data: ZAI_UNKNOWN_KEY });
+said = await checkKey(readSlots()[0]);
+line = entries().at(-1);
+check("a key of the right shape that Z.ai does not know is a bad key and nothing more",
+    said.verdict === "bad" && said.notAKey === false, JSON.stringify(said));
+check("and its log line is the plain one", line?.text === "glm answered 401: key refused", line?.text);
+
+answer({ status: 403, data: "Forbidden" });
+said = await checkKey(readSlots()[0]);
+check("a network turned away from Z.ai says nothing of the key", said.verdict === "blocked" && said.notAKey === false, JSON.stringify(said));
+
 // --- and the same verdict where a translation is refused
 
 fresh({ providerSlots: JSON.stringify([{ id: "gm", provider: "gemini", keys: { gemini: "AIzaWrong" }, models: { gemini: "gemini-3.8-flash" } }]) });
@@ -294,10 +335,16 @@ const network = provider => t("error.blocked", { provider: providerName(provider
 
 check("a translation Groq turns away with a bare Forbidden (403) says the network, not a key and not \"a moment\"",
     (await refused("groq", 403, "Forbidden")).endsWith(network("groq")));
-check("the same when Forbidden comes in an error object, as Groq answered a VPN's address",
+check("the same when Forbidden comes in an error object, as Groq answered a region it does not serve",
     (await refused("groq", 403, `{"error":{"message":"Forbidden"}}`)).endsWith(network("groq")));
 check("the same for the page in front of Groq",
     (await refused("groq", 403, "Access denied. Please check your network settings")).endsWith(network("groq")));
+
+// A VPN exit Groq refuses is answered by Cloudflare's front in an error object, and a translation quotes the
+// words it has, as it does for any provider: neither a wrong key nor "usually temporary".
+thrown = await refused("groq", 403, BLOCKED["the same protection in an error object (403)"][1]);
+check("and for that page in an error object, in the words it came with",
+    thrown.endsWith(t("error.forbiddenSaid", { provider: providerName("groq"), details: "Access denied. Please check your network settings." })), thrown);
 
 thrown = await refused("openai", 403, BLOCKED["OpenAI's unsupported country (403)"][1], { openai: "https://llm.example.com/v1" });
 check("a country OpenAI turns away is quoted in OpenAI's own words, as the notice already did",
@@ -312,6 +359,25 @@ check("while a 403 that is neither the key nor the network is still the provider
 
 thrown = await refused("groq", 401, WRONG.groq[1]);
 check("and a wrong key is still a wrong key", thrown.endsWith(t("error.badKey", { provider: providerName("groq"), status: 401 })), thrown);
+
+// Z.ai's "token expired or incorrect" is said as what it is, with the value pasted as it was.
+fresh({ providerSlots: JSON.stringify([{ id: "z", provider: "glm", keys: { glm: HEX }, models: { glm: "glm-4.5-flash" } }]) });
+answer({ status: WRONG.glm[0], data: WRONG.glm[1] });
+forgetAnswers();
+thrown = "";
+try {
+    await aiTranslate("sent", "hello");
+} catch (e) {
+    thrown = String(e?.message ?? e);
+}
+check("a translation Z.ai refuses with it says the value was not taken for an API key, and what to copy",
+    t("apiKey.notAKey") !== "apiKey.notAKey" && thrown.endsWith(t("apiKey.notAKey", { provider: providerName("glm") })), thrown);
+check("not the plain refused key, which says nothing of what to copy",
+    !thrown.includes(t("error.badKey", { provider: providerName("glm"), status: 401 })), thrown);
+
+thrown = await refused("glm", 401, ZAI_UNKNOWN_KEY);
+check("while a key Z.ai does not know is still the plain refused key",
+    thrown.endsWith(t("error.badKey", { provider: providerName("glm"), status: 401 })), thrown);
 
 await rm(out, { recursive: true, force: true });
 

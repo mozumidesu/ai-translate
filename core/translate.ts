@@ -22,7 +22,7 @@ import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
-import { FREE_MODELS, keyVerdict, readDuration, type TokenBudget } from "./providers";
+import { FREE_MODELS, keyVerdict, notAnApiKey, readDuration, type TokenBudget } from "./providers";
 import { baseUrlOf, isReady, keyOf, modelOf, providerName, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
@@ -1297,7 +1297,11 @@ interface Answer {
 function refusal({ status, data, model, provider, retryMs }: Answer, name: string): Error {
     if (status === -1) return fail("error.network", { details: data });
     const verdict = keyVerdict(status, data);
-    if (verdict === "bad") return fail("error.badKey", { provider: name, status });
+    if (verdict === "bad") {
+        // The one refusal with a mistake of its own to point at, and no status to show with it.
+        if (notAnApiKey(provider, status, data)) return fail("apiKey.notAKey", { provider: name });
+        return fail("error.badKey", { provider: name, status });
+    }
     if (verdict === "blocked") {
         // Groq's whole answer to a network it turns away is the word Forbidden, and
         // Gemini's is a 400: only an answer with words of its own is quoted.

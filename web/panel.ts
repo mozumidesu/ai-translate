@@ -458,12 +458,12 @@ function slotList() {
 async function offerModels(slot: Slot, list: HTMLDataListElement, said: HTMLElement) {
     if (!keyOf(slot)) return;
 
-    const { verdict, models } = await checkKey(slot);
+    const { verdict, notAKey, models } = await checkKey(slot);
 
     if (verdict === "bad" || verdict === "blocked") {
         // A network turned away is not the key's fault, so not in red.
         said.classList.toggle("bad", verdict === "bad");
-        said.textContent = t(verdict === "bad" ? "apiKey.bad" : "apiKey.blocked", { provider: providerName(slot.provider) });
+        said.textContent = t(verdict === "blocked" ? "apiKey.blocked" : notAKey ? "apiKey.notAKey" : "apiKey.bad", { provider: providerName(slot.provider) });
         return;
     }
 
