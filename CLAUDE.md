@@ -222,6 +222,8 @@ no colour or margin, so `styles.css` names both and doubles the class.
 
 - Comments are short. One line above a rule or a non-obvious decision, not a
   paragraph restating the code.
-- No em dashes in interface text; they make it read as machine-written.
+- No em dashes in interface text; they make it read as machine-written. One
+  is intended and stays: the line over a slot's key, "API key — Groq", which
+  `keyHeading` in `core/slots.ts` builds.
 - Interface strings are reviewed word by word. Keep agreed wording exactly as
   it is unless asked to change it.
