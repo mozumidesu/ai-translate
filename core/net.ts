@@ -2,9 +2,10 @@
  * AI Translate — one HTTP request, wherever the plugin happens to run.
  *
  * The rest of the plugin asks for a request through here, so the one thing
- * that differs between hosts stays in one place. Electron's main process calls
- * fetch freely; a page inside a browser cannot, because CORS stops it, and a
- * userscript manager or an extension each have their own way around that.
+ * that differs between hosts stays in one place. Electron's main process has no
+ * CORS and hands over Chromium's own fetch; a page inside a browser cannot call
+ * fetch freely, because CORS stops it, and a userscript manager or an extension
+ * each have their own way around that.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -30,19 +31,53 @@ export type Net = (request: NetRequest) => Promise<NetResponse>;
 
 const noHeaders = () => null;
 
+/** As much of fetch as a Net needs, so a host can hand over a fetch of its own. */
+export type Fetch = (url: string, init: {
+    method: string;
+    headers?: Record<string, string>;
+    body?: string;
+    signal?: AbortSignal;
+}) => Promise<{ status: number; headers: { get(name: string): string | null; }; text(): Promise<string>; }>;
+
+const messageOf = (e: any) => typeof e?.message === "string" ? e.message.trim() : "";
+
 /**
- * Plain fetch, which is enough in two places: Electron's main process, where
- * CORS does not apply, and Vencord's userscript build, where fetch itself has
- * been replaced by a wrapper around the userscript manager's own request.
+ * Why a request got no answer. Node's fetch says only "fetch failed" and keeps
+ * the reason in `cause`, so a log of it could not tell a name that did not
+ * resolve from a refused connection. Chromium's net::ERR_ name is its message.
  */
-export const fetchNet: Net = async ({ url, method = "GET", headers, body, signal }) => {
-    try {
-        const res = await fetch(url, { method, headers, body, signal });
-        return { status: res.status, data: await res.text(), header: name => res.headers.get(name) };
-    } catch (e) {
-        return { status: -1, data: String(e), header: noHeaders };
-    }
-};
+export function failureOf(e: unknown): string {
+    const said = String(e);
+    const cause = (e as { cause?: any; } | null)?.cause;
+    if (!cause || typeof cause !== "object") return said;
+
+    // Two addresses tried at once each fail on their own, under one code.
+    let reason = messageOf(cause) || (Array.isArray(cause.errors) ? cause.errors.map(messageOf).filter(Boolean).join("; ") : "");
+    const code = typeof cause.code === "string" ? cause.code : "";
+    if (code && !reason.includes(code)) reason = reason ? `${code}: ${reason}` : code;
+
+    return reason ? `${said} (${reason})` : said;
+}
+
+/** A fetch as a Net: a failure is the -1 the rest of the plugin reads, cause included. */
+export function netOf(fetcher: Fetch): Net {
+    return async ({ url, method = "GET", headers, body, signal }) => {
+        try {
+            const res = await fetcher(url, { method, headers, body, signal });
+            return { status: res.status, data: await res.text(), header: name => res.headers.get(name) };
+        } catch (e) {
+            return { status: -1, data: failureOf(e), header: noHeaders };
+        }
+    };
+}
+
+/**
+ * Plain fetch, for Vencord's userscript build, where fetch itself has been
+ * replaced by a wrapper around the userscript manager's own request. Electron's
+ * main process has it too, but it is Node's and ignores the proxy Discord
+ * follows, so native.ts hands over Chromium's instead.
+ */
+export const fetchNet: Net = netOf((url, init) => fetch(url, init));
 
 /** Headers as a userscript manager reports them: one "name: value" per line. */
 function readHeaders(raw: string | undefined) {

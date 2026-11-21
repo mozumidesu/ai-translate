@@ -9,22 +9,52 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { IpcMainInvokeEvent } from "electron";
+import { IpcMainInvokeEvent, session } from "electron";
 import { readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { channelRoot } from "./core/builds";
-import { fetchNet } from "./core/net";
+import { failureOf, netOf } from "./core/net";
 import { listModels, postFeedback, sendChat } from "./core/providers";
 import { VERSION } from "./core/version";
 
+type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
+
+let chromium: Fetcher | undefined;
+
+/**
+ * The way out Discord's own traffic takes: Chromium's network stack, which
+ * follows the system proxy, a PAC file, --proxy-server and Chromium's DNS.
+ * The global fetch here is Node's and follows none of them, so behind a VPN
+ * running as a system proxy these requests left from the real address. The
+ * session is the plugin's own and kept in memory: Discord's cookies, cache and
+ * the hooks set on its default session stay out of it, while the proxy, which
+ * Chromium keeps for the whole app, is the same. No cookies, as with Node's.
+ */
+function fetcher(): Fetcher {
+    if (chromium) return chromium;
+
+    try {
+        const own = session.fromPartition("ai-translate");
+        // Electron 25 and later.
+        if (typeof own.fetch === "function")
+            return chromium = (url, init) => own.fetch(url, { ...init, credentials: "omit" });
+    } catch {
+        // No session before the app is ready.
+    }
+
+    return (url, init) => fetch(url, init);
+}
+
+const net = netOf((url, init) => fetcher()(url, init));
+
 export async function makeAiTranslateRequest(_: IpcMainInvokeEvent, payload: string) {
-    return sendChat(fetchNet, payload);
+    return sendChat(net, payload);
 }
 
 /** Model ids a provider currently offers, so nobody has to type one by hand. */
 export async function listAiModels(_: IpcMainInvokeEvent, payload: string) {
-    return listModels(fetchNet, payload);
+    return listModels(net, payload);
 }
 
 /** Posts to the relay; only the relay knows the Discord webhook behind it. */
@@ -40,7 +70,7 @@ export async function sendAiTranslateFeedback(_: IpcMainInvokeEvent, payload: st
     const info = installedInfo();
     const which = info ? info.channel === "testing" ? `${info.build} testing` : info.build : "dev";
 
-    return postFeedback(fetchNet, endpoint, { ...body, build: `${VERSION} (${which})` });
+    return postFeedback(net, endpoint, { ...body, build: `${VERSION} (${which})` });
 }
 
 // --- updates ---
@@ -93,7 +123,7 @@ export async function aiTranslateBuild(_: IpcMainInvokeEvent) {
 }
 
 async function latestBuild(channel?: string): Promise<BuildInfo> {
-    const res = await fetch(`${channelRoot(channel)}/build.json`, { headers: { "Cache-Control": "no-cache" } });
+    const res = await fetcher()(`${channelRoot(channel)}/build.json`, { headers: { "Cache-Control": "no-cache" } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const info = JSON.parse(await res.text()) as BuildInfo;
@@ -113,7 +143,7 @@ export async function checkAiTranslateUpdate(_: IpcMainInvokeEvent, channel?: st
         const { build } = await latestBuild(channel);
         return { state: build !== installed ? "available" as const : "current" as const, details: "" };
     } catch (e) {
-        return { state: "offline" as const, details: String(e) };
+        return { state: "offline" as const, details: failureOf(e) };
     }
 }
 
@@ -127,7 +157,7 @@ export async function installAiTranslateUpdate(_: IpcMainInvokeEvent, channel?: 
         // Everything arrives before anything is replaced: a dropped
         // connection leaves the old build whole, not half of each.
         const files = await Promise.all(BUILD_FILES.map(async name => {
-            const res = await fetch(`${channelRoot(channel)}/${encodeURIComponent(info.build)}/${name}`);
+            const res = await fetcher()(`${channelRoot(channel)}/${encodeURIComponent(info.build)}/${name}`, { cache: "no-store" });
             if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
 
             const data = Buffer.from(await res.arrayBuffer());
@@ -152,6 +182,6 @@ export async function installAiTranslateUpdate(_: IpcMainInvokeEvent, channel?: 
 
         return { ok: true, details: "" };
     } catch (e) {
-        return { ok: false, details: String(e) };
+        return { ok: false, details: failureOf(e) };
     }
 }

@@ -485,7 +485,10 @@ check("a browser copy that is neither is only its build", fromPlain === `${VERSI
 
 // The desktop copy: native.ts as Electron's main process runs it, which finds the build the installer wrote beside it.
 const desktop = join(out, "desktop");
-await mkdir(desktop);
+await mkdir(join(desktop, "node_modules", "electron"), { recursive: true });
+// Electron's session hands its requests to the fetch below; test/native.mjs checks the route itself.
+await writeFile(join(desktop, "node_modules", "electron", "index.js"),
+    "module.exports = { session: { fromPartition: () => ({ fetch: (url, init) => globalThis.fetch(url, init) }) } };\n");
 await esbuild.build({
     entryPoints: [join(plugin, "native.ts")],
     bundle: true,

@@ -11,6 +11,17 @@ when `release` moves.
 
 ### Fixed
 
+- **On the desktop, requests go the way Discord's own do.** They were made by
+  Node inside Discord, which ignores the proxy Discord follows: the system proxy
+  set in GNOME, KDE or Windows, a `*_proxy` variable, a PAC file or
+  `--proxy-server`. Behind a VPN running as a system proxy, which is how most
+  VPN clients on Linux run, Discord went through the VPN and the plugin did
+  not, so Groq saw the real address and answered "Forbidden", or the request
+  failed with "fetch failed". Translations, the key check, feedback and updates
+  now go through Discord's own network stack, and take its proxy and route.
+- **A network failure says why in the Logs.** "fetch failed" now comes with its
+  reason, such as a name that did not resolve or a refused connection, and
+  Chromium's own name for it, such as `net::ERR_PROXY_CONNECTION_FAILED`.
 - **A key pasted with something invisible on it works now.** A space, a line
   break or a zero-width character copied along with a key went to the provider
   as part of it, and a good key came back "Groq did not accept this key". Keys
