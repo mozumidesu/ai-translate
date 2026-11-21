@@ -79,11 +79,11 @@ sh -c "$(curl -fsSL https://builds.zolatau.com/install.sh)"
 
 اختر **Install or update** بمفاتيح الأسهم واضغط Enter. وحين يسألك أي Discord يربط، اختر بالطريقة نفسها الذي تستعمله. على Windows يغلق الأمر Discord بنفسه قبل الربط. وعلى Linux قد يطلب كلمة مرورك، لأن Discord يكون عادةً حيث لا يكتب إلا المدير. بعد ذلك أغلق Discord تمامًا، ومن أيقونة شريط النظام أيضًا، ثم شغّله من جديد.
 
-على أنظمة Linux الذرية مثل Bazzite وSilverblue وKinoite وSteamOS يعمل الأمر نفسه: فهو لا يثبّت شيئًا في النظام، وكل شيء ينتهي في `~/.aiTranslate`. ويجب أن يكون Discord نفسه نسخة Flatpak، وعندها يمنح المثبّت تلك النسخة الوصول إلى هذه الملفات من تلقاء نفسه. أما Discord المدمج في صورة النظام عبر `rpm-ostree` فلا يمكن ربطه عادةً، لأن مجلدات النظام هناك للقراءة فقط؛ ثبّت نسخة Flatpak بدلًا منه.
+على أنظمة Linux الذرية مثل Bazzite وSilverblue وKinoite وSteamOS يعمل الأمر نفسه: فهو لا يثبّت شيئًا في النظام، وكل شيء ينتهي في `~/.ai-translate`. ويجب أن يكون Discord نفسه نسخة Flatpak، وعندها يمنح المثبّت تلك النسخة الوصول إلى هذه الملفات من تلقاء نفسه. أما Discord المدمج في صورة النظام عبر `rpm-ostree` فلا يمكن ربطه عادةً، لأن مجلدات النظام هناك للقراءة فقط؛ ثبّت نسخة Flatpak بدلًا منه.
 
 AI Translate مفعّل بالفعل. افتح **الإعدادات ← Vencord ← Plugins ← AI Translate**، واختر مزوّدًا والصق مفتاحك.
 
-كل ما ينزّله الأمر يبقى في مجلد خاص به: `%LOCALAPPDATA%\aiTranslate` على Windows و`~/.aiTranslate` على macOS وLinux. وربط Discord يعني استبدال ملف بدء التشغيل بملف صغير يحمّل Vencord أولًا ثم Discord كما كان تمامًا؛ ولا يُمسّ حسابك ولا إعداداتك ولا رسائلك.
+كل ما ينزّله الأمر يبقى في مجلد خاص به: `%LOCALAPPDATA%\ai-translate` على Windows و`~/.ai-translate` على macOS وLinux. وربط Discord يعني استبدال ملف بدء التشغيل بملف صغير يحمّل Vencord أولًا ثم Discord كما كان تمامًا؛ ولا يُمسّ حسابك ولا إعداداتك ولا رسائلك.
 
 ## في المتصفح
 
@@ -116,7 +116,7 @@ Discord في تبويب المتصفح لا يحتاج أيًّا من ذلك: �
 من مجلد Vencord لديك، استنسخ هذا المستودع بداخله بوصفه userplugin ثم أعد البناء:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

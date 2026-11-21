@@ -79,11 +79,11 @@ sh -c "$(curl -fsSL https://builds.zolatau.com/install.sh)"
 
 矢印キーで **Install or update** を選んで Enter を押します。どの Discord につなぐか聞かれたら、同じように普段使っているものを選びます。Windows ではコマンドがつなぐ前に Discord を閉じます。Linux ではパスワードを聞かれることがあります。Discord はたいてい管理者しか書き込めない場所にあるためです。その後、トレイのアイコンからも含めて Discord を完全に終了し、もう一度起動します。
 
-Bazzite、Silverblue、Kinoite、SteamOS のようなアトミックな Linux でも、同じコマンドで動きます。システムには何も入らず、すべて `~/.aiTranslate` に収まります。Discord 自体は Flatpak 版にしてください。そうすればインストーラーがその Flatpak にファイルへのアクセスを自動で許可します。`rpm-ostree` でシステムイメージに組み込んだ Discord はたいていつなげません。そこではシステムのフォルダーが読み取り専用だからです。代わりに Flatpak 版を入れてください。
+Bazzite、Silverblue、Kinoite、SteamOS のようなアトミックな Linux でも、同じコマンドで動きます。システムには何も入らず、すべて `~/.ai-translate` に収まります。Discord 自体は Flatpak 版にしてください。そうすればインストーラーがその Flatpak にファイルへのアクセスを自動で許可します。`rpm-ostree` でシステムイメージに組み込んだ Discord はたいていつなげません。そこではシステムのフォルダーが読み取り専用だからです。代わりに Flatpak 版を入れてください。
 
 AI Translate はすでに有効です。**設定 → Vencord → Plugins → AI Translate** を開き、プロバイダーを選んでキーを貼り付けてください。
 
-コマンドがダウンロードするものは、すべて専用のフォルダーに入ります。Windows では `%LOCALAPPDATA%\aiTranslate`、macOS と Linux では `~/.aiTranslate` です。Discord につなぐというのは、起動ファイルを小さなものに差し替えて、先に Vencord を、その後これまでどおり Discord を読み込ませることです。アカウントや設定、メッセージには触れません。
+コマンドがダウンロードするものは、すべて専用のフォルダーに入ります。Windows では `%LOCALAPPDATA%\ai-translate`、macOS と Linux では `~/.ai-translate` です。Discord につなぐというのは、起動ファイルを小さなものに差し替えて、先に Vencord を、その後これまでどおり Discord を読み込ませることです。アカウントや設定、メッセージには触れません。
 
 ## ブラウザーで
 
@@ -116,7 +116,7 @@ API キーと設定はダウンロードしたファイルではなく Vencord �
 Vencord のフォルダーから、このリポジトリを userplugin として中にクローンしてビルドし直します。
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

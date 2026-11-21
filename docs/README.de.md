@@ -120,7 +120,7 @@ Taskleistensymbol, und neu starten.
 
 Auf atomaren Linux-Systemen wie Bazzite, Silverblue, Kinoite oder SteamOS
 funktioniert derselbe Befehl: Ins System wird nichts installiert, alles landet
-in `~/.aiTranslate`. Discord selbst sollte das Flatpak sein, dann erteilt der
+in `~/.ai-translate`. Discord selbst sollte das Flatpak sein, dann erteilt der
 Installer diesem Flatpak den Zugriff auf diese Dateien von allein. Ein Discord,
 das mit `rpm-ostree` ins Systemabbild gelegt wurde, lässt sich meist nicht
 verbinden, weil die Systemordner dort nur lesbar sind; nimm stattdessen das
@@ -130,7 +130,7 @@ AI Translate ist bereits eingeschaltet. Öffne **Einstellungen → Vencord →
 Plugins → AI Translate**, wähle einen Anbieter und füge deinen Schlüssel ein.
 
 Alles, was der Befehl herunterlädt, liegt in einem eigenen Ordner:
-`%LOCALAPPDATA%\aiTranslate` unter Windows und `~/.aiTranslate` unter macOS und
+`%LOCALAPPDATA%\ai-translate` unter Windows und `~/.ai-translate` unter macOS und
 Linux. Discord zu verbinden heißt, seine Startdatei gegen eine kleine zu
 tauschen, die erst Vencord lädt und dann Discord genau wie vorher; dein
 Discord-Konto, deine Einstellungen und deine Nachrichten bleiben unberührt.
@@ -201,7 +201,7 @@ Klone dieses Repository aus deinem Vencord-Ordner heraus als Userplugin hinein
 und baue neu:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

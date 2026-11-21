@@ -15,7 +15,7 @@ Vencord. Built for `x86_64-pc-windows-msvc`:
 ```
 cd tools
 cargo build --release --target x86_64-pc-windows-msvc
-cargo test                 # 23 checks on the parts that are easy to get wrong
+cargo test                 # 27 checks on the parts that are easy to get wrong
 ```
 
 Every command takes `--root <path>`, which is the repository it works on, so
@@ -27,7 +27,7 @@ the one binary serves this repository and the website's.
 | `tools header --root .` | Writes the row of sixteen language links at the top of all sixteen READMEs, each with its own language in bold and the paths at the right depth. Fixes the banner's path too, where there is a banner. `--check` fails and says which file is wrong. The prose is never touched |
 | `tools tokens` | o200k counts, from `tiktoken-rs` with its own tables, so counting needs no network and nothing beside the project. `--lines` counts each line on its own, `--each` several texts at once |
 | `tools preview --root ../website` | Serves the website's `public/` on `localhost:8787`. Not the Worker: no redirects, no `_headers`, nothing cached |
-| `tools sync --root . <vencord>` | Copies the plugin into a Vencord checkout's `src/userplugins/aiTranslate`, leaving out `local/`, `.git/`, `.github/`, `test/`, `tools/`, `docs/` and `web/dist/`. Files whose bytes have not changed are left alone, so Vencord rebuilds only what moved. `--dry-run` says what would happen; `--prune` also deletes what the plugin no longer has |
+| `tools sync --root . <vencord>` | Copies the plugin into a Vencord checkout's `src/userplugins/ai-translate`, leaving out `local/`, `.git/`, `.github/`, `test/`, `tools/`, `docs/` and `web/dist/`. Files whose bytes have not changed are left alone, so Vencord rebuilds only what moved. A copy synced before 0.2.4a, under the folder's old name, is moved to the new one first, and both at once is refused, since Vencord would build the plugin twice. `--dry-run` says what would happen; `--prune` also deletes what the plugin no longer has |
 
 `tools tokens` is what replaced `gpt-tokenizer` for `test/measure.mjs` and
 `test/rules.mjs`. It counts the same: both scripts print the numbers they

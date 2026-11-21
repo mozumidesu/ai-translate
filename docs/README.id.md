@@ -117,7 +117,7 @@ termasuk dari ikon di baki sistem, lalu buka lagi.
 
 Di sistem Linux atomik seperti Bazzite, Silverblue, Kinoite, atau SteamOS,
 perintah yang sama tetap bekerja: tidak ada yang dipasang ke sistem, semuanya
-masuk ke `~/.aiTranslate`. Discord-nya sendiri sebaiknya versi Flatpak, dan
+masuk ke `~/.ai-translate`. Discord-nya sendiri sebaiknya versi Flatpak, dan
 pemasangnya akan memberi Flatpak itu akses ke berkas-berkas tersebut dengan
 sendirinya. Discord yang ditanam ke dalam citra sistem lewat `rpm-ostree`
 biasanya tidak bisa disambung, karena folder sistem di sana hanya bisa dibaca;
@@ -127,10 +127,10 @@ AI Translate sudah menyala. Buka **Pengaturan → Vencord → Plugins →
 AI Translate**, pilih penyedia, lalu tempel kunci Anda.
 
 Semua yang diunduh perintah itu berada di satu folder tersendiri:
-`%LOCALAPPDATA%\aiTranslate` di Windows dan `~/.aiTranslate` di macOS dan Linux.
-Menyambungkan Discord berarti menukar berkas awalannya dengan berkas kecil yang
-memuat Vencord dulu lalu Discord persis seperti sebelumnya; akun, pengaturan,
-dan pesan Discord Anda tidak disentuh.
+`%LOCALAPPDATA%\ai-translate` di Windows dan `~/.ai-translate` di macOS dan
+Linux. Menyambungkan Discord berarti menukar berkas awalannya dengan berkas
+kecil yang memuat Vencord dulu lalu Discord persis seperti sebelumnya; akun,
+pengaturan, dan pesan Discord Anda tidak disentuh.
 
 ## Di peramban
 
@@ -198,7 +198,7 @@ Dari folder Vencord Anda, klon repositori ini ke dalamnya sebagai userplugin
 lalu build ulang:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

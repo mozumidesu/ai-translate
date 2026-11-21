@@ -5,7 +5,7 @@ are sent, chat by chat, and incoming messages on request from the right-click
 menu, using an AI provider's API with the user's own key.
 
 This folder is the plugin itself. In a working Vencord checkout it sits at
-`src/userplugins/aiTranslate/`.
+`src/userplugins/ai-translate/`.
 
 Details live in skills under `.claude/skills/`, each the full text this file
 summarises. Load the one a task reaches before starting it:

@@ -114,7 +114,7 @@ Discord під'єднати, виберіть так само той, яким �
 
 На атомарних системах Linux, таких як Bazzite, Silverblue, Kinoite чи SteamOS,
 працює та сама команда: у систему вона нічого не ставить, усе йде в
-`~/.aiTranslate`. Сам Discord має бути з Flatpak, тоді встановлювач сам видасть
+`~/.ai-translate`. Сам Discord має бути з Flatpak, тоді встановлювач сам видасть
 цьому Flatpak доступ до цих файлів. Discord, вшитий в образ системи через
 `rpm-ostree`, під'єднати зазвичай не вийде: системні теки там лише для
 читання, поставте версію з Flatpak.
@@ -122,11 +122,11 @@ Discord під'єднати, виберіть так само той, яким �
 AI Translate уже ввімкнено. Відкрийте **Налаштування → Vencord → Plugins →
 AI Translate**, виберіть провайдера і вставте свій ключ.
 
-Усе, що завантажує команда, лежить в окремій теці: `%LOCALAPPDATA%\aiTranslate`
-на Windows і `~/.aiTranslate` на macOS та Linux. Під'єднання до Discord означає,
-що його стартовий файл змінюється на маленький, який спершу завантажує Vencord,
-а потім Discord рівно як раніше; вашого облікового запису, налаштувань і
-повідомлень це не торкається.
+Усе, що завантажує команда, лежить в окремій теці: `%LOCALAPPDATA%\ai-translate`
+на Windows і `~/.ai-translate` на macOS та Linux. Під'єднання до Discord
+означає, що його стартовий файл змінюється на маленький, який спершу завантажує
+Vencord, а потім Discord рівно як раніше; вашого облікового запису, налаштувань
+і повідомлень це не торкається.
 
 ## У браузері
 
@@ -189,7 +189,7 @@ Vencord запускає лише ті плагіни, які були в ньо
 З теки з Vencord склонуйте цей репозиторій як userplugin і перезберіть:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

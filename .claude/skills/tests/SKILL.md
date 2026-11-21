@@ -55,7 +55,7 @@ The two that count tokens need the binary in `tools/`, which they look for in
 where it is with `TOKENS=...`.
 
 Building the plugin itself means a Vencord checkout: put this folder at
-`src/userplugins/aiTranslate` there, which is what `tools sync --root . <vencord>`
+`src/userplugins/ai-translate` there, which is what `tools sync --root . <vencord>`
 does, and run `pnpm build`. That cannot be done from a cloud session, only on a
 machine with Vencord and Discord.
 

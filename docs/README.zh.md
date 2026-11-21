@@ -79,11 +79,11 @@ sh -c "$(curl -fsSL https://builds.zolatau.com/install.sh)"
 
 用方向键选择 **Install or update** 并按回车。当它询问要接哪个 Discord 时，同样选你在用的那个。在 Windows 上，命令会先自行关闭 Discord 再接入。在 Linux 上它可能要你输入密码，因为 Discord 通常放在只有管理员能写入的位置。之后请彻底退出 Discord，包括托盘图标，再重新启动。
 
-在 Bazzite、Silverblue、Kinoite 或 SteamOS 这类原子化 Linux 上，同一条命令照样可用：它不会往系统里装任何东西，所有文件都落在 `~/.aiTranslate`。Discord 本身请用 Flatpak 版，这样安装程序会自动给那个 Flatpak 授予对这些文件的访问权限。用 `rpm-ostree` 打进系统镜像的 Discord 通常接不上，因为那里的系统目录是只读的；请改装 Flatpak 版。
+在 Bazzite、Silverblue、Kinoite 或 SteamOS 这类原子化 Linux 上，同一条命令照样可用：它不会往系统里装任何东西，所有文件都落在 `~/.ai-translate`。Discord 本身请用 Flatpak 版，这样安装程序会自动给那个 Flatpak 授予对这些文件的访问权限。用 `rpm-ostree` 打进系统镜像的 Discord 通常接不上，因为那里的系统目录是只读的；请改装 Flatpak 版。
 
 AI Translate 已经是开启状态。打开 **设置 → Vencord → Plugins → AI Translate**，选择一个提供商并粘贴你的密钥。
 
-命令下载的全部内容都放在单独的一个文件夹里：Windows 上是 `%LOCALAPPDATA%\aiTranslate`，macOS 和 Linux 上是 `~/.aiTranslate`。接入 Discord 的意思是把它的启动文件换成一个很小的文件，先加载 Vencord，再和从前完全一样地加载 Discord；你的账号、设置和消息都不会被动。
+命令下载的全部内容都放在单独的一个文件夹里：Windows 上是 `%LOCALAPPDATA%\ai-translate`，macOS 和 Linux 上是 `~/.ai-translate`。接入 Discord 的意思是把它的启动文件换成一个很小的文件，先加载 Vencord，再和从前完全一样地加载 Discord；你的账号、设置和消息都不会被动。
 
 ## 在浏览器里
 
@@ -116,7 +116,7 @@ Vencord 只运行被编译进它内部的插件，所以你下载的是内含 AI
 在你的 Vencord 目录里，把这个仓库作为 userplugin 克隆进去并重新构建：
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

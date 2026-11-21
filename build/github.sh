@@ -30,6 +30,10 @@ set -euo pipefail
 VENCORD_REPO="https://github.com/Vendicated/Vencord.git"
 PLUGIN_REPO="https://github.com/mozumidesu/ai-translate.git"
 
+# Where the plugin goes inside Vencord. The folder's name is only a path:
+# Vencord finds the plugin and its natives by the name in definePlugin.
+PLUGIN_DIR="src/userplugins/ai-translate"
+
 # Where the builds are handed out, and the Cloudflare Worker that hands them out.
 SITE="https://builds.zolatau.com"
 WORKER="ai-translate-builds"
@@ -184,11 +188,11 @@ build_channel() { # ref, folder on the site, channel name, the build it replaces
     local root="$work/$channel"
 
     git clone --quiet --depth 1 "$VENCORD_REPO" "$root/vencord"
-    git clone --quiet --depth 1 --branch "$ref" "$PLUGIN_REPO" "$root/vencord/src/userplugins/aiTranslate"
+    git clone --quiet --depth 1 --branch "$ref" "$PLUGIN_REPO" "$root/vencord/$PLUGIN_DIR"
 
     # Either may have moved since the check above; the name follows what was cloned.
     VENCORD_FULL=$(git -C "$root/vencord" rev-parse HEAD)
-    PLUGIN_FULL=$(git -C "$root/vencord/src/userplugins/aiTranslate" rev-parse HEAD)
+    PLUGIN_FULL=$(git -C "$root/vencord/$PLUGIN_DIR" rev-parse HEAD)
     BUILD="${VENCORD_FULL:0:7}-${PLUGIN_FULL:0:7}"
 
     echo "Building the $channel channel as $BUILD."
@@ -215,7 +219,7 @@ build_channel() { # ref, folder on the site, channel name, the build it replaces
     # name of this build and the channel it came from are written into the
     # plugin here, where both are known. A support report from the browser then
     # names the same things a desktop one would.
-    local stamp="src/userplugins/aiTranslate/core/bridge.ts"
+    local stamp="$PLUGIN_DIR/core/bridge.ts"
     sed -i "s|^const BROWSER_BUILD = \"web\";\$|const BROWSER_BUILD = \"$BUILD\";|" "$stamp"
     grep -q "const BROWSER_BUILD = \"$BUILD\";" "$stamp" || {
         echo "Could not write the build name into bridge.ts. Has the line moved?"
@@ -318,7 +322,7 @@ if [ "$vencord-$head_release" != "$live_release" ]; then
     release_built=1
     release_vencord=$VENCORD_FULL
     release_plugin=$PLUGIN_FULL
-    release_clone="$work/release/vencord/src/userplugins/aiTranslate"
+    release_clone="$work/release/vencord/$PLUGIN_DIR"
 else
     carry_channel "" "$live_release"
 fi

@@ -118,7 +118,7 @@ pornește-l din nou.
 
 Pe sistemele Linux atomice, cum sunt Bazzite, Silverblue, Kinoite sau SteamOS,
 merge aceeași comandă: nu instalează nimic în sistem, totul ajunge în
-`~/.aiTranslate`. Discordul trebuie să fie cel din Flatpak, iar atunci
+`~/.ai-translate`. Discordul trebuie să fie cel din Flatpak, iar atunci
 instalatorul îi dă singur acelui Flatpak acces la fișierele acelea. Un Discord
 băgat în imaginea sistemului cu `rpm-ostree` de obicei nu poate fi legat, pentru
 că dosarele de sistem sunt acolo doar pentru citire; instalează în loc versiunea
@@ -128,8 +128,8 @@ AI Translate e deja pornit. Deschide **Setări → Vencord → Plugins →
 AI Translate**, alege un furnizor și lipește-ți cheia.
 
 Tot ce descarcă comanda stă într-un dosar al lui:
-`%LOCALAPPDATA%\aiTranslate` pe Windows și `~/.aiTranslate` pe macOS și Linux. A
-lega Discordul înseamnă a-i schimba fișierul de pornire cu unul mic, care
+`%LOCALAPPDATA%\ai-translate` pe Windows și `~/.ai-translate` pe macOS și Linux.
+A lega Discordul înseamnă a-i schimba fișierul de pornire cu unul mic, care
 încarcă întâi Vencord și apoi Discordul exact ca înainte; contul tău, setările
 și mesajele nu sunt atinse.
 
@@ -193,7 +193,7 @@ Din dosarul tău cu Vencord, clonează acest depozit înăuntru ca userplugin ș
 compilează din nou:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 
