@@ -25,6 +25,8 @@ export interface NetResponse {
     data: string;
     /** Header by name, case ignored; one that was not sent gives null. */
     header(name: string): string | null;
+    /** Which way a request that failed went, where the host can tell: for the log. */
+    route?: string;
 }
 
 export type Net = (request: NetRequest) => Promise<NetResponse>;

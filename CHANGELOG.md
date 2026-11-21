@@ -22,6 +22,8 @@ when `release` moves.
 - **A network failure says why in the Logs.** "fetch failed" now comes with its
   reason, such as a name that did not resolve or a refused connection, and
   Chromium's own name for it, such as `net::ERR_PROXY_CONNECTION_FAILED`.
+  A request that did not succeed also says which way it went, `DIRECT` or the
+  proxy it took, so a refusal shows whether it came through the VPN or round it.
 - **A key pasted with something invisible on it works now.** A space, a line
   break or a zero-width character copied along with a key went to the provider
   as part of it, and a good key came back "Groq did not accept this key". Keys

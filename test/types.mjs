@@ -75,7 +75,10 @@ writeFileSync(electron, [
     'declare module "electron" {',
     "    export interface IpcMainInvokeEvent {}",
     "    export const session: {",
-    "        fromPartition(partition: string): { fetch(input: string | Request, init?: RequestInit): Promise<Response>; };",
+    "        fromPartition(partition: string): {",
+    "            fetch(input: string | Request, init?: RequestInit): Promise<Response>;",
+    "            resolveProxy(url: string): Promise<string>;",
+    "        };",
     "    };",
     "}",
     ""

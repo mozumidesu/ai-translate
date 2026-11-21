@@ -58,6 +58,23 @@ await esbuild.build({
     logLevel: "error"
 });
 
+// The core's half: the key check and a translation, which write the log.
+await esbuild.build({
+    stdin: {
+        contents: `export { useHost } from "./core/host";\n`
+            + `export { aiTranslate } from "./core/translate";\n`
+            + `export { checkKey } from "./core/slots";\n`
+            + `export { asText, clear } from "./core/log";\n`,
+        resolveDir: plugin,
+        loader: "ts"
+    },
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    outfile: join(out, "core.mjs"),
+    logLevel: "error"
+});
+
 await esbuild.build({
     entryPoints: [join(plugin, "core/net.ts")],
     bundle: true,
@@ -90,6 +107,7 @@ function loadNative() {
 }
 
 const { failureOf, fetchNet } = await import(join(out, "net.mjs"));
+const core = await import(join(out, "core.mjs"));
 
 let pass = 0, fail = 0;
 
@@ -108,6 +126,8 @@ let sessionAnswers = () => answer(200, "{}");
 let nodeAnswers = () => answer(200, "{}");
 
 const partitions = [];
+/** The proxy Chromium says it takes for an address, as session.resolveProxy answers. */
+let route = "DIRECT";
 
 function electronWith({ fetch = true, ready = true } = {}) {
     globalThis.electron = {
@@ -115,7 +135,10 @@ function electronWith({ fetch = true, ready = true } = {}) {
         fromPartition(name) {
             if (!ready) throw new Error("Session can only be received when app is ready");
             partitions.push(name);
-            return fetch ? { fetch: async (url, init) => (viaSession.push({ url, init }), sessionAnswers(url, init)) } : {};
+            return fetch ? {
+                fetch: async (url, init) => (viaSession.push({ url, init }), sessionAnswers(url, init)),
+                resolveProxy: async () => route
+            } : {};
         }
     };
 }
@@ -222,6 +245,74 @@ sessionAnswers = () => Promise.reject(new Error("net::ERR_NAME_NOT_RESOLVED"));
 const offline = await native.checkAiTranslateUpdate({}, "release");
 check("a check that cannot reach the site says why", offline.state === "offline" && offline.details === "Error: net::ERR_NAME_NOT_RESOLVED", offline);
 
+// --- which way a request that failed went ---
+//
+// A provider's 403 cannot tell a request that went through the VPN from one
+// that went round it, and the reports that followed the move to Chromium could
+// not either. The log says the route for a request that did not succeed.
+
+electronWith();
+reset();
+native = loadNative();
+route = "DIRECT";
+check("an answer that worked carries no route", (await native.listAiModels({}, models)).route === undefined);
+
+sessionAnswers = () => answer(403, '{"error":{"message":"Forbidden"}}');
+const forbidden = await native.listAiModels({}, models);
+check("a refused one says which way it went", forbidden.status === 403 && forbidden.route === "Chromium, DIRECT", forbidden);
+
+sessionAnswers = () => answer(401, '{"error":{"message":"Invalid API Key"}}');
+route = "PROXY 127.0.0.1:2080";
+check("a proxy on this computer is named", (await native.makeAiTranslateRequest({}, chat)).route === "Chromium, PROXY 127.0.0.1:2080");
+route = "SOCKS5 [::1]:1080";
+check("an IPv6 one too", (await native.listAiModels({}, models)).route === "Chromium, SOCKS5 [::1]:1080");
+route = "PROXY 10.1.2.3:8080;DIRECT";
+check("one elsewhere is only said to be, since a log is pasted in public",
+    (await native.listAiModels({}, models)).route === "Chromium, PROXY remote:8080;DIRECT");
+route = "HTTPS proxy.corp.example:443";
+check("by name as well as by address", (await native.listAiModels({}, models)).route === "Chromium, HTTPS remote:443");
+
+sessionAnswers = () => Promise.reject(new Error("net::ERR_CONNECTION_RESET"));
+route = "PROXY 127.0.0.1:2080";
+const reset_ = await native.listAiModels({}, models);
+check("a request that got no answer says it too", reset_.status === -1 && reset_.route === "Chromium, PROXY 127.0.0.1:2080", reset_);
+
+// The same, as the Logs panel shows it.
+let settings = {
+    locale: "en", provider: "groq", groqApiKey: "gsk_test", groqModel: "openai/gpt-oss-120b",
+    baseUrl: "", sentLanguage: "English", receivedLanguage: "Russian", thinkingLevel: "low",
+    mode: "always", enabledChannels: "", onError: "hold", gender: "unset",
+    formality: "match", glossary: "", extraInstructions: "", useContext: false,
+    fallbackProvider: "none"
+};
+core.useHost({ config: () => settings, set: () => { }, recent: () => [], meId: () => undefined, notice: () => { } });
+globalThis.VencordNative = {
+    pluginHelpers: {
+        "AI Translate": {
+            makeAiTranslateRequest: payload => native.makeAiTranslateRequest({}, payload),
+            listAiModels: payload => native.listAiModels({}, payload)
+        }
+    }
+};
+
+core.clear();
+sessionAnswers = () => answer(403, '{"error":{"message":"Forbidden"}}');
+await core.checkKey({ id: "a", provider: "groq", keys: { groq: "gsk_test" }, models: { groq: "openai/gpt-oss-120b" } });
+check("the key check's line in the Logs ends with the route",
+    /groq answered 403: network or region refused, key not checked, via Chromium, PROXY 127\.0\.0\.1:2080$/m.test(core.asText()), core.asText());
+
+core.clear();
+sessionAnswers = () => answer(401, '{"error":{"message":"Invalid API Key"}}');
+await core.aiTranslate("sent", "привет").catch(() => { });
+check("and so does a translation's",
+    /groq openai\/gpt-oss-120b answered 401 in \d+ ms, via Chromium, PROXY 127\.0\.0\.1:2080$/m.test(core.asText()), core.asText());
+
+core.clear();
+sessionAnswers = () => answer(200, JSON.stringify({ choices: [{ message: { content: "[en] hello" }, finish_reason: "stop" }] }));
+await core.aiTranslate("sent", "привет, как ты");
+check("a translation that worked is written down as before", /answered 200 in \d+ ms$/m.test(core.asText()), core.asText());
+delete globalThis.VencordNative;
+
 // --- where there is no Chromium fetch to be had ---
 
 electronWith({ fetch: false });
@@ -233,6 +324,7 @@ nodeAnswers = () => Promise.reject(new TypeError("fetch failed", {
 const old = await native.listAiModels({}, models);
 check("an Electron older than 25, with no session.fetch, falls back to Node's fetch", viaNode.length === 1 && viaSession.length === 0);
 check("and Node's \"fetch failed\" names its cause", old.status === -1 && old.data === "TypeError: fetch failed (getaddrinfo ENOTFOUND api.groq.com)", old);
+check("and says that Node sent it, past any proxy", old.route === "Node, no proxy", old.route);
 
 electronWith({ ready: false });
 reset();

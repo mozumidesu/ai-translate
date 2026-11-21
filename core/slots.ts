@@ -180,9 +180,10 @@ export async function checkKey(slot: Slot): Promise<KeyCheck> {
     let status = -1;
     let models: string[] = [];
     let data = "";
+    let route: string | undefined;
 
     try {
-        ({ status, models, data } = await Bridge.listAiModels(JSON.stringify({
+        ({ status, models, data, route } = await Bridge.listAiModels(JSON.stringify({
             provider: slot.provider, apiKey, baseUrl: baseUrlOf(slot)
         })));
     } catch (e) {
@@ -194,7 +195,7 @@ export async function checkKey(slot: Slot): Promise<KeyCheck> {
     record(
         verdict === "ok" ? "info" : "error",
         "key check",
-        `${slot.provider} answered ${status}: ${SAID[verdict]}${verdict === "ok" ? `, ${models.length} models` : ""}`,
+        `${slot.provider} answered ${status}: ${SAID[verdict]}${verdict === "ok" ? `, ${models.length} models` : ""}${route ? `, via ${route}` : ""}`,
         verdict === "ok" ? undefined : withoutKey(data, apiKey)
     );
 

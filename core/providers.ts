@@ -143,7 +143,7 @@ export async function listModels(net: Net, payload: string) {
     const signal = timeoutSignal(20_000);
     const ask = () => net({ url, headers, signal });
     const res = await againAfter403(ask, await ask());
-    if (!ok(res.status)) return { status: res.status, models: [] as string[], data: res.data };
+    if (!ok(res.status)) return { status: res.status, models: [] as string[], data: res.data, route: res.route };
 
     try {
         const json = JSON.parse(res.data);
@@ -191,6 +191,8 @@ export interface Result {
     budget?: TokenBudget;
     /** How long a refusal asked to wait, from its retry-after header. */
     retryMs?: number;
+    /** Which way it went, when it failed and the host can tell. */
+    route?: string;
 }
 
 /** "14.43s", "1m26.4s", "500ms": the way these headers, and the refusals, write a duration. */
@@ -360,13 +362,14 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
             signal: deadline
         });
 
-        if (res.status === -1) return { status: -1, data: res.data };
+        if (res.status === -1) return { status: -1, data: res.data, route: res.route };
 
         return {
             status: res.status,
             data: res.data,
             budget: readBudget(res.header),
-            retryMs: readRetry(res.header)
+            retryMs: readRetry(res.header),
+            route: res.route
         };
     };
 

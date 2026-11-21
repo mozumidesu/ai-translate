@@ -14,13 +14,14 @@ import { readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { channelRoot } from "./core/builds";
-import { failureOf, netOf } from "./core/net";
+import { failureOf, Net, netOf } from "./core/net";
 import { listModels, postFeedback, sendChat } from "./core/providers";
 import { VERSION } from "./core/version";
 
 type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
 let chromium: Fetcher | undefined;
+let own: ReturnType<typeof session.fromPartition> | undefined;
 
 /**
  * The way out Discord's own traffic takes: Chromium's network stack, which
@@ -35,10 +36,12 @@ function fetcher(): Fetcher {
     if (chromium) return chromium;
 
     try {
-        const own = session.fromPartition("ai-translate");
+        const ses = session.fromPartition("ai-translate");
         // Electron 25 and later.
-        if (typeof own.fetch === "function")
-            return chromium = (url, init) => own.fetch(url, { ...init, credentials: "omit" });
+        if (typeof ses.fetch === "function") {
+            own = ses;
+            return chromium = (url, init) => ses.fetch(url, { ...init, credentials: "omit" });
+        }
     } catch {
         // No session before the app is ready.
     }
@@ -46,7 +49,31 @@ function fetcher(): Fetcher {
     return (url, init) => fetch(url, init);
 }
 
-const net = netOf((url, init) => fetcher()(url, init));
+/** A proxy on this computer is named; one elsewhere only said to be, since a log is pasted in public. */
+const hideRemote = (route: string) => route.replace(/\b([A-Z0-9]+) +(\[[^\]]*\]|[^\s:;]+):(\d+)/g, (all, scheme, host, port) =>
+    /^(?:127\.|localhost$|\[::1\]$)/i.test(host) ? all : `${scheme} remote:${port}`);
+
+/**
+ * Which way a request that failed went, as Chromium resolves it for that
+ * address: "DIRECT", or the proxy it took. Without it a 403 from a provider
+ * could not say whether the request went through the VPN or round it.
+ */
+async function routeOf(url: string) {
+    if (!own) return "Node, no proxy";
+
+    try {
+        return `Chromium, ${hideRemote(await own.resolveProxy(url))}`;
+    } catch {
+        return "Chromium";
+    }
+}
+
+const send = netOf((url, init) => fetcher()(url, init));
+
+const net: Net = async request => {
+    const res = await send(request);
+    return res.status >= 200 && res.status < 300 ? res : { ...res, route: await routeOf(request.url) };
+};
 
 export async function makeAiTranslateRequest(_: IpcMainInvokeEvent, payload: string) {
     return sendChat(net, payload);

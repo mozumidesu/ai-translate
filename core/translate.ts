@@ -1638,7 +1638,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         reserve(id, estimateTokens(`${id}|${kind}`, chars));
         const started = Date.now();
 
-        const { status, data: answered, budget, retryMs } = await Bridge.makeAiTranslateRequest(JSON.stringify({
+        const { status, data: answered, budget, retryMs, route } = await Bridge.makeAiTranslateRequest(JSON.stringify({
             provider: slot.provider, apiKey: key, model: chosen, baseUrl: baseUrlOf(slot),
             thinkingLevel: THINKING, system, text, roomy
         }));
@@ -1675,7 +1675,7 @@ export async function aiTranslate(kind: Kind, typed: string, context = "", mine 
         record(
             status === 200 ? "info" : "error",
             kind,
-            `${slot.provider} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}`,
+            `${slot.provider} ${chosen} answered ${status} in ${Date.now() - started} ms${spent}${route ? `, via ${route}` : ""}`,
             status === 200 ? undefined : data
         );
 
