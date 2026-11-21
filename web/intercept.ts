@@ -4,9 +4,10 @@
  * Vencord hands a plugin the message before Discord sends it. In a browser
  * there is no such hook, so the message is caught where it leaves the page:
  * the request that carries it. Discord posts a new message to
- * /api/v9/channels/<id>/messages and an edit to the same path plus the
- * message id, and those two addresses have been the same for years, which is
- * far more than can be said for the modules inside the app.
+ * /api/v9/channels/<id>/messages, an address that has been the same for
+ * years, which is far more than can be said for the modules inside the app.
+ * An edit goes to that address plus the message id and is left alone: it goes
+ * out exactly as typed, since editing is how a translation is put right.
  *
  * It also means the untranslated text physically cannot leave: if the
  * translation fails and the setting says not to send, the original request is
@@ -24,16 +25,11 @@ import { aiTranslate, isNotWorthTranslating } from "../core/translate";
 class Held extends Error { }
 
 const SEND = /\/api\/v\d+\/channels\/(\d+)\/messages(?:\?|$)/;
-const EDIT = /\/api\/v\d+\/channels\/(\d+)\/messages\/\d+(?:\?|$)/;
 
-/** The chat this request is sending to, or nothing if it is not a message. */
+/** The chat this request sends a new message to, or nothing: an edit is not one. */
 export function outgoingChannel(method: string, url: string): string | undefined {
     const how = String(method ?? "GET").toUpperCase();
-    const where = String(url ?? "");
-
-    if (how === "POST") return SEND.exec(where)?.[1];
-    if (how === "PATCH" || how === "PUT") return EDIT.exec(where)?.[1];
-    return undefined;
+    return how === "POST" ? SEND.exec(String(url ?? ""))?.[1] : undefined;
 }
 
 /**

@@ -53,7 +53,8 @@ await esbuild.build({
             + `export { t } from "./core/locales";\n`
             + `export { canRemove, keyHeading, providerLabel, providerName } from "./core/slots";\n`
             + `export { literalBackslashes } from "./core/keep";\n`
-            + `export { localizeHeadings } from "./ui/ModalHeadings";\n`,
+            + `export { localizeHeadings } from "./ui/ModalHeadings";\n`
+            + `export { outgoingChannel } from "./web/intercept";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -65,7 +66,7 @@ await esbuild.build({
 });
 
 const { useHost, t, canRemove, keyHeading, providerLabel, providerName,
-    literalBackslashes, localizeHeadings } = await import(join(out, "ui.mjs"));
+    literalBackslashes, localizeHeadings, outgoingChannel } = await import(join(out, "ui.mjs"));
 
 let locale = "en";
 
@@ -196,6 +197,19 @@ check("code is shown as it is, backslashes and all",
     literalBackslashes("`C:\\dir` and ```\na\\b\n``` x") === "`C:\\dir` and ```\na\\b\n``` x");
 check("text between code is still put right",
     literalBackslashes("`a\\b` \\x\\!") === "`a\\b` \\\\x\\\\\\!", literalBackslashes("`a\\b` \\x\\!"));
+
+// --- an edit goes out as typed ---
+//
+// Editing is how a slightly wrong translation is put right by hand, so an
+// edit is never translated, in a chat with auto-translation on as well: the
+// desktop has no hook for it, and the browser lets its request through.
+
+check("an edited message is not translated on the desktop",
+    !/onBeforeMessageEdit\s*:/.test(await readFile(join(plugin, "index.tsx"), "utf8")));
+check("nor in a browser, where it goes to the message's own address",
+    ["PATCH", "PUT"].every(how => outgoingChannel(how, "https://discord.com/api/v9/channels/123/messages/456") === undefined));
+check("a new message there is still caught",
+    outgoingChannel("POST", "https://discord.com/api/v9/channels/123/messages") === "123");
 
 // --- the headings, in a page shaped like Vencord's plugin window ---
 

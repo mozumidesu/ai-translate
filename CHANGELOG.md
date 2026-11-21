@@ -7,6 +7,16 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## Unreleased
+
+### Changed
+
+- **An edited message goes out exactly as you typed it.** An edit used to be
+  translated like a new message, so putting right one word of a translation
+  sent the whole of it to the model again, and it could come back reworded.
+  Now an edit is never translated, in a chat with auto-translation on as well,
+  on the desktop and in a browser alike. New messages are translated as before.
+
 ## 0.2.3a
 
 ### Fixed

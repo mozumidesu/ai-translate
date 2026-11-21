@@ -378,7 +378,7 @@ async function askForCorrection(channelId: string, sent: string, asked = false) 
 }
 
 /**
- * Shared by sending and editing: translate in place, or hold the message back.
+ * A new message on its way out: translate it in place, or hold it back.
  *
  * Everything happens inside the try, the checks included. Vencord catches
  * whatever a listener throws and then sends the message anyway, so a throw
@@ -505,9 +505,8 @@ export default definePlugin({
         }
     },
 
-    onBeforeMessageSend: (channelId: string, message: MessageObject) => translateOutgoing(channelId, message),
+    onBeforeMessageSend: (channelId: string, message: MessageObject) => translateOutgoing(channelId, message)
 
-    // An edit is text going out under the user's name just as much as a new
-    // message, so it takes the same route.
-    onBeforeMessageEdit: (channelId: string, _messageId: string, message: MessageObject) => translateOutgoing(channelId, message)
+    // No onBeforeMessageEdit, on purpose: an edit goes out exactly as typed,
+    // even where auto-translation is on, since editing is how a translation is put right.
 });
