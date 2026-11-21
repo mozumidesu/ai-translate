@@ -22,7 +22,7 @@ import { closeIn, closingOf, hasCase, LANGUAGES, scriptPattern, writtenIn } from
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
-import { BLOCK_PAGE, FREE_MODELS, keyVerdict, readDuration, type TokenBudget } from "./providers";
+import { FREE_MODELS, keyVerdict, readDuration, type TokenBudget } from "./providers";
 import { baseUrlOf, isReady, keyOf, modelOf, providerName, readSlots, Slot } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
@@ -1296,14 +1296,21 @@ interface Answer {
 /** What a person is told about an answer that is not a translation. */
 function refusal({ status, data, model, provider, retryMs }: Answer, name: string): Error {
     if (status === -1) return fail("error.network", { details: data });
-    if (keyVerdict(status, data) === "bad") return fail("error.badKey", { provider: name, status });
+    const verdict = keyVerdict(status, data);
+    if (verdict === "bad") return fail("error.badKey", { provider: name, status });
+    if (verdict === "blocked") {
+        // Groq's whole answer to a network it turns away is the word Forbidden, and
+        // Gemini's is a 400: only an answer with words of its own is quoted.
+        const said = status === 403 ? providerSaid(data) : "";
+        return said && !/^forbidden\.?$/i.test(said)
+            ? fail("error.forbiddenSaid", { provider: name, details: said })
+            : fail("error.blocked", { provider: name });
+    }
     if (status === 403) {
-        // A 403 is three different things: a key the provider will not take,
-        // the provider itself refusing in its own words, and protection in
-        // front of it turning the request away before the model ever saw it.
+        // What is left once the key and the network are ruled out: the provider
+        // refusing in its own words, or in none, and usually only for a moment.
         const said = providerSaid(data);
         if (said) return fail("error.forbiddenSaid", { provider: name, details: said });
-        if (BLOCK_PAGE.test(data)) return fail("error.blocked", { provider: name });
         return fail("error.forbidden", { provider: name });
     }
     if (status === 404) return fail("error.noSuchModel", { provider: name, model });

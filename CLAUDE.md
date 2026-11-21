@@ -138,7 +138,7 @@ space and invisible character when it is saved and again when it is read. A red
 line under a key appears only when the provider said the key is wrong, once the
 field has been left; a network or a country turned away gets a line of its own,
 not red. `keyVerdict` in `core/providers.ts` is the one rule for both, used by
-every settings page and by the Telegram panel. Settings from before the list
+every settings page, by the Telegram panel and by the notice a translation shows. Settings from before the list
 are still read when no list exists, which is what `web/` and every test hand
 over.
 
@@ -178,7 +178,7 @@ menu, it always answers, "nothing to correct here" included.
 ```
 node test/prompts.mjs      # 353 checks; needs esbuild
 node test/log.mjs          # 32 checks on the log and on error notices; needs esbuild
-node test/keys.mjs         # 58 checks: a pasted key cleaned, each provider's answers judged, the check logged; needs esbuild
+node test/keys.mjs         # 66 checks: a pasted key cleaned, each provider's answers judged, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
 node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild

@@ -177,7 +177,7 @@ check("and to the address as typed, without what came with the paste", seen[0]?.
 // Each of these came back from the provider itself, asked with a wrong key, on 21 November 2026.
 const WRONG = {
     groq: [401, `{"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}`],
-    glm: [401, `{"error":{"code":"1000","message":"身份验证失败。"}}`],
+    glm: [401, `{"error":{"code":"401","message":"token expired or incorrect"}}`],
     openai: [401, `{"error":{"message":"Incorrect API key provided: sk-wrong*********************rong. You can find your API key at https://platform.openai.com/account/api-keys.","type":"invalid_request_error","param":null,"code":"invalid_api_key"}}`],
     anthropic: [401, `{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"},"request_id":"req_011ChGWVkZ9uAmcpQVvx29Tr"}`],
     gemini: [400, `{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}}]}}`]
@@ -188,6 +188,11 @@ for (const [provider, [status, data]] of Object.entries(WRONG))
 
 check("as is Gemini's for a key it was told had leaked (403)",
     keyVerdict(403, `{"error":{"code":403,"message":"Your API key was reported as leaked. Please use another API key.","status":"PERMISSION_DENIED"}}`) === "bad");
+
+// Z.ai also numbers its authentication failures. Not seen today, and no claim of a document behind it:
+// a 401 is a bad key by its status, so the body does not matter.
+check("glm's numbered authentication failure (401) is a bad key too",
+    keyVerdict(401, `{"error":{"code":"1000","message":"身份验证失败。"}}`) === "bad");
 
 // A network or a country turned away, in the words the provider and its documentation give.
 const BLOCKED = {
@@ -270,6 +275,43 @@ try {
 }
 check("a translation Gemini refuses for a wrong key says the key was refused",
     thrown.endsWith(t("error.badKey", { provider: providerName("gemini"), status: 400 })), thrown);
+
+// What a translation says when it meets a network turned away: the network, never the key,
+// and never raw JSON. The provider's own words are quoted when it has any beyond "Forbidden".
+const refused = async (provider, status, data, baseUrls) => {
+    fresh({ providerSlots: JSON.stringify([{ id: "r", provider, keys: { [provider]: "k".repeat(30) }, models: { [provider]: "m" }, ...(baseUrls ? { baseUrls } : {}) }]) });
+    answer({ status, data });
+    forgetAnswers();
+    try {
+        await aiTranslate("sent", "hello");
+    } catch (e) {
+        return String(e?.message ?? e);
+    }
+    return "";
+};
+
+const network = provider => t("error.blocked", { provider: providerName(provider) });
+
+check("a translation Groq turns away with a bare Forbidden (403) says the network, not a key and not \"a moment\"",
+    (await refused("groq", 403, "Forbidden")).endsWith(network("groq")));
+check("the same when Forbidden comes in an error object, as Groq answered a VPN's address",
+    (await refused("groq", 403, `{"error":{"message":"Forbidden"}}`)).endsWith(network("groq")));
+check("the same for the page in front of Groq",
+    (await refused("groq", 403, "Access denied. Please check your network settings")).endsWith(network("groq")));
+
+thrown = await refused("openai", 403, BLOCKED["OpenAI's unsupported country (403)"][1], { openai: "https://llm.example.com/v1" });
+check("a country OpenAI turns away is quoted in OpenAI's own words, as the notice already did",
+    thrown.endsWith(t("error.forbiddenSaid", { provider: providerName("openai"), details: "Country, region, or territory not supported" })), thrown);
+
+thrown = await refused("gemini", 400, BLOCKED["Gemini's unsupported location (400)"][1]);
+check("Gemini's unsupported location (400) says the network, not a raw answer", thrown.endsWith(network("gemini")), thrown);
+
+thrown = await refused("anthropic", 403, NEITHER["a key that is right but not allowed this model (Anthropic, 403)"][1]);
+check("while a 403 that is neither the key nor the network is still the provider's own words",
+    thrown.endsWith(t("error.forbiddenSaid", { provider: providerName("anthropic"), details: "Your API key does not have permission to use the specified resource." })), thrown);
+
+thrown = await refused("groq", 401, WRONG.groq[1]);
+check("and a wrong key is still a wrong key", thrown.endsWith(t("error.badKey", { provider: providerName("groq"), status: 401 })), thrown);
 
 await rm(out, { recursive: true, force: true });
 

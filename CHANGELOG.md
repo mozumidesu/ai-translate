@@ -23,6 +23,12 @@ when `release` moves.
   settings say so under the key and under the model list, with no red line. A
   wrong Gemini key, which Gemini answers with a 400, is now called wrong, on the
   settings page and when a translation fails.
+- **A translation says so when your network is the problem.** Groq answers a VPN
+  or proxy it does not like with a bare "Forbidden", and a translation reported
+  it as "refused the request, usually temporary", with nothing to say it would
+  happen again. It now says the provider stopped the request before the model
+  saw it and that another VPN server or a backup provider helps. Gemini's
+  "location is not supported" no longer comes up as raw text.
 
 ### Added
 

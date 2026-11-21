@@ -31,7 +31,10 @@ front of it, OpenAI's unsupported_country_region_territory, Gemini's 400 "User
 location is not supported". Those are "blocked", which gets its own line under
 the key and its own hint under the model list, not in red. Nothing is said about
 an empty key, a timeout, a rate limit or an outage, because none of those is the
-key's fault. `test/keys.mjs` holds each provider's real answer to a wrong key.
+key's fault. A translation that meets the same answers uses the same verdict: a
+wrong key is said as one, a refused network is said as the network (the provider's
+own words when it has any beyond "Forbidden"), and never as "usually temporary".
+`test/keys.mjs` holds each provider's real answer to a wrong key.
 
 The check is the same request the model list needs, so it costs one request, not
 two, and `checkKey` in `core/slots.ts` writes it to the log: the provider, the
