@@ -1,6 +1,9 @@
 {
   "effortLevel": "high",
   "permissions": {
-    "allow": ["mcp__claude-code-remote__create_session"]
+    "allow": [
+      "mcp__claude-code-remote__create_session",
+      "Bash(*/pwsh-dl/x/pwsh -NoProfile -NonInteractive *)"
+    ]
   }
 }
