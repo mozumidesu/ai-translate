@@ -562,5 +562,340 @@
       "im gonna be late, dont wait for me"
     ],
     "group": "tag"
+  },
+  {
+    "id": "a-stressed-refusal-to-become-keeps-who-refuses",
+    "why": "a refusal the writer stressed, with \"я\" after the verb, came back into Japanese as a bare \"will not become\": with the speaker and the weight both gone, it reads as a remark about nobody in particular. The speaker, or a word that carries the weight (なんか, なんて, 絶対), is enough to keep it",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Не стану я врачом",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分",
+        "なんか",
+        "なんて",
+        "もんか",
+        "ものか",
+        "絶対"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-stressed-refusal-to-grow-up-keeps-who-refuses",
+    "why": "the same with an adjective: not becoming a grown-up, said about oneself and meant",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Не стану я взрослым",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分",
+        "なんか",
+        "なんて",
+        "もんか",
+        "ものか",
+        "絶対"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-stressed-refusal-to-be-like-them-keeps-who-refuses",
+    "why": "the same with a comparison: not turning into what they are",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Не стану я таким, как они",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分",
+        "なんか",
+        "なんて",
+        "もんか",
+        "ものか",
+        "絶対"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-stressed-refusal-to-change-keeps-who-refuses",
+    "why": "the same with another verb of becoming: not changing for somebody",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Не изменюсь я ради них",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分",
+        "なんか",
+        "なんて",
+        "もんか",
+        "ものか",
+        "絶対"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-stressed-refusal-to-obey-keeps-who-refuses",
+    "why": "the same with a word that is also an adverb in Japanese: a bare \"won't become obedient\" can be read as \"won't, obediently\", and says nothing of who",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Не стану я послушным",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分",
+        "なんか",
+        "なんて",
+        "もんか",
+        "ものか",
+        "絶対"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-stressed-refusal-to-become-keeps-who-refuses-in-korean",
+    "why": "the same refusal into Korean, which leaves its subjects out as readily",
+    "kind": "sent",
+    "to": "Korean",
+    "text": "Не стану я врачом",
+    "anyOf": [
+      [
+        "나는",
+        "난",
+        "저는",
+        "전 ",
+        "내가",
+        "제가",
+        "나 ",
+        "절대"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-contrasted-speaker-stays-in",
+    "why": "\"я-то\" sets the writer against everyone else; without the speaker the contrast is gone, however firm the rest",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Уж я-то не опоздаю",
+    "anyOf": [
+      [
+        "私",
+        "俺",
+        "僕",
+        "あたし",
+        "わたし",
+        "うち",
+        "自分"
+      ]
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "a-plain-statement-gains-no-speaker",
+    "why": "the other side of the same rule: where nobody is stressed, Japanese leaves the speaker out, and a stated one reads like a textbook",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Пойду спать",
+    "mustNot": [
+      "私は",
+      "俺は",
+      "僕は",
+      "あたしは",
+      "わたしは"
+    ],
+    "group": "emphasis"
+  },
+  {
+    "id": "the-chats-own-word-for-joining",
+    "why": "whether a little of the chat's manner reaches a translation with no rule asking for it, which is what this group weighs: the chat says \"hop on\" for joining a game, and the same words in the answer are how they talk, with nothing added",
+    "kind": "sent",
+    "to": "English",
+    "text": "Я зайду через 10 минут",
+    "anyOf": [
+      [
+        "hop"
+      ]
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "hop on in 5?"
+      },
+      {
+        "who": "them",
+        "name": "Alex",
+        "text": "hopping on now"
+      }
+    ]
+  },
+  {
+    "id": "the-chats-own-word-for-agreeing",
+    "why": "the chat says \"down\" for being in on a plan",
+    "kind": "sent",
+    "to": "English",
+    "text": "Я тоже за",
+    "anyOf": [
+      [
+        "down"
+      ]
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "anyone down for pizza tonight?"
+      },
+      {
+        "who": "them",
+        "name": "Alex",
+        "text": "im down"
+      }
+    ]
+  },
+  {
+    "id": "the-chats-own-word-for-really",
+    "why": "the chat says マジ for \"really\"",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Серьёзно, я не шучу",
+    "anyOf": [
+      [
+        "マジ"
+      ]
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "マジで？"
+      },
+      {
+        "who": "them",
+        "name": "Ren",
+        "text": "マジマジ"
+      }
+    ]
+  },
+  {
+    "id": "the-writers-own-i-is-not-the-chats",
+    "why": "the other side of that: the others say 俺 and the writer says 僕, and the writer's word for themselves is theirs, whatever the chat uses",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "Я завтра напишу",
+    "mustNot": [
+      "俺"
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "俺もう寝るわ"
+      },
+      {
+        "who": "me",
+        "name": "Me",
+        "text": "僕もそろそろ寝る"
+      },
+      {
+        "who": "them",
+        "name": "Kaii",
+        "text": "おやすみ"
+      }
+    ]
+  },
+  {
+    "id": "the-chats-swearing-is-not-the-writers",
+    "why": "the chat swears and laughs in every line; the writer's plain message gains neither",
+    "kind": "sent",
+    "to": "English",
+    "text": "Да, было сложно",
+    "mustNot": [
+      "fuck",
+      "lmao",
+      "lol",
+      "bro"
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "that boss was fucking brutal lmao"
+      },
+      {
+        "who": "them",
+        "name": "Alex",
+        "text": "bro i died like 10 times lmao"
+      }
+    ]
+  },
+  {
+    "id": "the-writers-politeness-stays-theirs",
+    "why": "the chat is all slang and the writer is polite: the politeness is the writer's, not something to even out",
+    "kind": "sent",
+    "to": "English",
+    "text": "Добрый вечер, у меня всё хорошо, спасибо",
+    "anyOf": [
+      [
+        "evening"
+      ]
+    ],
+    "mustNot": [
+      "wassup",
+      "nm ",
+      "nm,",
+      " u?",
+      " u "
+    ],
+    "group": "manner",
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "yo wassup"
+      },
+      {
+        "who": "them",
+        "name": "Alex",
+        "text": "nm u?"
+      }
+    ]
   }
 ]
