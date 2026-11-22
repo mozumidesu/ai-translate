@@ -215,11 +215,22 @@
         if ($patch) {
             if ($OldHome) { Write-Host "AI Translate moves from $OldHome to $AitHome, so Discord is patched again." }
             Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
+
+            # Another Discord on this computer (PTB, Canary) may have been
+            # patched to the old folder, and fails to start once that is
+            # deleted. The old folder goes only after every one of them is
+            # patched; a failed or cancelled patch throws from here with it
+            # kept, and the next run moves again.
+            if ($OldHome) {
+                while ((Select-Option "Did another Discord on this computer have AI Translate too?" @("No", "Yes")) -eq 1) {
+                    Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
+                }
+            }
+
             if ($moving) { Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue }
             if ($OldHome) {
                 try { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }
                 catch { Write-Host "Could not delete $OldHome. Delete it by hand." -ForegroundColor Yellow }
-                Write-Host "If another Discord on this computer had AI Translate too, run this again and patch that one."
             }
         }
 

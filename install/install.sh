@@ -196,10 +196,23 @@ install_or_update() {
     if [ "$patch" = 1 ]; then
         [ -n "$OLD_HOME" ] && say "AI Translate moves from $OLD_HOME to $AIT_HOME, so Discord is patched again."
         vencord_installer --install || stop "Patching Discord failed."
+
+        # Another Discord on this computer (PTB, Canary, a Flatpak beside a
+        # native one) may have been patched to the old folder, and fails to
+        # start once that is deleted. The old folder goes only after every one
+        # of them is patched; a failed or cancelled patch stops here with it
+        # kept, and the next run moves again.
+        if [ -n "$OLD_HOME" ]; then
+            while :; do
+                choose "Did another Discord on this computer have AI Translate too?" "No" "Yes"
+                [ "$CHOICE" = 1 ] || break
+                vencord_installer --install || stop "Patching Discord failed."
+            done
+        fi
+
         rm -rf "$AIT_HOME/Vencord"
         if [ -n "$OLD_HOME" ]; then
             rm -rf "$OLD_HOME" || say "Could not delete $OLD_HOME. Delete it by hand."
-            say "If another Discord on this computer had AI Translate too, run this again and patch that one."
         fi
     fi
 
