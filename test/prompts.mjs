@@ -1257,7 +1257,7 @@ backed("and its refusal after that is news again", again.shown.map(text => text.
 again = await carried("запасной не нужен", refused(400, "Unrecognized request argument supplied: frobnicate"), "[ru] never asked");
 backed("a 400 that says nothing of the model is not handed on", [again.said.startsWith("threw: AI Translate: HTTP 400"), again.models], [true, ["main"]]);
 
-// Claude from 4.7 on and OpenAI's reasoning models refuse any temperature but their own, with a 400 that names it.
+// Claude from 4.7 on refuses any temperature but its own with a 400, by Anthropic's documentation. The wording is an example, not a measured answer.
 const ownTemperature = refused(400, "Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported.");
 settings.providerSlots = JSON.stringify([
     { id: "t3mp", provider: "groq", keys: { groq: "temp-key" }, models: { groq: "own-temperature" } },

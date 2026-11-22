@@ -18,7 +18,6 @@ when `release` moves.
   "openrouter.ai did not accept this key", rather than "OpenAI-compatible".
   Nothing saved has to change: a provider set up before keeps its key, model
   and address. Anthropic Claude stays in the list with its own API.
-
 - **An edited message goes out exactly as you typed it.** An edit used to be
   translated like a new message, so putting right one word of a translation
   sent the whole of it to the model again, and it could come back reworded.
@@ -37,11 +36,11 @@ when `release` moves.
 
 ### Fixed
 
-- **Claude from 4.7 on translates, and so do OpenAI's reasoning models in
-  Other.** They take no temperature but their own and refuse any other with an
-  error, as Anthropic's and OpenAI's documentation say, and the plugin always
-  asked for 0.2, so with such a model no message was translated. A model that
-  refuses it is now asked again without one, and without one from then on.
+- **Claude from 4.7 on translates, and so does any model like it.** Those
+  models take no temperature but their own and refuse any other with an error,
+  as Anthropic's documentation says, and the plugin always asked for 0.2, so
+  with such a model no message was translated. A model that refuses it is now
+  asked again without one, and without one from then on.
 - **A message you write on one line goes out on one line.** Three sentences
   typed on one line could arrive as three lines, one a sentence, however the
   prompt asked: the plugin put line breaks right only in a message that had

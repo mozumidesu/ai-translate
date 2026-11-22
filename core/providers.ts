@@ -258,9 +258,9 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Newer models take only their own temperature and answer the plugin's 0.2
- * with a 400 that names it: Claude from 4.7 on, OpenAI's reasoning models. A
- * model that refused it once is asked without one from then on, so a message
- * does not pay for the refusal again.
+ * with a 400, as Anthropic documents for Claude from 4.7 on. A model that
+ * refused it once is asked without one from then on, so a message does not
+ * pay for the refusal again.
  */
 const ownTemperature = new Set<string>();
 
