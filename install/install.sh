@@ -155,6 +155,50 @@ vencord_installer() {
     fi
 }
 
+# Whether an app.asar loads AI Translate from inside a folder: Vencord's
+# installer writes one that requires a patcher.js there by its full path.
+loads_from() {
+    [ -f "$1" ] && grep -qF "$2/" "$1" 2> /dev/null
+}
+
+# Each Discord that still loads AI Translate from a folder, of those in the
+# places Vencord's installer looks. Of the app-* folders a Discord updates
+# itself into, only the newest runs.
+still_loading_from() {
+    for asar in /usr/share/[Dd]iscord*/resources/app.asar \
+        /usr/lib64/[Dd]iscord*/resources/app.asar /opt/[Dd]iscord*/resources/app.asar \
+        "$HOME"/.local/share/[Dd]iscord*/resources/app.asar \
+        "$HOME"/.dvm/[Dd]iscord*/resources/app.asar \
+        /var/lib/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
+        "$HOME"/.local/share/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
+        /Applications/Discord*.app/Contents/Resources/app.asar \
+        "$HOME"/Applications/Discord*.app/Contents/Resources/app.asar; do
+        loads_from "$asar" "$1" || continue
+        asar=${asar%/resources/app.asar}
+        say "  ${asar%/Contents/Resources/app.asar}"
+    done
+    for base in "$HOME"/.config/discord* "$HOME"/.var/app/com.discordapp.*/config/discord \
+        "$HOME/Library/Application Support"/discord*; do
+        newest=""
+        for asar in "$base"/app-*/resources/app.asar "$base"/app-*/Discord*.app/Contents/Resources/app.asar; do
+            [ -f "$asar" ] && newest=$asar
+        done
+        loads_from "$newest" "$1" && say "  $base"
+    done
+}
+
+# A folder about to be deleted stays while a Discord still loads AI Translate
+# from it, and the run stops there, so the next one patches again.
+keep_while_loaded() {
+    [ -d "$1" ] || return 0
+    left=$(still_loading_from "$1")
+    [ -n "$left" ] || return 0
+    say ""
+    say "A Discord still loads AI Translate from $1:"
+    say "$left"
+    stop "So $1 is kept. Run this again and patch that Discord too."
+}
+
 install_or_update() {
     first=0
     # "ait-build.json" is what the file was called before it was renamed.
@@ -210,8 +254,12 @@ install_or_update() {
             done
         fi
 
+        # Vencord's installer leaves its own menu on Ctrl+C with the exit
+        # status of a patch that worked, so its word alone is not enough.
+        keep_while_loaded "$AIT_HOME/Vencord"
         rm -rf "$AIT_HOME/Vencord"
         if [ -n "$OLD_HOME" ]; then
+            keep_while_loaded "$OLD_HOME"
             rm -rf "$OLD_HOME" || say "Could not delete $OLD_HOME. Delete it by hand."
         fi
     fi
