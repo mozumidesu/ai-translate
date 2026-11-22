@@ -176,6 +176,62 @@
         }
     }
 
+    # The path a patched app.asar requires. Vencord's installer writes
+    # require("...") with the path as JSON, so it is decoded, not matched.
+    function Get-RequiredPath([string]$Asar) {
+        $file = Get-Item -LiteralPath $Asar -Force -ErrorAction SilentlyContinue
+        # A patched app.asar is a few hundred bytes; Discord's own is megabytes.
+        if (-not $file -or $file.PSIsContainer -or $file.Length -gt 65536) { return $null }
+        try {
+            $text = [IO.File]::ReadAllText($file.FullName, [Text.Encoding]::UTF8)
+            $match = [regex]::Match($text, 'require\(("(?:[^"\\]|\\.)*")\)')
+            if (-not $match.Success) { return $null }
+            return ('{"path":' + $match.Groups[1].Value + '}' | ConvertFrom-Json).path
+        }
+        catch { return $null }
+    }
+
+    # Windows paths ignore case, and Vencord's installer writes backslashes.
+    function Test-Inside([string]$Path, [string]$Folder) {
+        $Folder = $Folder.Replace('/', '\').TrimEnd('\') + '\'
+        return $Path.Replace('/', '\').StartsWith($Folder, [StringComparison]::OrdinalIgnoreCase)
+    }
+
+    # Each Discord that still loads AI Translate from inside a folder, of those
+    # Vencord's installer looks for. It patches, and Discord runs, only the
+    # app-* whose resources path sorts last byte by byte, as Go compares it;
+    # older ones stay behind after Discord updates itself.
+    function Get-DiscordLoadingFrom([string]$Folder) {
+        foreach ($name in $DiscordVersions.Values) {
+            $path = Join-Path $env:LOCALAPPDATA $name
+            $newest = $null
+            foreach ($dir in @(Get-ChildItem -LiteralPath $path -Directory -Force -ErrorAction SilentlyContinue)) {
+                if (-not $dir.Name.StartsWith("app-", [StringComparison]::Ordinal)) { continue }
+                $resources = Join-Path $dir.FullName "resources"
+                if (-not (Test-Path -LiteralPath $resources)) { continue }
+                $key = $dir.Name + "\resources"
+                if (-not $newest -or [string]::CompareOrdinal($key, $newest.Key) -gt 0) {
+                    $newest = @{ Key = $key; Resources = $resources }
+                }
+            }
+            if (-not $newest) { continue }
+            $required = Get-RequiredPath (Join-Path $newest.Resources "app.asar")
+            if ($required -and (Test-Inside $required $Folder)) { $path }
+        }
+    }
+
+    # A folder about to be deleted stays while a Discord still loads AI
+    # Translate from it, and the run stops there, so the next one patches again.
+    function Stop-WhileLoaded([string]$Folder) {
+        if (-not (Test-Path -LiteralPath $Folder -PathType Container)) { return }
+        $left = @(Get-DiscordLoadingFrom $Folder)
+        if ($left.Count -eq 0) { return }
+        Write-Host ""
+        Write-Host "A Discord still loads AI Translate from $($Folder):"
+        foreach ($path in $left) { Write-Host "  $path" }
+        Stop-Here "So $Folder is kept. Run this again and patch that Discord too."
+    }
+
     function Install-AiTranslate {
         # "ait-build.json" is what the file was called before it was renamed.
         $first = -not ((Test-Path (Join-Path $Dist "build.json")) -or (Test-Path (Join-Path $Dist "ait-build.json")) -or $OldHome)
@@ -227,8 +283,14 @@
                 }
             }
 
-            if ($moving) { Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue }
+            # Answering No above can leave a Discord still patched to a folder
+            # about to go, and it would no longer start.
+            if ($moving) {
+                Stop-WhileLoaded $old
+                Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue
+            }
             if ($OldHome) {
+                Stop-WhileLoaded $OldHome
                 try { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }
                 catch { Write-Host "Could not delete $OldHome. Delete it by hand." -ForegroundColor Yellow }
             }

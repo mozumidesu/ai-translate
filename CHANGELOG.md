@@ -7,6 +7,19 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## Unreleased
+
+### Fixed
+
+- **On Windows too, the install command keeps the old folder while a Discord
+  still loads from it.** Moving out of `%LOCALAPPDATA%\aiTranslate`, it asks
+  whether another Discord on the computer had AI Translate too, and answering
+  No while one still did deleted the folder that Discord loads from, so it no
+  longer started. Now the command first looks at every Discord where Vencord's
+  installer finds them, and while one still loads from the old folder it
+  keeps the folder, says which Discord that is and stops. Run it again and it
+  moves again, patching that Discord too.
+
 ## 0.2.4a
 
 Released on 22 November 2026.
