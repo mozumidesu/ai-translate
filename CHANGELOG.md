@@ -7,6 +7,21 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## Unreleased
+
+### Fixed
+
+- **The install command on macOS and Linux no longer deletes the old folder
+  while a Discord still loads from it, when the home folder's name has `&`,
+  `<`, `>`, `"` or `\` in it.** Vencord's installer writes such a character
+  into a Discord's app.asar as an escape, `&` as `\u0026`, and the command
+  looked for the folder's name as typed. So it never found a Discord still on
+  the old folder, never offered to patch it, and deleted the folder that
+  Discord loads from, after which it no longer started. It now looks for the
+  name the way Vencord's installer writes it. Removing AI Translate was
+  affected the same way. Version 0.2.5a has this fault; the fix reaches users
+  with the next release.
+
 ## 0.2.5a
 
 Released on 22 November 2026.

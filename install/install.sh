@@ -309,10 +309,16 @@ vencord_installer() {
     fi
 }
 
+# A path as Vencord's installer writes it into app.asar, in Go's json.Marshal:
+# \ and " escaped, and < > & as < > &.
+as_json() {
+    printf '%s\n' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/</\\u003c/g' -e 's/>/\\u003e/g' -e 's/&/\\u0026/g'
+}
+
 # Whether an app.asar loads AI Translate from inside a folder: Vencord's
 # installer writes one that requires a patcher.js there by its full path.
 loads_from() {
-    [ -f "$1" ] && grep -qF "$2/" "$1" 2> /dev/null
+    [ -f "$1" ] && grep -qF "$(as_json "$2")/" "$1" 2> /dev/null
 }
 
 # The lines of discords for each Discord that still loads AI Translate from a
