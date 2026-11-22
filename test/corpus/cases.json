@@ -661,7 +661,7 @@
   },
   {
     "id": "a-stressed-refusal-to-obey-keeps-who-refuses",
-    "why": "the same with a word that is also an adverb in Japanese: a bare \"won't become obedient\" can be read as \"won't, obediently\", and says nothing of who",
+    "why": "the same with a word that is also an adverb in Japanese: a bare \"won't become obedient\" can be read as \"won't, obediently\", and says nothing of who. Groq's gpt-oss-120b, the plugin's default, answered a bare 従順にならない 5 runs of 5, and the same with a rule naming the fault; Gemini kept the weight every run",
     "kind": "sent",
     "to": "Japanese",
     "text": "Не стану я послушным",
@@ -739,7 +739,7 @@
   },
   {
     "id": "the-chats-own-word-for-joining",
-    "why": "whether a little of the chat's manner reaches a translation with no rule asking for it, which is what this group weighs until it is measured on Groq: the chat says \"hop on\" for joining a game, and the same words in the answer are how they talk, with nothing added",
+    "why": "whether a little of the chat's manner reaches a translation with no rule asking for it, which is what this group weighs: the chat says \"hop on\" for joining a game, and the same words in the answer are how they talk, with nothing added. With no rule Gemini took the chat's words in all three of these and Groq in two, never in this one, where it said \"I'll be there\" 5 runs of 5",
     "kind": "sent",
     "to": "English",
     "text": "Я зайду через 10 минут",
