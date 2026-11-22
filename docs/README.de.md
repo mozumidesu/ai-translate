@@ -53,7 +53,8 @@ Jede empfangene Nachricht lässt sich über das Rechtsklickmenü übersetzen. We
 selbst die Übersetzung nicht weiterhilft, wegen Abkürzungen, eines Wortes, das
 nur in einem Land benutzt wird, oder eines Witzes zwischen zwei Leuten, nennt
 der Eintrag **Erklären** im selben Menü die Sprache, schreibt die Abkürzungen
-aus und sagt, was gemeint war.
+aus und sagt, was gemeint war. Dieser Eintrag ist aus, bis du ihn in den
+Einstellungen des Plugins einschaltest.
 
 Die letzten Nachrichten des Gesprächs gehen mit jeder Anfrage mit, damit ein
 bloßes „ja“ oder „es fügt sich nicht ein“ so ankommt, wie es gemeint war. Du
@@ -90,8 +91,11 @@ ablehnt, läuft die Übersetzung von selbst über den nächsten. Hat der erste
 abgelehnt, nennt eine kurze Benachrichtigung den Grund, einmal und nicht bei
 jeder Nachricht.
 
-Die Anfragen gehen aus dem Hintergrundprozess von Discord raus, dein Schlüssel
-landet also nie in dem Teil von Discord, an den eine Webseite herankommt.
+Die Anfragen gehen aus dem Hintergrundprozess von Discord raus, über eine eigene
+Verbindung des Plugins. Deshalb werden sie nicht blockiert, wie es die einer
+Webseite würden, und sie nehmen denselben Weg wie Discords eigener Verkehr, samt
+seinem Proxy. Dein Schlüssel liegt bei den übrigen Einstellungen von Vencord,
+und Code, der im Fenster von Discord läuft, auch andere Plugins, kann ihn lesen.
 
 ## Installation
 
@@ -153,8 +157,11 @@ steckt schon Vencord, und zwei davon in einem Tab vertragen sich nicht.
 
 Öffne dann **Einstellungen → Vencord → Plugins → AI Translate**, wähle einen
 Anbieter und füge deinen Schlüssel ein, genauso wie in der App. Den Schlüssel
-hält der Userscript-Manager, nicht die Seite, und die Anfragen laufen ebenfalls
-über ihn. Zum Entfernen lösche das Skript im Userscript-Manager.
+speichert Vencord mit seinen übrigen Einstellungen im Speicher von discord.com
+in diesem Browser, wo Code, der auf der Seite läuft, ihn lesen kann; die
+Anfragen laufen über den Userscript-Manager. Zum Entfernen lösche das Skript im
+Userscript-Manager; die Einstellungen, die es gespeichert hat, samt Schlüssel,
+bleiben im Speicher von discord.com.
 
 Dein Userscript-Manager sucht nach seinem eigenen Zeitplan nach einer neuen
 Version. **Nach Updates suchen** unten in den Einstellungen des Plugins fragt

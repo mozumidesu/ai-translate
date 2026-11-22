@@ -53,6 +53,7 @@ Orice mesaj primit poate fi tradus din meniul de clic dreapta. Când nici
 traducerea nu te lămurește, din cauza prescurtărilor, a unui cuvânt folosit
 doar într-o țară sau a unei glume între doi oameni, opțiunea **Explică** din
 același meniu spune ce limbă e, desface prescurtările și zice ce s-a vrut spus.
+Opțiunea e oprită până o pornești tu din setările pluginului.
 
 Ultimele mesaje ale conversației pleacă odată cu fiecare cerere, așa că un
 simplu „da” sau „nu se lipește” ajunge așa cum trebuia. Îți poți fixa și
@@ -87,8 +88,11 @@ aglomerat, a rămas fără cotă sau refuză cererea, traducerea trece de la sin
 prin următorul. Dacă primul a refuzat, o notificare scurtă spune de ce, o
 singură dată și nu la fiecare mesaj.
 
-Cererile pleacă din procesul de fundal al Discordului, așa că cheia ta nu ajunge
-niciodată în partea de Discord la care ar putea ajunge o pagină web.
+Cererile pleacă din procesul de fundal al Discordului, printr-o conexiune
+proprie a pluginului, așa că nu sunt blocate cum ar fi cele ale unei pagini web
+și urmează același drum ca traficul Discordului însuși, cu tot cu proxy. Cheia
+ta e păstrată împreună cu celelalte setări Vencord, iar codul care rulează în
+fereastra Discordului, inclusiv alte pluginuri, o poate citi.
 
 ## Instalare
 
@@ -148,9 +152,12 @@ Deschide discord.com și reîncarcă pagina. Dacă ai extensia Vencord Web,
 oprește-o: scriptul acesta are Vencord în el, iar două într-o filă nu se împacă.
 
 Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un furnizor
-și lipește-ți cheia, la fel ca în aplicație. Cheia o ține managerul de
-userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
-șterge scriptul din manager.
+și lipește-ți cheia, la fel ca în aplicație. Cheia e păstrată împreună cu
+celelalte setări Vencord în spațiul de stocare al discord.com din acest browser,
+unde codul care rulează în acea pagină o poate citi, iar cererile pleacă prin
+managerul de userscripturi. Ca să îl scoți, șterge scriptul din manager;
+setările salvate de el, cu tot cu cheie, rămân în spațiul de stocare al
+discord.com.
 
 Managerul de userscripturi caută o versiune nouă în ritmul lui. **Caută
 actualizări**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva

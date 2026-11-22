@@ -50,7 +50,8 @@ klik kanan menyalakan atau mematikan obrolan yang sedang dibuka.
 Pesan apa pun yang Anda terima bisa diterjemahkan lewat menu klik kanan. Kalau
 terjemahannya pun tidak menolong, karena singkatan, kata yang hanya dipakai di
 satu negara, atau lelucon antara dua orang, opsi **Jelaskan** di menu yang sama
-menyebut bahasanya, membuka singkatannya, dan menjelaskan maksudnya.
+menyebut bahasanya, membuka singkatannya, dan menjelaskan maksudnya. Opsi itu
+mati sampai Anda menyalakannya di pengaturan plugin.
 
 Beberapa pesan terakhir percakapan ikut dikirim bersama setiap permintaan, jadi
 "ya" yang singkat atau "tidak mau ke-paste" sampai seperti yang dimaksud. Anda
@@ -86,8 +87,11 @@ pertama sedang penuh, kuotanya habis, atau menolak permintaan, terjemahan lewat
 yang berikutnya dengan sendirinya. Kalau yang pertama menolak, sebuah
 pemberitahuan singkat menyebut alasannya, sekali saja dan tidak di setiap pesan.
 
-Permintaan dikirim dari proses latar Discord, jadi kunci Anda tidak pernah masuk
-ke bagian Discord yang bisa dijangkau halaman web.
+Permintaan dikirim dari proses latar Discord, lewat koneksi milik plugin
+sendiri, jadi tidak diblokir seperti permintaan dari halaman web dan menempuh
+jalur yang sama dengan lalu lintas Discord sendiri, termasuk proxy-nya. Kunci
+Anda disimpan bersama pengaturan Vencord lainnya, dan kode yang berjalan di
+jendela Discord, termasuk plugin lain, bisa membacanya.
 
 ## Pemasangan
 
@@ -148,9 +152,12 @@ matikan: skrip ini sudah berisi Vencord, dan dua-duanya dalam satu tab tidak
 akur.
 
 Lalu buka **Pengaturan → Vencord → Plugins → AI Translate**, pilih penyedia, dan
-tempel kunci Anda, sama seperti di aplikasi. Kunci dipegang oleh pengelola
-userscript, bukan oleh halamannya, dan permintaan juga keluar lewat pengelola.
-Untuk melepasnya, hapus skripnya di pengelola Anda.
+tempel kunci Anda, sama seperti di aplikasi. Kunci disimpan bersama pengaturan
+Vencord lainnya di penyimpanan discord.com di browser ini, tempat kode yang
+berjalan di halaman itu bisa membacanya, dan permintaan keluar lewat pengelola
+userscript. Untuk melepas plugin ini, hapus skripnya di pengelola Anda;
+pengaturan yang disimpannya, termasuk kunci Anda, tetap ada di penyimpanan
+discord.com.
 
 Pengelola userscript Anda mencari versi baru sesuai jadwalnya sendiri. **Periksa
 pembaruan** di bagian bawah pengaturan plugin menanyakannya seketika dan, kalau

@@ -50,7 +50,8 @@ paneli açar, sağ tıklamak o anki sohbeti açıp kapatır.
 Gelen her mesaj sağ tık menüsünden çevrilebilir. Çeviri bile bir şey anlatmadığı
 zaman, kısaltmalar, yalnızca bir ülkede kullanılan bir kelime ya da iki kişi
 arasındaki bir şaka yüzünden, aynı menüdeki **Açıkla** seçeneği dilin hangisi
-olduğunu söyler, kısaltmaları açar ve neyin kastedildiğini anlatır.
+olduğunu söyler, kısaltmaları açar ve neyin kastedildiğini anlatır. Bu seçenek,
+siz eklentinin ayarlarından açana kadar kapalıdır.
 
 Konuşmanın son birkaç mesajı her istekle birlikte gider, böylece kuru bir
 "evet" ya da "yapıştırmıyor" olması gerektiği gibi ulaşır. Kendi sözlüğünüzü de
@@ -86,8 +87,11 @@ kotası bittiğinde ya da isteği geri çevirdiğinde çeviri kendiliğinden sı
 geçer. İlki geri çevirdiyse kısa bir bildirim nedenini söyler, her mesajda
 değil, bir kez.
 
-İstekler Discord'un arka plan sürecinden gönderilir, yani anahtarınız
-Discord'un bir web sayfasının ulaşabileceği kısmına hiç girmez.
+İstekler Discord'un arka plan sürecinden, eklentinin kendi bağlantısı üzerinden
+gönderilir; bu yüzden bir web sayfasının istekleri gibi engellenmez ve
+Discord'un kendi trafiğiyle aynı yolu, proxy'si dahil, izler. Anahtarınız
+Vencord'un diğer ayarlarıyla birlikte saklanır ve Discord'un penceresinde
+çalışan kod, başka eklentiler de dahil, onu okuyabilir.
 
 ## Kurulum
 
@@ -147,9 +151,11 @@ kapatın: bu betiğin içinde zaten Vencord var ve aynı sekmede iki tanesi
 geçinemez.
 
 Sonra **Ayarlar → Vencord → Plugins → AI Translate** yolunu açın, uygulamadaki
-gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtarı sayfa değil
-userscript yöneticisi tutar, istekler de onun üzerinden gider. Kaldırmak için
-betiği yöneticiden silin.
+gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtar, Vencord'un diğer
+ayarlarıyla birlikte bu tarayıcıda discord.com'un depolama alanında saklanır ve
+o sayfada çalışan kod onu okuyabilir; istekler ise userscript yöneticisi
+üzerinden gider. Kaldırmak için betiği yöneticiden silin; betiğin kaydettiği
+ayarlar, anahtarınız da dahil, discord.com'un depolama alanında kalır.
 
 Userscript yöneticiniz yeni sürümü kendi takvimine göre arar. Eklenti
 ayarlarının altındaki **Güncellemeleri denetle** hemen sorar ve yeni bir şey

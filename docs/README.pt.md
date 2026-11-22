@@ -52,6 +52,7 @@ Qualquer mensagem recebida pode ser traduzida pelo menu do clique direito.
 Quando nem a tradução esclarece, por causa de abreviações, de uma palavra que só
 se usa em um país ou de uma piada entre duas pessoas, a opção **Explicar** nesse
 mesmo menu diz qual é o idioma, abre as abreviações e conta o que se quis dizer.
+Essa opção fica desligada até você ligar nas configurações do plugin.
 
 As últimas mensagens da conversa vão junto com cada pedido, então um simples
 "sim" ou "não cola" chega do jeito que devia. Você também pode fixar o seu
@@ -87,8 +88,11 @@ primeiro está sobrecarregado, sem cota ou recusa o pedido, a tradução passa p
 seguinte por conta própria. Se o primeiro recusou, uma notificação curta diz por
 quê, uma vez e não a cada mensagem.
 
-Os pedidos saem do processo de segundo plano do Discord, então sua chave nunca
-entra na parte do Discord que uma página da web poderia alcançar.
+Os pedidos saem do processo de segundo plano do Discord, por uma conexão própria
+do plugin, então não são bloqueados como seriam os de uma página da web e seguem
+o mesmo caminho do tráfego do próprio Discord, inclusive o proxy. Sua chave fica
+guardada com as outras configurações do Vencord, e o código que roda na janela
+do Discord, outros plugins inclusive, pode lê-la.
 
 ## Instalação
 
@@ -147,9 +151,12 @@ desligue-a: este script já tem o Vencord dentro, e dois na mesma aba não se d�
 bem.
 
 Depois abra **Configurações → Vencord → Plugins → AI Translate**, escolha um
-provedor e cole sua chave, igual ao aplicativo. A chave fica com o gerenciador
-de userscripts, não com a página, e os pedidos saem por ele também. Para
-remover, apague o script no seu gerenciador.
+provedor e cole sua chave, igual ao aplicativo. A chave fica guardada com as
+outras configurações do Vencord no armazenamento do discord.com neste navegador,
+onde o código que roda nessa página pode lê-la, e os pedidos saem pelo
+gerenciador de userscripts. Para remover, apague o script no seu gerenciador; as
+configurações que ele salvou, inclusive a chave, continuam no armazenamento do
+discord.com.
 
 Seu gerenciador de userscripts procura uma versão nova no ritmo dele. **Procurar
 atualizações**, lá no fim das configurações do plugin, pergunta na hora e, se

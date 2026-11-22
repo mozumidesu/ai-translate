@@ -49,7 +49,8 @@ mà bạn thật sự cần. Nhấp chuột trái vào nút dịch trên thanh n
 Bất kỳ tin nhắn nào bạn nhận đều có thể dịch từ menu chuột phải. Khi ngay cả
 bản dịch cũng không giúp bạn hiểu, vì viết tắt, vì một từ chỉ dùng ở một nước
 hay một câu đùa riêng của hai người, mục **Giải thích** trong cùng menu đó sẽ
-gọi tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì.
+gọi tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì. Mục
+đó tắt cho đến khi bạn bật trong phần cài đặt của plugin.
 
 Vài tin nhắn gần nhất của cuộc trò chuyện đi kèm mỗi yêu cầu, nên một câu "ừ"
 trống trơn hay "không dán được" đến nơi đúng như ý. Bạn cũng có thể ghim từ vựng
@@ -84,8 +85,11 @@ thứ nhất quá tải, hết hạn mức hoặc từ chối yêu cầu, bản 
 tiếp. Nếu cái thứ nhất từ chối, một thông báo ngắn nói lý do, chỉ một lần chứ
 không phải mỗi tin nhắn.
 
-Các yêu cầu được gửi từ tiến trình nền của Discord, nên khóa của bạn không bao
-giờ vào phần Discord mà một trang web có thể chạm tới.
+Các yêu cầu được gửi từ tiến trình nền của Discord, qua một kết nối riêng của
+plugin, nên không bị chặn như yêu cầu từ một trang web và đi cùng đường với lưu
+lượng của chính Discord, kể cả proxy. Khóa của bạn được lưu cùng các cài đặt
+khác của Vencord, và mã chạy trong cửa sổ Discord, kể cả các plugin khác, có thể
+đọc được nó.
 
 ## Cài đặt
 
@@ -143,9 +147,11 @@ tải lại trang. Nếu đã cài tiện ích Vencord Web, hãy tắt nó đi: 
 có Vencord bên trong, hai cái trong một thẻ sẽ xung đột.
 
 Rồi mở **Cài đặt → Vencord → Plugins → AI Translate**, chọn một nhà cung cấp và
-dán khóa của bạn, giống như trong ứng dụng. Khóa do trình quản lý userscript
-giữ, không nằm ở trang web, và các yêu cầu cũng đi ra qua nó. Muốn bỏ thì xóa
-tập lệnh trong trình quản lý.
+dán khóa của bạn, giống như trong ứng dụng. Khóa được lưu cùng các cài đặt khác
+của Vencord trong bộ nhớ của discord.com trên trình duyệt này, nơi mã chạy trên
+trang đó có thể đọc được nó, còn các yêu cầu đi ra qua trình quản lý userscript.
+Muốn bỏ thì xóa tập lệnh trong trình quản lý; các cài đặt nó đã lưu, kể cả khóa,
+vẫn nằm trong bộ nhớ của discord.com.
 
 Trình quản lý userscript tự tìm phiên bản mới theo lịch riêng của nó. **Kiểm tra
 cập nhật** ở cuối phần cài đặt của plugin sẽ hỏi ngay, và nếu có bản mới thì mở

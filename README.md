@@ -51,7 +51,8 @@ Anything you receive can be translated from the right-click menu on the
 message. When even a translation leaves you none the wiser, because of chat
 shorthand, a word only used in one country or a joke between two people,
 **AI Explain** in the same menu names the language, spells the abbreviations
-out and says what was meant.
+out and says what was meant. That item is off until you switch it on in the
+plugin's settings.
 
 The last few messages of the conversation travel with each request, so a bare
 "yes", or "it won't paste", lands the way it was meant. You can pin your own
@@ -87,8 +88,11 @@ is overloaded, out of quota or refuses the request, the translation goes through
 the next one by itself. If the first one refused, a short notice says why, once
 and not with every message.
 
-Requests are made from Discord's background process, so your key never enters
-the part of Discord that a web page could reach.
+Requests are made from Discord's background process, through a connection of the
+plugin's own, so they are not blocked the way a web page's would be, and they
+take the same route as Discord's own traffic, its proxy included. Your key is
+stored with the rest of Vencord's settings, and code running in Discord's
+window, other plugins included, can read it.
 
 ## Install
 
@@ -146,9 +150,11 @@ is installed, switch it off: this script has Vencord inside it, and two of them
 in one tab do not get along.
 
 Then open **Settings → Vencord → Plugins → AI Translate**, choose a provider and
-paste your key, the same as in the app. Your key is kept by the userscript
-manager, not by the page, and requests go out through the manager as well. To
-remove it, delete the script in your userscript manager.
+paste your key, the same as in the app. Your key is saved with the rest of
+Vencord's settings in discord.com's storage in this browser, where code running
+on that page can read it, and requests go out through the userscript manager. To
+remove the plugin, delete the script in your userscript manager; the settings it
+saved, your key included, stay in discord.com's storage.
 
 Your userscript manager looks for a new version on its own schedule. **Check for
 updates**, at the bottom of the plugin's settings, asks at once, and when there

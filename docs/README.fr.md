@@ -54,7 +54,8 @@ N'importe quel message reçu peut être traduit depuis le menu du clic droit.
 Quand même la traduction ne vous avance à rien, à cause d'abréviations, d'un mot
 qu'on n'emploie que dans un pays ou d'une blague entre deux personnes,
 l'entrée **Expliquer** de ce même menu nomme la langue, développe les
-abréviations et dit ce qui était voulu.
+abréviations et dit ce qui était voulu. Cette entrée est désactivée tant que
+vous ne l'activez pas dans les paramètres du plugin.
 
 Les derniers messages de la conversation partent avec chaque requête, si bien
 qu'un simple « oui » ou « ça ne se colle pas » arrive comme il le devait. Vous
@@ -91,8 +92,12 @@ Quand le premier est saturé, à court de quota ou refuse la requête, la
 traduction passe d'elle-même par le suivant. Si le premier a refusé, une courte
 notification en donne la raison, une fois et non à chaque message.
 
-Les requêtes partent du processus d'arrière-plan de Discord : votre clé n'entre
-donc jamais dans la partie de Discord qu'une page web pourrait atteindre.
+Les requêtes partent du processus d'arrière-plan de Discord, par une connexion
+propre au plugin : elles ne sont donc pas bloquées comme le seraient celles
+d'une page web, et elles suivent le même chemin que le trafic de Discord
+lui-même, proxy compris. Votre clé est enregistrée avec les autres paramètres de
+Vencord, et le code qui tourne dans la fenêtre de Discord, autres plugins
+compris, peut la lire.
 
 ## Installation
 
@@ -153,9 +158,12 @@ désactivez-la : ce script contient déjà Vencord, et deux dans un même onglet
 font pas bon ménage.
 
 Ouvrez ensuite **Paramètres → Vencord → Plugins → AI Translate**, choisissez un
-fournisseur et collez votre clé, comme dans l'application. La clé est gardée par
-le gestionnaire de userscripts, pas par la page, et les requêtes passent aussi
-par lui. Pour l'enlever, supprimez le script dans votre gestionnaire.
+fournisseur et collez votre clé, comme dans l'application. La clé est
+enregistrée avec les autres paramètres de Vencord dans le stockage de
+discord.com de ce navigateur, où le code qui tourne sur cette page peut la lire,
+et les requêtes passent par le gestionnaire de userscripts. Pour enlever le
+plugin, supprimez le script dans votre gestionnaire ; les paramètres qu'il a
+enregistrés, votre clé comprise, restent dans le stockage de discord.com.
 
 Votre gestionnaire de userscripts cherche une nouvelle version à son rythme.
 **Rechercher des mises à jour**, en bas des paramètres du plugin, le demande
