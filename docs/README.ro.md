@@ -52,7 +52,7 @@ oprește conversația curentă.
 Orice mesaj primit poate fi tradus din meniul de clic dreapta. Când nici
 traducerea nu te lămurește, din cauza prescurtărilor, a unui cuvânt folosit
 doar într-o țară sau a unei glume între doi oameni, opțiunea **Explică** din
-același meniu spune ce limbă e, desface prescurtările și zice ce s-a vrut.
+același meniu spune ce limbă e, desface prescurtările și zice ce s-a vrut spus.
 
 Ultimele mesaje ale conversației pleacă odată cu fiecare cerere, așa că un
 simplu „da” sau „nu se lipește” ajunge așa cum trebuia. Îți poți fixa și
