@@ -7,14 +7,24 @@
 # build robot puts it whenever Vencord or the plugin changes. Vencord's own
 # installer then points Discord at it.
 #
-# Everything lives in %LOCALAPPDATA%\aiTranslate. Running this again updates
+# Everything lives in %LOCALAPPDATA%\ai-translate. Running this again updates
 # the files, or removes them.
 #
 # The whole file is one script block, so nothing it defines is left behind in
 # the window it was pasted into.
 
 & {
-    $AitHome = if ($env:AIT_HOME) { $env:AIT_HOME } else { Join-Path $env:LOCALAPPDATA "aiTranslate" }
+    # A copy installed before 0.2.4a lives in $OldHome, and Discord loads it
+    # from there until it is patched again. Only the default folder is ever
+    # moved: one named in AIT_HOME stays where its owner put it.
+    $OldHome = $null
+    if ($env:AIT_HOME) { $AitHome = $env:AIT_HOME }
+    else {
+        $AitHome = Join-Path $env:LOCALAPPDATA "ai-translate"
+        # The folder's name before 0.2.4a, read only to move a copy out of it.
+        $OldHome = Join-Path $env:LOCALAPPDATA "aiTranslate"
+        if (-not (Test-Path -LiteralPath $OldHome -PathType Container)) { $OldHome = $null }
+    }
     $Dist = Join-Path $AitHome "dist"
     $Builds = "https://builds.zolatau.com"
 
@@ -168,12 +178,15 @@
 
     function Install-AiTranslate {
         # "ait-build.json" is what the file was called before it was renamed.
-        $first = -not ((Test-Path (Join-Path $Dist "build.json")) -or (Test-Path (Join-Path $Dist "ait-build.json")))
+        $first = -not ((Test-Path (Join-Path $Dist "build.json")) -or (Test-Path (Join-Path $Dist "ait-build.json")) -or $OldHome)
 
         # The first installer built Vencord in a folder of its own, and Discord
-        # keeps pointing there until it is patched again.
+        # keeps pointing there until it is patched again. So does a copy in the
+        # old folder: the files arrive in the new one, Discord is pointed at
+        # them, and only then does the old folder go, so Discord never points
+        # at nothing.
         $old = Join-Path $AitHome "Vencord"
-        $moving = Test-Path $old
+        $moving = (Test-Path $old) -or $OldHome
 
         New-Item -ItemType Directory -Force -Path $Dist | Out-Null
 
@@ -200,8 +213,25 @@
         }
 
         if ($patch) {
+            if ($OldHome) { Write-Host "AI Translate moves from $OldHome to $AitHome, so Discord is patched again." }
             Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
+
+            # Another Discord on this computer (PTB, Canary) may have been
+            # patched to the old folder, and fails to start once that is
+            # deleted. The old folder goes only after every one of them is
+            # patched; a failed or cancelled patch throws from here with it
+            # kept, and the next run moves again.
+            if ($OldHome) {
+                while ((Select-Option "Did another Discord on this computer have AI Translate too?" @("No", "Yes")) -eq 1) {
+                    Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
+                }
+            }
+
             if ($moving) { Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue }
+            if ($OldHome) {
+                try { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }
+                catch { Write-Host "Could not delete $OldHome. Delete it by hand." -ForegroundColor Yellow }
+            }
         }
 
         Write-Host ""
@@ -221,6 +251,7 @@
         if ((Select-Option "Also delete the downloaded files in $($AitHome)?" @("No", "Yes")) -eq 1) {
             try {
                 Remove-Item -LiteralPath $AitHome -Recurse -Force -ErrorAction Stop
+                if ($OldHome) { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }
                 Write-Host "Deleted $AitHome."
             }
             catch {
@@ -234,7 +265,12 @@
 
     try {
         $choice = Select-Option "AI Translate" @("Install or update", "Remove")
-        if ($choice -eq 1) { Remove-AiTranslate } else { Install-AiTranslate }
+        if ($choice -eq 1) {
+            # A copy never moved out of the old folder is removed where it is.
+            if ($OldHome -and -not (Test-Path $AitHome)) { $AitHome = $OldHome; $OldHome = $null }
+            Remove-AiTranslate
+        }
+        else { Install-AiTranslate }
     }
     catch [System.OperationCanceledException] {
         Write-Host ""

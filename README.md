@@ -51,7 +51,8 @@ Anything you receive can be translated from the right-click menu on the
 message. When even a translation leaves you none the wiser, because of chat
 shorthand, a word only used in one country or a joke between two people,
 **AI Explain** in the same menu names the language, spells the abbreviations
-out and says what was meant.
+out and says what was meant. That item is off until you switch it on in the
+plugin's settings.
 
 The last few messages of the conversation travel with each request, so a bare
 "yes", or "it won't paste", lands the way it was meant. You can pin your own
@@ -71,8 +72,9 @@ it otherwise.
 
 ## Providers
 
-You bring your own API key, and it stays yours. The plugin has no server of
-its own and never sees anyone else's key.
+You bring your own API key, and it stays yours. Translations go straight from
+Discord to the provider you chose, with no server of the plugin's in between,
+and no one else's key is involved.
 
 | Provider | Free tier |
 |---|---|
@@ -80,14 +82,18 @@ its own and never sees anyone else's key.
 | Google Gemini | yes |
 | Z.ai GLM | yes, and reachable where the other two are blocked |
 | Anthropic Claude | no |
-| Any OpenAI-compatible | depends on the provider |
+| Other (any OpenAI-compatible API) | depends on the provider |
 
-A second provider can be named as a backup. When the first one is overloaded,
-out of quota or refuses the request, the translation goes through the other one
-without bothering you about it.
+Up to four backup providers can stand behind the first one. When the first one
+is overloaded, out of quota or refuses the request, the translation goes through
+the next one by itself. If the first one refused, a short notice says why, once
+and not with every message.
 
-Requests are made from Discord's background process, so your key never enters
-the part of Discord that a web page could reach.
+Requests are made from Discord's background process, through a connection of the
+plugin's own, so they are not blocked the way a web page's would be, and they
+take the same route as Discord's own traffic, its proxy included. Your key is
+stored with the rest of Vencord's settings, and code running in Discord's
+window, other plugins included, can read it.
 
 ## Install
 
@@ -117,7 +123,7 @@ Then quit Discord completely, from the tray icon too, and start it again.
 
 On atomic Linux systems, such as Bazzite, Silverblue, Kinoite or SteamOS, the
 same command works: it installs nothing into the system, everything lands in
-`~/.aiTranslate`. Discord itself should be the Flatpak one, and the installer
+`~/.ai-translate`. Discord itself should be the Flatpak one, and the installer
 then grants that Flatpak access to those files on its own. A Discord layered
 into the system image with `rpm-ostree` usually cannot be patched, because the
 system folders are read-only there; install the Flatpak instead.
@@ -126,7 +132,7 @@ AI Translate is already switched on. Open **Settings → Vencord → Plugins →
 AI Translate**, choose a provider and paste your key.
 
 Everything the command downloads lives in one folder of its own:
-`%LOCALAPPDATA%\aiTranslate` on Windows and `~/.aiTranslate` on macOS and
+`%LOCALAPPDATA%\ai-translate` on Windows and `~/.ai-translate` on macOS and
 Linux. Patching Discord means swapping its startup file for a small one that
 loads Vencord first and then Discord exactly as before; your Discord account,
 settings and messages are not touched.
@@ -145,9 +151,11 @@ is installed, switch it off: this script has Vencord inside it, and two of them
 in one tab do not get along.
 
 Then open **Settings → Vencord → Plugins → AI Translate**, choose a provider and
-paste your key, the same as in the app. Your key is kept by the userscript
-manager, not by the page, and requests go out through the manager as well. To
-remove it, delete the script in your userscript manager.
+paste your key, the same as in the app. Your key is saved with the rest of
+Vencord's settings in discord.com's storage in this browser, where code running
+on that page can read it, and requests go out through the userscript manager. To
+remove the plugin, delete the script in your userscript manager; the settings it
+saved, your key included, stay in discord.com's storage.
 
 Your userscript manager looks for a new version on its own schedule. **Check for
 updates**, at the bottom of the plugin's settings, asks at once, and when there
@@ -192,7 +200,7 @@ downloaded files, so they are still there if you ever install again.
 From your Vencord folder, clone this repository in as a userplugin and rebuild:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

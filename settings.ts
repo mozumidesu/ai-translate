@@ -63,7 +63,7 @@ export const settings = definePluginSettings({
 
     baseUrl: {
         type: OptionType.STRING,
-        description: "internal: pre-list address for the OpenAI-compatible provider",
+        description: "internal: pre-list address for Other, the OpenAI-compatible provider",
         default: "",
         hidden: true
     },

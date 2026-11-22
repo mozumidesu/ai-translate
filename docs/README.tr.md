@@ -49,8 +49,9 @@ paneli açar, sağ tıklamak o anki sohbeti açıp kapatır.
 
 Gelen her mesaj sağ tık menüsünden çevrilebilir. Çeviri bile bir şey anlatmadığı
 zaman, kısaltmalar, yalnızca bir ülkede kullanılan bir kelime ya da iki kişi
-arasındaki bir şaka yüzünden, aynı menüdeki **AI Explain** dilin hangisi
-olduğunu söyler, kısaltmaları açar ve neyin kastedildiğini anlatır.
+arasındaki bir şaka yüzünden, aynı menüdeki **Açıkla** seçeneği dilin hangisi
+olduğunu söyler, kısaltmaları açar ve neyin kastedildiğini anlatır. Bu seçenek,
+siz eklentinin ayarlarından açana kadar kapalıdır.
 
 Konuşmanın son birkaç mesajı her istekle birlikte gider, böylece kuru bir
 "evet" ya da "yapıştırmıyor" olması gerektiği gibi ulaşır. Kendi sözlüğünüzü de
@@ -70,8 +71,9 @@ Discord'un dilini izler.
 
 ## Sağlayıcılar
 
-API anahtarını siz getirirsiniz ve o sizde kalır. Eklentinin kendi sunucusu
-yoktur ve kimsenin anahtarını görmez.
+API anahtarını siz getirirsiniz ve o sizde kalır. Çeviriler Discord'dan doğrudan
+seçtiğiniz sağlayıcıya gider, arada eklentinin bir sunucusu yoktur ve başka
+kimsenin anahtarı işe karışmaz.
 
 | Sağlayıcı | Ücretsiz kullanım |
 |---|---|
@@ -79,14 +81,18 @@ yoktur ve kimsenin anahtarını görmez.
 | Google Gemini | var |
 | Z.ai GLM | var, ve diğer ikisinin engellendiği yerlerden erişilebilir |
 | Anthropic Claude | yok |
-| OpenAI uyumlu herhangi biri | sağlayıcıya bağlı |
+| Diğer (OpenAI uyumlu herhangi bir API) | sağlayıcıya bağlı |
 
-İkinci bir sağlayıcı yedek olarak tanımlanabilir. İlki yoğun olduğunda, kotası
-bittiğinde ya da isteği geri çevirdiğinde çeviri sizi rahatsız etmeden diğeri
-üzerinden gider.
+İlkinin arkasına dört yedek sağlayıcıya kadar konabilir. İlki yoğun olduğunda,
+kotası bittiğinde ya da isteği geri çevirdiğinde çeviri kendiliğinden sıradakine
+geçer. İlki geri çevirdiyse kısa bir bildirim nedenini söyler, her mesajda
+değil, bir kez.
 
-İstekler Discord'un arka plan sürecinden gönderilir, yani anahtarınız
-Discord'un bir web sayfasının ulaşabileceği kısmına hiç girmez.
+İstekler Discord'un arka plan sürecinden, eklentinin kendi bağlantısı üzerinden
+gönderilir; bu yüzden bir web sayfasının istekleri gibi engellenmez ve
+Discord'un kendi trafiğiyle aynı yolu, proxy'si dahil, izler. Anahtarınız
+Vencord'un diğer ayarlarıyla birlikte saklanır ve Discord'un penceresinde
+çalışan kod, başka eklentiler de dahil, onu okuyabilir.
 
 ## Kurulum
 
@@ -116,7 +122,7 @@ Ardından Discord'u tepsi simgesinden de olmak üzere tamamen kapatıp yeniden
 başlatın.
 
 Bazzite, Silverblue, Kinoite ya da SteamOS gibi atomik Linux sistemlerinde aynı
-komut çalışır: sisteme hiçbir şey kurulmaz, her şey `~/.aiTranslate` içine
+komut çalışır: sisteme hiçbir şey kurulmaz, her şey `~/.ai-translate` içine
 iner. Discord'un kendisi Flatpak sürümü olmalı, o zaman kurulum programı o
 Flatpak'e bu dosyalara erişimi kendiliğinden verir. `rpm-ostree` ile sistem
 imajına gömülmüş bir Discord genelde bağlanamaz, çünkü orada sistem klasörleri
@@ -126,7 +132,7 @@ AI Translate zaten açık. **Ayarlar → Vencord → Plugins → AI Translate** 
 açın, bir sağlayıcı seçin ve anahtarınızı yapıştırın.
 
 Komutun indirdiği her şey kendi klasöründe durur: Windows'ta
-`%LOCALAPPDATA%\aiTranslate`, macOS ve Linux'ta `~/.aiTranslate`. Discord'u
+`%LOCALAPPDATA%\ai-translate`, macOS ve Linux'ta `~/.ai-translate`. Discord'u
 bağlamak, açılış dosyasını önce Vencord'u sonra Discord'u eskisi gibi yükleyen
 küçük bir dosyayla değiştirmek demektir; hesabınıza, ayarlarınıza ve
 mesajlarınıza dokunulmaz.
@@ -146,9 +152,11 @@ kapatın: bu betiğin içinde zaten Vencord var ve aynı sekmede iki tanesi
 geçinemez.
 
 Sonra **Ayarlar → Vencord → Plugins → AI Translate** yolunu açın, uygulamadaki
-gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtarı sayfa değil
-userscript yöneticisi tutar, istekler de onun üzerinden gider. Kaldırmak için
-betiği yöneticiden silin.
+gibi bir sağlayıcı seçin ve anahtarınızı yapıştırın. Anahtar, Vencord'un diğer
+ayarlarıyla birlikte bu tarayıcıda discord.com'un depolama alanında saklanır ve
+o sayfada çalışan kod onu okuyabilir; istekler ise userscript yöneticisi
+üzerinden gider. Kaldırmak için betiği yöneticiden silin; betiğin kaydettiği
+ayarlar, anahtarınız da dahil, discord.com'un depolama alanında kalır.
 
 Userscript yöneticiniz yeni sürümü kendi takvimine göre arar. Eklenti
 ayarlarının altındaki **Güncellemeleri denetle** hemen sorar ve yeni bir şey
@@ -194,7 +202,7 @@ Vencord klasörünüzden bu depoyu içeri userplugin olarak klonlayıp yeniden
 derleyin:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

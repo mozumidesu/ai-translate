@@ -30,7 +30,7 @@ import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
 import { changedWords, keepCorrection, looksLikeOwnAttempt, Part, sameMessage, splitCorrection } from "./core/learn";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, TranslationResult, wasCancelled } from "./core/translate";
+import { collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, translate, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -276,10 +276,9 @@ async function translateMessage(message: Message) {
 
         const author = (message.author as any)?.globalName || message.author?.username;
         const mine = message.author?.id === UserStore.getCurrentUser()?.id;
-        const context = collectContext(message.channel_id, message.id)
-            + (author ? `\n\nThe message below was written by ${author}.` : "");
+        const context = collectContext(message.channel_id, message.id, author);
 
-        showUnderMessage(message.id, await aiTranslate("received", content, context, mine));
+        showUnderMessage(message.id, await translate("received", content, context, mine));
     } catch (e) {
         notify(e, "failure");
     }
@@ -291,10 +290,9 @@ async function explainMessage(message: Message) {
 
     try {
         const author = (message.author as any)?.globalName || message.author?.username;
-        const context = collectContext(message.channel_id, message.id)
-            + (author ? `\n\nThe message below was written by ${author}.` : "");
+        const context = collectContext(message.channel_id, message.id, author);
 
-        const result = await aiTranslate("explain", content, context);
+        const result = await translate("explain", content, context);
         showUnderMessage(message.id, { ...result, explained: true });
     } catch (e) {
         notify(e, "failure");
@@ -360,7 +358,7 @@ const inFlight = new Set<string>();
  */
 async function askForCorrection(channelId: string, sent: string, asked = false) {
     try {
-        const { text } = await aiTranslate("correct", sent, collectContext(channelId));
+        const { text } = await translate("correct", sent, collectContext(channelId));
         if (!text) return;
 
         const { native, why } = splitCorrection(text);
@@ -378,7 +376,7 @@ async function askForCorrection(channelId: string, sent: string, asked = false) 
 }
 
 /**
- * Shared by sending and editing: translate in place, or hold the message back.
+ * A new message on its way out: translate it in place, or hold it back.
  *
  * Everything happens inside the try, the checks included. Vencord catches
  * whatever a listener throws and then sends the message anyway, so a throw
@@ -427,7 +425,7 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         document.addEventListener("keydown", onKey, true);
 
         try {
-            message.content = (await aiTranslate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
+            message.content = (await translate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
         } finally {
             document.removeEventListener("keydown", onKey, true);
             inFlight.delete(sending);
@@ -505,9 +503,8 @@ export default definePlugin({
         }
     },
 
-    onBeforeMessageSend: (channelId: string, message: MessageObject) => translateOutgoing(channelId, message),
+    onBeforeMessageSend: (channelId: string, message: MessageObject) => translateOutgoing(channelId, message)
 
-    // An edit is text going out under the user's name just as much as a new
-    // message, so it takes the same route.
-    onBeforeMessageEdit: (channelId: string, _messageId: string, message: MessageObject) => translateOutgoing(channelId, message)
+    // No onBeforeMessageEdit, on purpose: an edit goes out exactly as typed, \markers\
+    // and all, even where auto-translation is on, since editing is how a translation is put right.
 });

@@ -53,7 +53,8 @@ await esbuild.build({
             + `export { t } from "./core/locales";\n`
             + `export { canRemove, keyHeading, providerLabel, providerName } from "./core/slots";\n`
             + `export { literalBackslashes } from "./core/keep";\n`
-            + `export { localizeHeadings } from "./ui/ModalHeadings";\n`,
+            + `export { localizeHeadings } from "./ui/ModalHeadings";\n`
+            + `export { outgoingChannel } from "./web/intercept";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -65,7 +66,7 @@ await esbuild.build({
 });
 
 const { useHost, t, canRemove, keyHeading, providerLabel, providerName,
-    literalBackslashes, localizeHeadings } = await import(join(out, "ui.mjs"));
+    literalBackslashes, localizeHeadings, outgoingChannel } = await import(join(out, "ui.mjs"));
 
 let locale = "en";
 
@@ -143,20 +144,32 @@ for (const lang of LANGUAGES.filter(l => l !== "en" && blocks[l])) {
 // --- what a provider is called ---
 
 locale = "en";
-check("the generic provider reads \"Any OpenAI-compatible\", with no API at the end",
-    providerLabel("openai", true) === "Any OpenAI-compatible", providerLabel("openai", true));
-check("in a backup's list too", providerLabel("openai") === "Any OpenAI-compatible");
-check("its key is headed \"API key — any OpenAI-compatible\"",
-    keyHeading("openai") === "API key — any OpenAI-compatible", keyHeading("openai"));
+check("the provider with an address of its own reads \"Other\"", providerLabel("openai", true) === "Other", providerLabel("openai", true));
+check("in a backup's list too", providerLabel("openai") === "Other");
+check("its key is headed \"API key — Other\"", keyHeading("openai") === "API key — Other", keyHeading("openai"));
 check("another provider's key is headed with its name", keyHeading("groq") === "API key — Groq", keyHeading("groq"));
 check("advice stays on the first provider only",
     providerLabel("groq", true) === "Groq (recommended)" && providerLabel("groq") === "Groq");
-check("in a sentence it is called by what it speaks, not by a label that starts with Any",
-    providerName("openai") === "OpenAI-compatible" && providerName("groq") === "Groq");
+check("what Other takes is said under its address, with the example addresses",
+    /OpenAI-compatible/.test(t("baseUrl.desc")) && t("baseUrl.desc").includes("https://openrouter.ai/api/v1"), t("baseUrl.desc"));
+
+// "Other did not accept this key" names nobody, and two slots can each have an Other.
+const NAMED_BY_HOST = [
+    ["https://openrouter.ai/api/v1", "openrouter.ai"],
+    [" https://api.deepseek.com \n", "api.deepseek.com"],
+    ["http://user:secret@LOCALHOST:11434/v1", "localhost"],
+    ["https://[::1]:8080/v1", "[::1]"]
+];
+for (const [address, host] of NAMED_BY_HOST)
+    check(`in a sentence Other is called by its address's host: ${host}`, providerName("openai", address) === host, providerName("openai", address));
+check("and by its label while there is no address to name it by",
+    providerName("openai") === "Other" && providerName("openai", "openrouter.ai/api/v1") === "Other", providerName("openai", "openrouter.ai/api/v1"));
+check("another provider keeps its name whatever address its slot holds",
+    providerName("groq", "https://openrouter.ai/api/v1") === "Groq" && providerName("anthropic") === "Anthropic Claude");
 
 locale = "ru";
-check("in Russian the key heading follows the same pattern",
-    keyHeading("openai") === "Ключ API — любой, совместимый с OpenAI", keyHeading("openai"));
+check("in Russian the key heading follows the same pattern", keyHeading("openai") === "Ключ API — Другой", keyHeading("openai"));
+check("and Other is still called by its host", providerName("openai", "https://openrouter.ai/api/v1") === "openrouter.ai");
 locale = "en";
 
 // --- the minus ---
@@ -196,6 +209,19 @@ check("code is shown as it is, backslashes and all",
     literalBackslashes("`C:\\dir` and ```\na\\b\n``` x") === "`C:\\dir` and ```\na\\b\n``` x");
 check("text between code is still put right",
     literalBackslashes("`a\\b` \\x\\!") === "`a\\b` \\\\x\\\\\\!", literalBackslashes("`a\\b` \\x\\!"));
+
+// --- an edit goes out as typed ---
+//
+// Editing is how a slightly wrong translation is put right by hand, so an
+// edit is never translated, in a chat with auto-translation on as well: the
+// desktop has no hook for it, and the browser lets its request through.
+
+check("an edited message is not translated on the desktop",
+    !/onBeforeMessageEdit\s*:/.test(await readFile(join(plugin, "index.tsx"), "utf8")));
+check("nor in a browser, where it goes to the message's own address",
+    ["PATCH", "PUT"].every(how => outgoingChannel(how, "https://discord.com/api/v9/channels/123/messages/456") === undefined));
+check("a new message there is still caught",
+    outgoingChannel("POST", "https://discord.com/api/v9/channels/123/messages") === "123");
 
 // --- the headings, in a page shaped like Vencord's plugin window ---
 
@@ -524,6 +550,23 @@ check("a copy installed before there were two channels is a release", desktopOld
 
 const desktopSource = await desktopBuild(null);
 check("a copy built from source has no build to name: dev", desktopSource === `${VERSION} (dev)`, desktopSource);
+
+// --- which build a copy is, for the line under the Logs button ---
+
+const DISK = "fedcba9-7654321";
+await writeFile(join(desktop, "build.json"), JSON.stringify({ build: DISK, channel: "release" }));
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "", whichBuild: () => native.whichBuild({}) } } };
+const fromMain = await testing.Bridge.whichBuild();
+check("a desktop renderer asks its main process, which reads the disk",
+    fromMain.build === DISK && fromMain.channel === "release", JSON.stringify(fromMain));
+
+// An update installed without a restart runs the new renderer against the main
+// process Discord started with, which before 0.2.4a had no whichBuild.
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "" } } };
+const fromStamp = await testing.Bridge.whichBuild();
+check("a main process from before the rename: the build stamped into the renderer answers",
+    testing.onDesktop() && fromStamp.build === OWN && fromStamp.channel === "testing", JSON.stringify(fromStamp));
+delete globalThis.VencordNative;
 
 globalThis.fetch = realFetch;
 

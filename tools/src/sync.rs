@@ -1,5 +1,5 @@
 /*
- * The plugin into a Vencord checkout, at src/userplugins/aiTranslate, which is
+ * The plugin into a Vencord checkout, at src/userplugins/ai-translate, which is
  * where Vencord looks for it and the only way to build it.
  *
  * What is left out is what the plugin does not need in order to be built:
@@ -9,6 +9,10 @@
  *
  * A file whose bytes have not changed is left as it is, so Vencord rebuilds
  * only what actually moved.
+ *
+ * A checkout synced before 0.2.4a has the plugin in a folder of the old name.
+ * Vencord would build both under one name, so that folder is moved to the new
+ * one first, and its unchanged files are still left as they are.
  */
 
 use crate::cli::Cli;
@@ -21,7 +25,8 @@ Copy the plugin into a Vencord checkout.
   tools sync [--root <path>] <vencord> [--prune] [--dry-run]
 
 <vencord> is a Vencord checkout. The plugin lands in its
-src/userplugins/aiTranslate, which is where Vencord looks for it.
+src/userplugins/ai-translate, which is where Vencord looks for it. A copy
+left under the folder's old name is moved there first.
 
   --root <path>   The plugin repository. The current folder by default
   --prune         Also delete files there that are not in the plugin any more
@@ -33,7 +38,10 @@ left alone, so Vencord rebuilds only what moved.
 ";
 
 /// Where Vencord keeps plugins that are not its own.
-const INSIDE: &str = "src/userplugins/aiTranslate";
+const INSIDE: &str = "src/userplugins/ai-translate";
+
+/// The folder's name before 0.2.4a, read only to move a copy out of it.
+const BEFORE: &str = "src/userplugins/aiTranslate";
 
 /// Not part of what gets built. Matched against the path from the plugin root.
 const LEAVE_OUT: [&str; 7] = [
@@ -80,6 +88,12 @@ pub fn run(cli: &mut Cli) -> Result<(), String> {
     }
 
     let into = vencord.join(INSIDE.replace('/', std::path::MAIN_SEPARATOR_STR));
+    let before = vencord.join(BEFORE.replace('/', std::path::MAIN_SEPARATOR_STR));
+
+    let moved = move_old_copy(&before, &into, dry_run)?;
+
+    // A dry run has moved nothing, so it compares with the files where they are.
+    let there = if moved.is_some() && dry_run { &before } else { &into };
 
     let mut tally = Tally::default();
     let mut wanted: Vec<PathBuf> = Vec::new();
@@ -92,7 +106,7 @@ pub fn run(cli: &mut Cli) -> Result<(), String> {
         let bytes =
             fs::read(&from).map_err(|e| format!("could not read {}: {e}", from.display()))?;
 
-        if fs::read(&to).is_ok_and(|there| there == bytes) {
+        if fs::read(there.join(file)).is_ok_and(|old| old == bytes) {
             tally.same += 1;
             continue;
         }
@@ -112,11 +126,11 @@ pub fn run(cli: &mut Cli) -> Result<(), String> {
 
     // Anything over there that the plugin no longer has. Left in place unless
     // --prune says otherwise: that folder is the person's, not ours.
-    if into.is_dir() {
-        let mut there: Vec<PathBuf> = Vec::new();
-        walk(&into, &into, &mut there)?;
-        there.sort();
-        for file in there {
+    if there.is_dir() {
+        let mut found: Vec<PathBuf> = Vec::new();
+        walk(there, there, &mut found)?;
+        found.sort();
+        for file in found {
             if !wanted.contains(&file) {
                 tally.stale.push(as_text(&file));
                 if prune && !dry_run {
@@ -126,8 +140,37 @@ pub fn run(cli: &mut Cli) -> Result<(), String> {
         }
     }
 
+    if let Some(line) = moved {
+        println!("{line}");
+    }
     println!("{}", said(&tally, &into, prune, dry_run));
     Ok(())
+}
+
+/// Moves a copy synced under the folder's old name to the new one, and says so.
+/// Both at once would be the plugin twice, which is the person's to sort out.
+fn move_old_copy(before: &Path, into: &Path, dry_run: bool) -> Result<Option<String>, String> {
+    if !before.is_dir() {
+        return Ok(None);
+    }
+
+    if into.exists() {
+        return Err(format!(
+            "both {} and {} are there, and Vencord would build the plugin twice. \
+             Delete the first, which is the folder's old name.",
+            before.display(),
+            into.display()
+        ));
+    }
+
+    if dry_run {
+        return Ok(Some(format!("Would move {} to {}.", before.display(), into.display())));
+    }
+
+    fs::rename(before, into).map_err(|e| {
+        format!("could not move {} to {}: {e}", before.display(), into.display())
+    })?;
+    Ok(Some(format!("Moved {} to {}.", before.display(), into.display())))
 }
 
 fn said(tally: &Tally, into: &Path, prune: bool, dry_run: bool) -> String {
@@ -233,6 +276,71 @@ mod tests {
         assert!(!out("build/github.sh"));
         assert!(!out("install/install.ps1"));
         assert!(!out("LICENSE"));
+    }
+
+    /// A Vencord checkout of its own in the temp folder, gone when dropped.
+    struct Checkout(PathBuf);
+
+    impl Checkout {
+        fn new(name: &str) -> Self {
+            let path = std::env::temp_dir().join(format!("tools-sync-{}-{name}", std::process::id()));
+            let _ = fs::remove_dir_all(&path);
+            fs::create_dir_all(path.join("src/userplugins")).unwrap();
+            Checkout(path)
+        }
+
+        fn plugin(&self, folder: &str) -> PathBuf {
+            let path = self.0.join(folder);
+            fs::create_dir_all(&path).unwrap();
+            fs::write(path.join("index.tsx"), "definePlugin").unwrap();
+            path
+        }
+    }
+
+    impl Drop for Checkout {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn a_copy_under_the_old_name_is_moved() {
+        let vc = Checkout::new("moved");
+        let before = vc.plugin(BEFORE);
+        let into = vc.0.join(INSIDE);
+
+        let said = move_old_copy(&before, &into, false).unwrap().unwrap();
+        assert!(said.starts_with("Moved "));
+        assert!(!before.exists());
+        assert_eq!(fs::read_to_string(into.join("index.tsx")).unwrap(), "definePlugin");
+    }
+
+    #[test]
+    fn a_dry_run_moves_nothing() {
+        let vc = Checkout::new("dry");
+        let before = vc.plugin(BEFORE);
+        let into = vc.0.join(INSIDE);
+
+        let said = move_old_copy(&before, &into, true).unwrap().unwrap();
+        assert!(said.starts_with("Would move "));
+        assert!(before.join("index.tsx").is_file());
+        assert!(!into.exists());
+    }
+
+    #[test]
+    fn both_folders_at_once_are_refused() {
+        let vc = Checkout::new("both");
+        let before = vc.plugin(BEFORE);
+        let into = vc.plugin(INSIDE);
+
+        assert!(move_old_copy(&before, &into, false).is_err());
+        assert!(before.is_dir() && into.is_dir());
+    }
+
+    #[test]
+    fn no_old_copy_is_nothing_to_say() {
+        let vc = Checkout::new("none");
+        assert_eq!(move_old_copy(&vc.0.join(BEFORE), &vc.0.join(INSIDE), false).unwrap(), None);
     }
 
     #[test]

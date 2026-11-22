@@ -48,8 +48,9 @@ mà bạn thật sự cần. Nhấp chuột trái vào nút dịch trên thanh n
 
 Bất kỳ tin nhắn nào bạn nhận đều có thể dịch từ menu chuột phải. Khi ngay cả
 bản dịch cũng không giúp bạn hiểu, vì viết tắt, vì một từ chỉ dùng ở một nước
-hay một câu đùa riêng của hai người, **AI Explain** trong cùng menu đó sẽ gọi
-tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì.
+hay một câu đùa riêng của hai người, mục **Giải thích** trong cùng menu đó sẽ
+gọi tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì. Mục
+đó tắt cho đến khi bạn bật trong phần cài đặt của plugin.
 
 Vài tin nhắn gần nhất của cuộc trò chuyện đi kèm mỗi yêu cầu, nên một câu "ừ"
 trống trơn hay "không dán được" đến nơi đúng như ý. Bạn cũng có thể ghim từ vựng
@@ -68,8 +69,9 @@ biết thực sự cái gì đã đi ra; cái đó tắt cho đến khi bạn b�
 
 ## Nhà cung cấp
 
-Khóa API là của bạn mang theo, và vẫn là của bạn. Plugin không có máy chủ riêng
-và không bao giờ nhìn thấy khóa của ai.
+Khóa API là của bạn mang theo, và vẫn là của bạn. Các bản dịch đi thẳng từ
+Discord tới nhà cung cấp bạn chọn, không qua máy chủ nào của plugin, và không
+dùng đến khóa của ai khác.
 
 | Nhà cung cấp | Gói miễn phí |
 |---|---|
@@ -77,14 +79,18 @@ và không bao giờ nhìn thấy khóa của ai.
 | Google Gemini | có |
 | Z.ai GLM | có, và dùng được ở nơi hai cái kia bị chặn |
 | Anthropic Claude | không |
-| Bất kỳ nhà cung cấp nào tương thích OpenAI | tùy nhà cung cấp |
+| Khác (bất kỳ API nào tương thích OpenAI) | tùy nhà cung cấp |
 
-Có thể chỉ định nhà cung cấp thứ hai làm dự phòng. Khi cái thứ nhất quá tải, hết
-hạn mức hoặc từ chối yêu cầu, bản dịch lặng lẽ đi qua cái còn lại mà không làm
-phiền bạn.
+Có thể đặt tới bốn nhà cung cấp dự phòng đứng sau nhà cung cấp đầu tiên. Khi cái
+thứ nhất quá tải, hết hạn mức hoặc từ chối yêu cầu, bản dịch tự đi qua cái kế
+tiếp. Nếu cái thứ nhất từ chối, một thông báo ngắn nói lý do, chỉ một lần chứ
+không phải mỗi tin nhắn.
 
-Các yêu cầu được gửi từ tiến trình nền của Discord, nên khóa của bạn không bao
-giờ vào phần Discord mà một trang web có thể chạm tới.
+Các yêu cầu được gửi từ tiến trình nền của Discord, qua một kết nối riêng của
+plugin, nên không bị chặn như yêu cầu từ một trang web và đi cùng đường với lưu
+lượng của chính Discord, kể cả proxy. Khóa của bạn được lưu cùng các cài đặt
+khác của Vencord, và mã chạy trong cửa sổ Discord, kể cả các plugin khác, có thể
+đọc được nó.
 
 ## Cài đặt
 
@@ -114,7 +120,7 @@ khay hệ thống, rồi mở lại.
 
 Trên các hệ thống Linux atomic như Bazzite, Silverblue, Kinoite hay SteamOS,
 vẫn là câu lệnh đó: nó không cài gì vào hệ thống, mọi thứ nằm trong
-`~/.aiTranslate`. Bản Discord nên là bản Flatpak, khi đó trình cài đặt tự cấp
+`~/.ai-translate`. Bản Discord nên là bản Flatpak, khi đó trình cài đặt tự cấp
 cho Flatpak ấy quyền truy cập những tệp này. Một bản Discord được nhúng vào ảnh
 hệ thống bằng `rpm-ostree` thường không nối được, vì ở đó các thư mục hệ thống
 chỉ đọc; hãy cài bản Flatpak.
@@ -123,7 +129,7 @@ AI Translate đã bật sẵn. Mở **Cài đặt → Vencord → Plugins → AI
 một nhà cung cấp và dán khóa của bạn.
 
 Mọi thứ câu lệnh tải về đều nằm trong một thư mục riêng:
-`%LOCALAPPDATA%\aiTranslate` trên Windows và `~/.aiTranslate` trên macOS và
+`%LOCALAPPDATA%\ai-translate` trên Windows và `~/.ai-translate` trên macOS và
 Linux. Nối Discord nghĩa là đổi tệp khởi động của nó thành một tệp nhỏ, nạp
 Vencord trước rồi nạp Discord y như cũ; tài khoản, cài đặt và tin nhắn Discord
 của bạn không bị đụng đến.
@@ -142,9 +148,11 @@ tải lại trang. Nếu đã cài tiện ích Vencord Web, hãy tắt nó đi: 
 có Vencord bên trong, hai cái trong một thẻ sẽ xung đột.
 
 Rồi mở **Cài đặt → Vencord → Plugins → AI Translate**, chọn một nhà cung cấp và
-dán khóa của bạn, giống như trong ứng dụng. Khóa do trình quản lý userscript
-giữ, không nằm ở trang web, và các yêu cầu cũng đi ra qua nó. Muốn bỏ thì xóa
-tập lệnh trong trình quản lý.
+dán khóa của bạn, giống như trong ứng dụng. Khóa được lưu cùng các cài đặt khác
+của Vencord trong bộ nhớ của discord.com trên trình duyệt này, nơi mã chạy trên
+trang đó có thể đọc được nó, còn các yêu cầu đi ra qua trình quản lý userscript.
+Muốn bỏ thì xóa tập lệnh trong trình quản lý; các cài đặt nó đã lưu, kể cả khóa,
+vẫn nằm trong bộ nhớ của discord.com.
 
 Trình quản lý userscript tự tìm phiên bản mới theo lịch riêng của nó. **Kiểm tra
 cập nhật** ở cuối phần cài đặt của plugin sẽ hỏi ngay, và nếu có bản mới thì mở
@@ -186,7 +194,7 @@ trong các tệp đã tải, nên chúng vẫn còn đó nếu sau này bạn c�
 Từ thư mục Vencord của bạn, clone kho này vào làm userplugin rồi dựng lại:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

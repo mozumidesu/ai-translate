@@ -1,10 +1,12 @@
 /*
  * AI Translate — provider requests from Electron's main process.
  *
- * No CORS here, and the API key stays out of the renderer. What each provider
- * wants is in providers.ts, which knows nothing about Electron, so the same
- * code also serves the browser version; this file is the desktop's end of it,
- * plus the updating, which only an installed copy on a disk can do.
+ * No CORS here, and requests take Chromium's route, Discord's proxy included.
+ * The API key still comes from the renderer, which holds it as a Vencord
+ * setting, inside each request's payload. What each provider wants is in
+ * providers.ts, which knows nothing about Electron, so the same code also
+ * serves the browser version; this file is the desktop's end of it, plus the
+ * updating, which only an installed copy on a disk can do.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -144,7 +146,7 @@ function installedInfo(): BuildInfo | null {
 const installedBuild = () => installedInfo()?.build ?? null;
 
 /** What this copy is, for the version line in the settings. */
-export async function aiTranslateBuild(_: IpcMainInvokeEvent) {
+export async function whichBuild(_: IpcMainInvokeEvent) {
     const info = installedInfo();
     return { build: info?.build ?? "", channel: info ? info.channel ?? "release" : "" };
 }

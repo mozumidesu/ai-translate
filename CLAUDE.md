@@ -5,7 +5,7 @@ are sent, chat by chat, and incoming messages on request from the right-click
 menu, using an AI provider's API with the user's own key.
 
 This folder is the plugin itself. In a working Vencord checkout it sits at
-`src/userplugins/aiTranslate/`.
+`src/userplugins/ai-translate/`.
 
 Details live in skills under `.claude/skills/`, each the full text this file
 summarises. Load the one a task reaches before starting it:
@@ -43,7 +43,8 @@ effort level is set in `.claude/settings.json`.
 - **The README exists in 16 languages too**: `README.md` plus
   `docs/README.<code>.md`. Same rule.
 - **What a language is written in is its row in `core/languages.ts`**: its
-  alphabet, its closing marks, whether it has capitals. The core reads the
+  alphabet, its closing marks, whether it has capitals, whether a space stands
+  between its sentences. The core reads the
   record and never guesses from a prefix of the English name. Adding a language
   is adding one row, and `test/prompts.mjs` fails on a row that names the wrong
   alphabet or none.
@@ -62,7 +63,7 @@ effort level is set in `.claude/settings.json`.
 | `core/net.ts` | How to make one HTTP request: `fetch`, `GM_xmlhttpRequest` or the host's own (`useNet`, or any fetch made a Net by `netOf`); `failureOf`, a network failure with its cause; and a deadline that works without `AbortSignal.timeout` |
 | `core/providers.ts` | Each provider's address and request shape, rate limits read from responses, every retry rule, the cleaning of a pasted key, and `keyVerdict`: what an answer says about a key |
 | `core/keep.ts` | What must not be translated, `\fragments\`, code, slash emoticons and never-translate words, held as placeholders; also `literalBackslashes` for the echo |
-| `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals. Finding a record by name, and reading a text by them |
+| `core/languages.ts` | One record for each language: its names for the dropdowns, its alphabet, its closing marks, whether it has capitals, whether a space stands between its sentences. Finding a record by name, and reading a text by them |
 | `core/locales.ts` | Interface text in 16 languages |
 | `core/chats.ts` | Which chats have auto-translation on |
 | `core/slots.ts` | Which providers this copy asks, in what order, and what each is called; keys saved and read clean, and `checkKey`, which asks and logs |
@@ -140,7 +141,9 @@ field has been left; a network or a country turned away gets a line of its own,
 not red. `keyVerdict` in `core/providers.ts` is the one rule for both, used by
 every settings page, by the Telegram panel and by the notice a translation shows. Settings from before the list
 are still read when no list exists, which is what `web/` and every test hand
-over.
+over. Other takes any OpenAI-compatible address under the id `openai`, the one
+saved settings already carry, and a sentence calls it by its address's host.
+Anthropic keeps its own API: its OpenAI-compatible layer is meant for testing.
 
 ## Prompt rules
 
@@ -176,11 +179,11 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 353 checks; needs esbuild
+node test/prompts.mjs      # 377 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
-node test/keys.mjs         # 86 checks: a pasted key cleaned, each provider's answers judged, the check logged, a translation's notice for them; needs esbuild
+node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
-node test/interface.mjs    # 178 checks on strings, provider names, the echo, the headings, browser updating, the report's build line; needs esbuild
+node test/interface.mjs    # 190 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line, which build a copy is; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/native.mjs       # 40 checks: native.ts beside a fake Electron, every request through the plugin's own session, failures with their cause and route; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
@@ -202,7 +205,7 @@ no colour or margin, so `styles.css` names both and doubles the class.
 
 ## How a change reaches users
 
-- The version lives in `core/version.ts` and nowhere else, `0.2.3a` today. The
+- The version lives in `core/version.ts` and nowhere else, `0.2.4a` today. The
   third number counts fixes, the second anything new and puts the third back to
   zero, nine is the ceiling for both, and `1.0.0` drops the letter. Raising it
   is part of moving `release`, never of a commit; builds made because Vencord

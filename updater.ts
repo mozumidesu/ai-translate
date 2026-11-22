@@ -58,7 +58,7 @@ async function adoptInstalledChannel() {
     if (store()?.updateChannel) return;
 
     try {
-        const { channel: installed } = await Bridge.aiTranslateBuild();
+        const { channel: installed } = await Bridge.whichBuild();
         if (installed) store().updateChannel = installed;
     } catch {
         // The setting stays empty, which is read as the released channel.

@@ -8,12 +8,20 @@
 # build robot puts it whenever Vencord or the plugin changes. Vencord's own
 # installer then points Discord at it.
 #
-# Everything lives in ~/.aiTranslate. Running this again updates the files, or
+# Everything lives in ~/.ai-translate. Running this again updates the files, or
 # removes them.
 
 set -u
 
-AIT_HOME="${AIT_HOME:-$HOME/.aiTranslate}"
+# A copy installed before 0.2.4a lives in OLD_HOME, and Discord loads it from
+# there until it is patched again. Only the default folder is ever moved: one
+# named in AIT_HOME stays where its owner put it.
+OLD_HOME=""
+if [ -z "${AIT_HOME:-}" ]; then
+    AIT_HOME="$HOME/.ai-translate"
+    # The folder's name before 0.2.4a, read only to move a copy out of it.
+    [ -d "$HOME/.aiTranslate" ] && OLD_HOME="$HOME/.aiTranslate"
+fi
 DIST="$AIT_HOME/dist"
 BUILDS="https://builds.zolatau.com"
 
@@ -147,15 +155,62 @@ vencord_installer() {
     fi
 }
 
+# Whether an app.asar loads AI Translate from inside a folder: Vencord's
+# installer writes one that requires a patcher.js there by its full path.
+loads_from() {
+    [ -f "$1" ] && grep -qF "$2/" "$1" 2> /dev/null
+}
+
+# Each Discord that still loads AI Translate from a folder, of those in the
+# places Vencord's installer looks. Of the app-* folders a Discord updates
+# itself into, only the newest runs.
+still_loading_from() {
+    for asar in /usr/share/[Dd]iscord*/resources/app.asar \
+        /usr/lib64/[Dd]iscord*/resources/app.asar /opt/[Dd]iscord*/resources/app.asar \
+        "$HOME"/.local/share/[Dd]iscord*/resources/app.asar \
+        "$HOME"/.dvm/[Dd]iscord*/resources/app.asar \
+        /var/lib/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
+        "$HOME"/.local/share/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
+        /Applications/Discord*.app/Contents/Resources/app.asar \
+        "$HOME"/Applications/Discord*.app/Contents/Resources/app.asar; do
+        loads_from "$asar" "$1" || continue
+        asar=${asar%/resources/app.asar}
+        say "  ${asar%/Contents/Resources/app.asar}"
+    done
+    for base in "$HOME"/.config/discord* "$HOME"/.var/app/com.discordapp.*/config/discord \
+        "$HOME/Library/Application Support"/discord*; do
+        newest=""
+        for asar in "$base"/app-*/resources/app.asar "$base"/app-*/Discord*.app/Contents/Resources/app.asar; do
+            [ -f "$asar" ] && newest=$asar
+        done
+        loads_from "$newest" "$1" && say "  $base"
+    done
+}
+
+# A folder about to be deleted stays while a Discord still loads AI Translate
+# from it, and the run stops there, so the next one patches again.
+keep_while_loaded() {
+    [ -d "$1" ] || return 0
+    left=$(still_loading_from "$1")
+    [ -n "$left" ] || return 0
+    say ""
+    say "A Discord still loads AI Translate from $1:"
+    say "$left"
+    stop "So $1 is kept. Run this again and patch that Discord too."
+}
+
 install_or_update() {
     first=0
     # "ait-build.json" is what the file was called before it was renamed.
-    [ -f "$DIST/build.json" ] || [ -f "$DIST/ait-build.json" ] || first=1
+    [ -f "$DIST/build.json" ] || [ -f "$DIST/ait-build.json" ] || [ -n "$OLD_HOME" ] || first=1
 
     # The first installer built Vencord in a folder of its own, and Discord
-    # keeps pointing there until it is patched again.
+    # keeps pointing there until it is patched again. So does a copy in the
+    # old folder: the files arrive in the new one, Discord is pointed at them,
+    # and only then does the old folder go, so Discord never points at nothing.
     moving=0
     [ -d "$AIT_HOME/Vencord" ] && moving=1
+    [ -n "$OLD_HOME" ] && moving=1
 
     mkdir -p "$DIST" || stop "Could not create $DIST."
 
@@ -183,8 +238,30 @@ install_or_update() {
     fi
 
     if [ "$patch" = 1 ]; then
+        [ -n "$OLD_HOME" ] && say "AI Translate moves from $OLD_HOME to $AIT_HOME, so Discord is patched again."
         vencord_installer --install || stop "Patching Discord failed."
-        [ "$moving" = 1 ] && rm -rf "$AIT_HOME/Vencord"
+
+        # Another Discord on this computer (PTB, Canary, a Flatpak beside a
+        # native one) may have been patched to the old folder, and fails to
+        # start once that is deleted. The old folder goes only after every one
+        # of them is patched; a failed or cancelled patch stops here with it
+        # kept, and the next run moves again.
+        if [ -n "$OLD_HOME" ]; then
+            while :; do
+                choose "Did another Discord on this computer have AI Translate too?" "No" "Yes"
+                [ "$CHOICE" = 1 ] || break
+                vencord_installer --install || stop "Patching Discord failed."
+            done
+        fi
+
+        # Vencord's installer leaves its own menu on Ctrl+C with the exit
+        # status of a patch that worked, so its word alone is not enough.
+        keep_while_loaded "$AIT_HOME/Vencord"
+        rm -rf "$AIT_HOME/Vencord"
+        if [ -n "$OLD_HOME" ]; then
+            keep_while_loaded "$OLD_HOME"
+            rm -rf "$OLD_HOME" || say "Could not delete $OLD_HOME. Delete it by hand."
+        fi
     fi
 
     say ""
@@ -195,6 +272,11 @@ install_or_update() {
 }
 
 remove() {
+    # A copy never moved out of the old folder is removed where it is.
+    if [ ! -d "$AIT_HOME" ] && [ -n "$OLD_HOME" ]; then
+        AIT_HOME=$OLD_HOME
+        OLD_HOME=""
+    fi
     [ -d "$AIT_HOME" ] || stop "Nothing to remove: $AIT_HOME does not exist."
 
     say "Removing the patch from Discord..."
@@ -202,7 +284,7 @@ remove() {
 
     choose "Also delete the downloaded files in $AIT_HOME?" "No" "Yes"
     if [ "$CHOICE" = 1 ]; then
-        cd "$HOME" && rm -rf "$AIT_HOME" && say "Deleted $AIT_HOME."
+        cd "$HOME" && rm -rf "$AIT_HOME" ${OLD_HOME:+"$OLD_HOME"} && say "Deleted $AIT_HOME."
     fi
 
     say ""

@@ -37,7 +37,7 @@
 
 自动翻译按聊天单独开启，所以只在你真正需要的对话里起作用。左键点击输入栏的翻译按钮会打开面板，右键点击则开关当前聊天。
 
-收到的任何消息都可以从右键菜单翻译。当翻译本身也帮不上忙时，因为缩写、只在某个国家用的词，或者两个人之间的玩笑，同一菜单里的 **AI Explain** 会说出是哪种语言，把缩写展开，并讲清楚对方想说什么。
+收到的任何消息都可以从右键菜单翻译。当翻译本身也帮不上忙时，因为缩写、只在某个国家用的词，或者两个人之间的玩笑，同一菜单里的 **解释** 选项会说出是哪种语言，把缩写展开，并讲清楚对方想说什么。这一项要你自己在插件设置里打开。
 
 对话最近的几条消息会随每次请求一起发出，所以一句干巴巴的「嗯」或者「粘贴不上」也能按原意传达。你也可以固定自己的词汇：永远不翻译的词、固定一种译法的术语、用于你自己的语法性别，以及对对方是否使用敬语。
 
@@ -47,7 +47,7 @@
 
 ## 提供商
 
-API 密钥由你自己提供，并且一直是你的。插件没有自己的服务器，也从不会看到别人的密钥。
+API 密钥由你自己提供，并且一直是你的。翻译从 Discord 直接发往你选的提供商，中间不经过插件的任何服务器，也不会用到别人的密钥。
 
 | 提供商 | 免费额度 |
 |---|---|
@@ -55,11 +55,11 @@ API 密钥由你自己提供，并且一直是你的。插件没有自己的服�
 | Google Gemini | 有 |
 | Z.ai GLM | 有，而且在前两家被挡住的地方也能用 |
 | Anthropic Claude | 无 |
-| 任何兼容 OpenAI 的服务 | 取决于提供商 |
+| 其他（任何兼容 OpenAI 的 API） | 取决于提供商 |
 
-可以指定第二家作为备用。当第一家繁忙、额度用尽或拒绝请求时，翻译会悄悄走另一家，不来打扰你。
+第一家后面最多可以再放四家备用。当第一家繁忙、额度用尽或拒绝请求时，翻译会自动走下一家。如果第一家拒绝了，会弹出一条简短的通知说明原因，只弹一次，不会每条消息都弹。
 
-请求从 Discord 的后台进程发出，所以你的密钥永远不会进入网页能够触及的那部分 Discord。
+请求从 Discord 的后台进程、经插件自己的连接发出，所以不会像网页发出的请求那样被拦下，并且和 Discord 自身的流量走同一条路，包括它的代理。你的密钥和 Vencord 的其他设置保存在一起，在 Discord 窗口里运行的代码，包括其他插件，都能读到它。
 
 ## 安装
 
@@ -79,11 +79,11 @@ sh -c "$(curl -fsSL https://builds.zolatau.com/install.sh)"
 
 用方向键选择 **Install or update** 并按回车。当它询问要接哪个 Discord 时，同样选你在用的那个。在 Windows 上，命令会先自行关闭 Discord 再接入。在 Linux 上它可能要你输入密码，因为 Discord 通常放在只有管理员能写入的位置。之后请彻底退出 Discord，包括托盘图标，再重新启动。
 
-在 Bazzite、Silverblue、Kinoite 或 SteamOS 这类原子化 Linux 上，同一条命令照样可用：它不会往系统里装任何东西，所有文件都落在 `~/.aiTranslate`。Discord 本身请用 Flatpak 版，这样安装程序会自动给那个 Flatpak 授予对这些文件的访问权限。用 `rpm-ostree` 打进系统镜像的 Discord 通常接不上，因为那里的系统目录是只读的；请改装 Flatpak 版。
+在 Bazzite、Silverblue、Kinoite 或 SteamOS 这类原子化 Linux 上，同一条命令照样可用：它不会往系统里装任何东西，所有文件都落在 `~/.ai-translate`。Discord 本身请用 Flatpak 版，这样安装程序会自动给那个 Flatpak 授予对这些文件的访问权限。用 `rpm-ostree` 打进系统镜像的 Discord 通常接不上，因为那里的系统目录是只读的；请改装 Flatpak 版。
 
 AI Translate 已经是开启状态。打开 **设置 → Vencord → Plugins → AI Translate**，选择一个提供商并粘贴你的密钥。
 
-命令下载的全部内容都放在单独的一个文件夹里：Windows 上是 `%LOCALAPPDATA%\aiTranslate`，macOS 和 Linux 上是 `~/.aiTranslate`。接入 Discord 的意思是把它的启动文件换成一个很小的文件，先加载 Vencord，再和从前完全一样地加载 Discord；你的账号、设置和消息都不会被动。
+命令下载的全部内容都放在单独的一个文件夹里：Windows 上是 `%LOCALAPPDATA%\ai-translate`，macOS 和 Linux 上是 `~/.ai-translate`。接入 Discord 的意思是把它的启动文件换成一个很小的文件，先加载 Vencord，再和从前完全一样地加载 Discord；你的账号、设置和消息都不会被动。
 
 ## 在浏览器里
 
@@ -91,7 +91,7 @@ AI Translate 已经是开启状态。打开 **设置 → Vencord → Plugins →
 
 装上 [Tampermonkey](https://www.tampermonkey.net/) 或者别的用户脚本管理器，然后打开 [ai-translate.user.js](https://builds.zolatau.com/ai-translate.user.js)。管理器会询问是否安装，之后便从那里自动保持更新。打开 discord.com 并刷新页面。如果装了 Vencord Web 扩展，请把它关掉：这个脚本里已经有 Vencord，同一个标签页里两个会打架。
 
-然后打开 **设置 → Vencord → Plugins → AI Translate**，像在应用里一样选择一个提供商并粘贴你的密钥。密钥由用户脚本管理器保管，不在页面里，请求也是经它发出的。想撤掉的话，在管理器里删掉这个脚本。
+然后打开 **设置 → Vencord → Plugins → AI Translate**，像在应用里一样选择一个提供商并粘贴你的密钥。密钥和 Vencord 的其他设置一起保存在这个浏览器里 discord.com 的存储中，在该页面上运行的代码能读到它；请求则经用户脚本管理器发出。想撤掉的话，在管理器里删掉这个脚本；不过它保存的设置，包括密钥，仍会留在 discord.com 的存储里。
 
 用户脚本管理器会按它自己的时间表查找新版本。插件设置最下面的 **检查更新** 会立刻去问，如果有新版本，就在管理器里打开脚本：在那里确认，然后刷新页面。
 
@@ -116,7 +116,7 @@ Vencord 只运行被编译进它内部的插件，所以你下载的是内含 AI
 在你的 Vencord 目录里，把这个仓库作为 userplugin 克隆进去并重新构建：
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

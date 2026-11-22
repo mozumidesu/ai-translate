@@ -50,8 +50,9 @@ abre o painel; clique direito liga ou desliga a conversa atual.
 
 Qualquer mensagem recebida pode ser traduzida pelo menu do clique direito.
 Quando nem a tradução esclarece, por causa de abreviações, de uma palavra que só
-se usa em um país ou de uma piada entre duas pessoas, o **AI Explain** nesse
+se usa em um país ou de uma piada entre duas pessoas, a opção **Explicar** nesse
 mesmo menu diz qual é o idioma, abre as abreviações e conta o que se quis dizer.
+Essa opção fica desligada até você ligar nas configurações do plugin.
 
 As últimas mensagens da conversa vão junto com cada pedido, então um simples
 "sim" ou "não cola" chega do jeito que devia. Você também pode fixar o seu
@@ -71,8 +72,9 @@ coisa.
 
 ## Provedores
 
-A chave de API é sua e continua sendo sua. O plugin não tem servidor próprio e
-nunca vê a chave de ninguém.
+A chave de API é sua e continua sendo sua. As traduções vão direto do Discord
+para o provedor que você escolheu, sem nenhum servidor do plugin no meio, e
+nenhuma outra chave entra nisso.
 
 | Provedor | Plano gratuito |
 |---|---|
@@ -80,14 +82,18 @@ nunca vê a chave de ninguém.
 | Google Gemini | sim |
 | Z.ai GLM | sim, e funciona onde os outros dois estão bloqueados |
 | Anthropic Claude | não |
-| Qualquer provedor compatível com OpenAI | depende do provedor |
+| Outro (qualquer API compatível com OpenAI) | depende do provedor |
 
-Dá para indicar um segundo provedor como reserva. Quando o primeiro está
-sobrecarregado, sem cota ou recusa o pedido, a tradução passa pelo outro sem te
-incomodar com isso.
+Até quatro provedores de reserva podem ficar atrás do primeiro. Quando o
+primeiro está sobrecarregado, sem cota ou recusa o pedido, a tradução passa pelo
+seguinte por conta própria. Se o primeiro recusou, uma notificação curta diz por
+quê, uma vez e não a cada mensagem.
 
-Os pedidos saem do processo de segundo plano do Discord, então sua chave nunca
-entra na parte do Discord que uma página da web poderia alcançar.
+Os pedidos saem do processo de segundo plano do Discord, por uma conexão própria
+do plugin, então não são bloqueados como seriam os de uma página da web e seguem
+o mesmo caminho do tráfego do próprio Discord, inclusive o proxy. Sua chave fica
+guardada com as outras configurações do Vencord, e o código que roda na janela
+do Discord, outros plugins inclusive, pode lê-la.
 
 ## Instalação
 
@@ -117,7 +123,7 @@ Discord por completo, inclusive pelo ícone da bandeja, e abra de novo.
 
 Em sistemas Linux atômicos como Bazzite, Silverblue, Kinoite ou SteamOS, o mesmo
 comando funciona: ele não instala nada no sistema, tudo vai parar em
-`~/.aiTranslate`. O próprio Discord tem que ser o do Flatpak, e aí o instalador
+`~/.ai-translate`. O próprio Discord tem que ser o do Flatpak, e aí o instalador
 libera sozinho o acesso desse Flatpak a esses arquivos. Um Discord embutido na
 imagem do sistema com `rpm-ostree` normalmente não dá para conectar, porque lá
 as pastas do sistema são só de leitura; instale o Flatpak no lugar.
@@ -126,7 +132,7 @@ O AI Translate já vem ligado. Abra **Configurações → Vencord → Plugins �
 AI Translate**, escolha um provedor e cole sua chave.
 
 Tudo o que o comando baixa fica numa pasta só dele:
-`%LOCALAPPDATA%\aiTranslate` no Windows e `~/.aiTranslate` no macOS e Linux.
+`%LOCALAPPDATA%\ai-translate` no Windows e `~/.ai-translate` no macOS e Linux.
 Conectar o Discord quer dizer trocar o arquivo de inicialização dele por um
 pequeno que carrega primeiro o Vencord e depois o Discord exatamente como antes;
 sua conta, suas configurações e suas mensagens não são tocadas.
@@ -146,21 +152,24 @@ desligue-a: este script já tem o Vencord dentro, e dois na mesma aba não se d�
 bem.
 
 Depois abra **Configurações → Vencord → Plugins → AI Translate**, escolha um
-provedor e cole sua chave, igual ao aplicativo. A chave fica com o gerenciador
-de userscripts, não com a página, e os pedidos saem por ele também. Para
-remover, apague o script no seu gerenciador.
+provedor e cole sua chave, igual ao aplicativo. A chave fica guardada com as
+outras configurações do Vencord no armazenamento do discord.com neste navegador,
+onde o código que roda nessa página pode lê-la, e os pedidos saem pelo
+gerenciador de userscripts. Para remover, apague o script no seu gerenciador; as
+configurações que ele salvou, inclusive a chave, continuam no armazenamento do
+discord.com.
 
-Seu gerenciador de userscripts procura uma versão nova no ritmo dele.
-**Verificar atualizações**, lá no fim das configurações do plugin, pergunta na
-hora e, se houver algo novo, abre o script no seu gerenciador: confirme lá e
-recarregue a página.
+Seu gerenciador de userscripts procura uma versão nova no ritmo dele. **Procurar
+atualizações**, lá no fim das configurações do plugin, pergunta na hora e, se
+houver algo novo, abre o script no seu gerenciador: confirme lá e recarregue a
+página.
 
 ## Atualizações
 
 Você não precisa fazer nada. O AI Translate procura uma versão nova sozinho a
 cada 2 dias, baixa em segundo plano e mostra uma notificação; clique nela e o
 Discord reinicia já na versão nova. Se você ignorar, a atualização simplesmente
-é aplicada na próxima vez que o Discord abrir. **Verificar atualizações**, lá no
+é aplicada na próxima vez que o Discord abrir. **Procurar atualizações**, lá no
 fim das configurações do plugin, faz o mesmo na hora.
 
 Cada versão nova traz também o Vencord mais recente, então as correções do
@@ -194,7 +203,7 @@ Da sua pasta do Vencord, clone este repositório dentro como userplugin e compil
 de novo:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

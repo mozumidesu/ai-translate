@@ -7,6 +7,76 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## 0.2.4a
+
+Released on 22 November 2026.
+
+### Changed
+
+- **An edited message goes out exactly as you typed it.** An edit used to be
+  translated like a new message, so putting right one word of a translation
+  sent the whole of it to the model again, and it could come back reworded.
+  Now an edit is never translated, in a chat with auto-translation on as well,
+  on the desktop and in a browser alike, and nothing in it is touched, not
+  even the backslashes around a `\carpe diem\`. New messages are translated
+  as before.
+- **The install command's folder is called `ai-translate` now:**
+  `~/.ai-translate` on macOS and Linux, `%LOCALAPPDATA%\ai-translate` on
+  Windows. Running the command again moves a copy out of the folder of the old
+  name: the files arrive in the new folder, Discord is patched again to load
+  them from there, and the command asks whether another Discord on the same
+  computer (PTB, Canary, a Flatpak beside a native one) had AI Translate too.
+  Answer Yes and it patches that one as well, and asks again until the answer
+  is No. The old folder is deleted only once every patch has worked, so no
+  Discord is left pointing at a folder that is gone. On macOS and Linux the
+  command also looks at every Discord where Vencord's installer finds them,
+  and while one still loads from the old folder it keeps the folder, says
+  which Discord that is and stops. If a patch fails or is cancelled, the old
+  folder stays too, and the next run moves again. Your settings and keys are
+  kept by Vencord in a folder of its own and stay as they are. Until you run
+  the command, a copy in the old folder goes on updating itself there. If you
+  build the plugin yourself, its folder in Vencord is
+  `src/userplugins/ai-translate`, and `tools sync` moves a copy it made under
+  the old name.
+- **"Any OpenAI-compatible" is called Other.** It takes the address of any
+  OpenAI-compatible API, as before, and the line under that address now says
+  so, with two examples: `https://openrouter.ai/api/v1` and
+  `https://api.openai.com/v1`. A message about it names the address it went to,
+  "openrouter.ai did not accept this key", rather than "OpenAI-compatible".
+  Nothing saved has to change: a provider set up before keeps its key, model
+  and address. Anthropic Claude stays in the list with its own API.
+
+### Fixed
+
+- **Claude from 4.7 on translates, and so does any model like it.** Those
+  models take no temperature but their own and refuse any other with an error,
+  as Anthropic's documentation says, and the plugin always asked for 0.2, so
+  with such a model no message was translated. A model that refuses it is now
+  asked again without one, and without one from then on.
+- **A message you write on one line goes out on one line.** Three sentences
+  typed on one line could arrive as three lines, one a sentence, however the
+  prompt asked: the plugin put line breaks right only in a message that had
+  some of its own. The lines are now joined back at once, with no second
+  request: with a space, or in Chinese and Japanese straight on after the
+  sentence's own mark. A message read in your language is put back the same
+  way. A message of several lines that comes back broken in more places is
+  asked for once more, as one that came back run together always was.
+- **The line under Backup provider describes the list as it is.** It still
+  spoke of a single backup retried quietly. It now says that up to four can
+  stand behind the main provider, each with its own key and model, and that a
+  translation goes through the next one by itself.
+- **The README says where your key really is.** It said that on the desktop
+  the key never enters the part of Discord a web page could reach, and that in
+  a browser the userscript manager keeps it. Neither was so: the key is saved
+  with the rest of Vencord's settings, where code running in Discord's window,
+  other plugins included, can read it, and in a browser that is discord.com's
+  storage, which deleting the script leaves behind. In all sixteen languages
+  the README also says now that AI Explain is off until you switch it on, that
+  up to four backup providers can stand behind the first, that a translation
+  goes straight from Discord to your provider with no server of the plugin's
+  in between, and it names the menu item and the Check for updates button the
+  way the plugin shows them.
+
 ## 0.2.3a
 
 ### Fixed

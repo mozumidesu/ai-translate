@@ -49,8 +49,9 @@ klik kanan menyalakan atau mematikan obrolan yang sedang dibuka.
 
 Pesan apa pun yang Anda terima bisa diterjemahkan lewat menu klik kanan. Kalau
 terjemahannya pun tidak menolong, karena singkatan, kata yang hanya dipakai di
-satu negara, atau lelucon antara dua orang, **AI Explain** di menu yang sama
-menyebut bahasanya, membuka singkatannya, dan menjelaskan maksudnya.
+satu negara, atau lelucon antara dua orang, opsi **Jelaskan** di menu yang sama
+menyebut bahasanya, membuka singkatannya, dan menjelaskan maksudnya. Opsi itu
+mati sampai Anda menyalakannya di pengaturan plugin.
 
 Beberapa pesan terakhir percakapan ikut dikirim bersama setiap permintaan, jadi
 "ya" yang singkat atau "tidak mau ke-paste" sampai seperti yang dimaksud. Anda
@@ -70,8 +71,9 @@ Discord selama Anda tidak menentukan lain.
 
 ## Penyedia
 
-Kunci API Anda bawa sendiri, dan tetap milik Anda. Plugin ini tidak punya server
-sendiri dan tidak pernah melihat kunci milik orang lain.
+Kunci API Anda bawa sendiri, dan tetap milik Anda. Terjemahan dikirim dari
+Discord langsung ke penyedia yang Anda pilih, tanpa server plugin di tengahnya,
+dan tidak ada kunci milik orang lain yang terlibat.
 
 | Penyedia | Paket gratis |
 |---|---|
@@ -79,14 +81,18 @@ sendiri dan tidak pernah melihat kunci milik orang lain.
 | Google Gemini | ada |
 | Z.ai GLM | ada, dan bisa dipakai di tempat dua yang lain diblokir |
 | Anthropic Claude | tidak |
-| Penyedia apa pun yang kompatibel dengan OpenAI | tergantung penyedianya |
+| Lainnya (API apa pun yang kompatibel dengan OpenAI) | tergantung penyedianya |
 
-Penyedia kedua bisa ditunjuk sebagai cadangan. Kalau yang pertama sedang penuh,
-kuotanya habis, atau menolak permintaan, terjemahan lewat yang satunya tanpa
-mengganggu Anda.
+Hingga empat penyedia cadangan bisa berdiri di belakang yang pertama. Kalau yang
+pertama sedang penuh, kuotanya habis, atau menolak permintaan, terjemahan lewat
+yang berikutnya dengan sendirinya. Kalau yang pertama menolak, sebuah
+pemberitahuan singkat menyebut alasannya, sekali saja dan tidak di setiap pesan.
 
-Permintaan dikirim dari proses latar Discord, jadi kunci Anda tidak pernah masuk
-ke bagian Discord yang bisa dijangkau halaman web.
+Permintaan dikirim dari proses latar Discord, lewat koneksi milik plugin
+sendiri, jadi tidak diblokir seperti permintaan dari halaman web dan menempuh
+jalur yang sama dengan lalu lintas Discord sendiri, termasuk proxy-nya. Kunci
+Anda disimpan bersama pengaturan Vencord lainnya, dan kode yang berjalan di
+jendela Discord, termasuk plugin lain, bisa membacanya.
 
 ## Pemasangan
 
@@ -117,7 +123,7 @@ termasuk dari ikon di baki sistem, lalu buka lagi.
 
 Di sistem Linux atomik seperti Bazzite, Silverblue, Kinoite, atau SteamOS,
 perintah yang sama tetap bekerja: tidak ada yang dipasang ke sistem, semuanya
-masuk ke `~/.aiTranslate`. Discord-nya sendiri sebaiknya versi Flatpak, dan
+masuk ke `~/.ai-translate`. Discord-nya sendiri sebaiknya versi Flatpak, dan
 pemasangnya akan memberi Flatpak itu akses ke berkas-berkas tersebut dengan
 sendirinya. Discord yang ditanam ke dalam citra sistem lewat `rpm-ostree`
 biasanya tidak bisa disambung, karena folder sistem di sana hanya bisa dibaca;
@@ -127,10 +133,10 @@ AI Translate sudah menyala. Buka **Pengaturan → Vencord → Plugins →
 AI Translate**, pilih penyedia, lalu tempel kunci Anda.
 
 Semua yang diunduh perintah itu berada di satu folder tersendiri:
-`%LOCALAPPDATA%\aiTranslate` di Windows dan `~/.aiTranslate` di macOS dan Linux.
-Menyambungkan Discord berarti menukar berkas awalannya dengan berkas kecil yang
-memuat Vencord dulu lalu Discord persis seperti sebelumnya; akun, pengaturan,
-dan pesan Discord Anda tidak disentuh.
+`%LOCALAPPDATA%\ai-translate` di Windows dan `~/.ai-translate` di macOS dan
+Linux. Menyambungkan Discord berarti menukar berkas awalannya dengan berkas
+kecil yang memuat Vencord dulu lalu Discord persis seperti sebelumnya; akun,
+pengaturan, dan pesan Discord Anda tidak disentuh.
 
 ## Di peramban
 
@@ -147,9 +153,12 @@ matikan: skrip ini sudah berisi Vencord, dan dua-duanya dalam satu tab tidak
 akur.
 
 Lalu buka **Pengaturan → Vencord → Plugins → AI Translate**, pilih penyedia, dan
-tempel kunci Anda, sama seperti di aplikasi. Kunci dipegang oleh pengelola
-userscript, bukan oleh halamannya, dan permintaan juga keluar lewat pengelola.
-Untuk melepasnya, hapus skripnya di pengelola Anda.
+tempel kunci Anda, sama seperti di aplikasi. Kunci disimpan bersama pengaturan
+Vencord lainnya di penyimpanan discord.com di browser ini, tempat kode yang
+berjalan di halaman itu bisa membacanya, dan permintaan keluar lewat pengelola
+userscript. Untuk melepas plugin ini, hapus skripnya di pengelola Anda;
+pengaturan yang disimpannya, termasuk kunci Anda, tetap ada di penyimpanan
+discord.com.
 
 Pengelola userscript Anda mencari versi baru sesuai jadwalnya sendiri. **Periksa
 pembaruan** di bagian bawah pengaturan plugin menanyakannya seketika dan, kalau
@@ -198,7 +207,7 @@ Dari folder Vencord Anda, klon repositori ini ke dalamnya sebagai userplugin
 lalu build ulang:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

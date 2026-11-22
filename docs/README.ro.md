@@ -51,8 +51,9 @@ oprește conversația curentă.
 
 Orice mesaj primit poate fi tradus din meniul de clic dreapta. Când nici
 traducerea nu te lămurește, din cauza prescurtărilor, a unui cuvânt folosit
-doar într-o țară sau a unei glume între doi oameni, **AI Explain** din același
-meniu spune ce limbă e, desface prescurtările și zice ce s-a vrut.
+doar într-o țară sau a unei glume între doi oameni, opțiunea **Explică** din
+același meniu spune ce limbă e, desface prescurtările și zice ce s-a vrut spus.
+Opțiunea e oprită până o pornești tu din setările pluginului.
 
 Ultimele mesaje ale conversației pleacă odată cu fiecare cerere, așa că un
 simplu „da” sau „nu se lipește” ajunge așa cum trebuia. Îți poți fixa și
@@ -71,8 +72,9 @@ vorbește 16 limbi și o urmează pe cea a Discordului cât timp nu îi spui alt
 
 ## Furnizori
 
-Cheia de API o aduci tu și rămâne a ta. Pluginul nu are server propriu și nu
-vede niciodată cheia nimănui.
+Cheia de API o aduci tu și rămâne a ta. Traducerile merg direct din Discord la
+furnizorul ales de tine, fără vreun server al pluginului la mijloc, și nu intră
+în joc cheia nimănui altcuiva.
 
 | Furnizor | Plan gratuit |
 |---|---|
@@ -80,14 +82,18 @@ vede niciodată cheia nimănui.
 | Google Gemini | da |
 | Z.ai GLM | da, și merge acolo unde celelalte două sunt blocate |
 | Anthropic Claude | nu |
-| Oricare compatibil cu OpenAI | depinde de furnizor |
+| Altul (orice API compatibil cu OpenAI) | depinde de furnizor |
 
-Poți pune un al doilea furnizor ca rezervă. Când primul e aglomerat, a rămas
-fără cotă sau refuză cererea, traducerea trece prin celălalt fără să te
-deranjeze cu asta.
+Până la patru furnizori de rezervă pot sta în spatele primului. Când primul e
+aglomerat, a rămas fără cotă sau refuză cererea, traducerea trece de la sine
+prin următorul. Dacă primul a refuzat, o notificare scurtă spune de ce, o
+singură dată și nu la fiecare mesaj.
 
-Cererile pleacă din procesul de fundal al Discordului, așa că cheia ta nu ajunge
-niciodată în partea de Discord la care ar putea ajunge o pagină web.
+Cererile pleacă din procesul de fundal al Discordului, printr-o conexiune
+proprie a pluginului, așa că nu sunt blocate cum ar fi cele ale unei pagini web
+și urmează același drum ca traficul Discordului însuși, cu tot cu proxy. Cheia
+ta e păstrată împreună cu celelalte setări Vencord, iar codul care rulează în
+fereastra Discordului, inclusiv alte pluginuri, o poate citi.
 
 ## Instalare
 
@@ -118,7 +124,7 @@ pornește-l din nou.
 
 Pe sistemele Linux atomice, cum sunt Bazzite, Silverblue, Kinoite sau SteamOS,
 merge aceeași comandă: nu instalează nimic în sistem, totul ajunge în
-`~/.aiTranslate`. Discordul trebuie să fie cel din Flatpak, iar atunci
+`~/.ai-translate`. Discordul trebuie să fie cel din Flatpak, iar atunci
 instalatorul îi dă singur acelui Flatpak acces la fișierele acelea. Un Discord
 băgat în imaginea sistemului cu `rpm-ostree` de obicei nu poate fi legat, pentru
 că dosarele de sistem sunt acolo doar pentru citire; instalează în loc versiunea
@@ -128,8 +134,8 @@ AI Translate e deja pornit. Deschide **Setări → Vencord → Plugins →
 AI Translate**, alege un furnizor și lipește-ți cheia.
 
 Tot ce descarcă comanda stă într-un dosar al lui:
-`%LOCALAPPDATA%\aiTranslate` pe Windows și `~/.aiTranslate` pe macOS și Linux. A
-lega Discordul înseamnă a-i schimba fișierul de pornire cu unul mic, care
+`%LOCALAPPDATA%\ai-translate` pe Windows și `~/.ai-translate` pe macOS și Linux.
+A lega Discordul înseamnă a-i schimba fișierul de pornire cu unul mic, care
 încarcă întâi Vencord și apoi Discordul exact ca înainte; contul tău, setările
 și mesajele nu sunt atinse.
 
@@ -147,12 +153,15 @@ Deschide discord.com și reîncarcă pagina. Dacă ai extensia Vencord Web,
 oprește-o: scriptul acesta are Vencord în el, iar două într-o filă nu se împacă.
 
 Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un furnizor
-și lipește-ți cheia, la fel ca în aplicație. Cheia o ține managerul de
-userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
-șterge scriptul din manager.
+și lipește-ți cheia, la fel ca în aplicație. Cheia e păstrată împreună cu
+celelalte setări Vencord în spațiul de stocare al discord.com din acest browser,
+unde codul care rulează în acea pagină o poate citi, iar cererile pleacă prin
+managerul de userscripturi. Ca să îl scoți, șterge scriptul din manager;
+setările salvate de el, cu tot cu cheie, rămân în spațiul de stocare al
+discord.com.
 
-Managerul de userscripturi caută o versiune nouă în ritmul lui. **Verifică
-actualizările**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
+Managerul de userscripturi caută o versiune nouă în ritmul lui. **Caută
+actualizări**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
 nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
 
 ## Actualizări
@@ -160,8 +169,8 @@ nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
 Nu trebuie să faci nimic. AI Translate caută singur o versiune nouă o dată la 2
 zile, o descarcă în fundal și arată o notificare; dă clic pe ea și Discordul
 repornește deja în versiunea nouă. Dacă o ignori, actualizarea se aplică pur și
-simplu data viitoare când pornești Discordul. **Verifică actualizările**, în
-josul setărilor pluginului, face același lucru pe loc.
+simplu data viitoare când pornești Discordul. **Caută actualizări**, în josul
+setărilor pluginului, face același lucru pe loc.
 
 Fiecare versiune nouă aduce și cel mai recent Vencord, așa că și reparațiile lui
 ajung pe același drum. Pe Windows și Linux legătura supraviețuiește și
@@ -193,7 +202,7 @@ Din dosarul tău cu Vencord, clonează acest depozit înăuntru ca userplugin ș
 compilează din nou:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

@@ -53,8 +53,9 @@ salon en cours.
 N'importe quel message reçu peut être traduit depuis le menu du clic droit.
 Quand même la traduction ne vous avance à rien, à cause d'abréviations, d'un mot
 qu'on n'emploie que dans un pays ou d'une blague entre deux personnes,
-**AI Explain** dans ce même menu nomme la langue, développe les abréviations et
-dit ce qui était voulu.
+l'entrée **Expliquer** de ce même menu nomme la langue, développe les
+abréviations et dit ce qui était voulu. Cette entrée est désactivée tant que
+vous ne l'activez pas dans les paramètres du plugin.
 
 Les derniers messages de la conversation partent avec chaque requête, si bien
 qu'un simple « oui » ou « ça ne se colle pas » arrive comme il le devait. Vous
@@ -75,8 +76,9 @@ tant que vous ne dites pas le contraire.
 
 ## Fournisseurs
 
-La clé d'API, c'est vous qui l'apportez, et elle reste la vôtre. Le plugin n'a
-pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
+La clé d'API, c'est vous qui l'apportez, et elle reste la vôtre. Les traductions
+vont directement de Discord au fournisseur que vous avez choisi, sans serveur du
+plugin entre les deux, et aucune autre clé que la vôtre n'entre en jeu.
 
 | Fournisseur | Offre gratuite |
 |---|---|
@@ -84,14 +86,19 @@ pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
 | Google Gemini | oui |
 | Z.ai GLM | oui, et accessible là où les deux autres sont bloqués |
 | Anthropic Claude | non |
-| Tout fournisseur compatible OpenAI | selon le fournisseur |
+| Autre (toute API compatible OpenAI) | selon le fournisseur |
 
-Un deuxième fournisseur peut être désigné comme secours. Quand le premier est
-saturé, à court de quota ou refuse la requête, la traduction passe par l'autre
-sans vous déranger avec ça.
+Jusqu'à quatre fournisseurs de secours peuvent se placer derrière le premier.
+Quand le premier est saturé, à court de quota ou refuse la requête, la
+traduction passe d'elle-même par le suivant. Si le premier a refusé, une courte
+notification en donne la raison, une fois et non à chaque message.
 
-Les requêtes partent du processus d'arrière-plan de Discord : votre clé n'entre
-donc jamais dans la partie de Discord qu'une page web pourrait atteindre.
+Les requêtes partent du processus d'arrière-plan de Discord, par une connexion
+propre au plugin : elles ne sont donc pas bloquées comme le seraient celles
+d'une page web, et elles suivent le même chemin que le trafic de Discord
+lui-même, proxy compris. Votre clé est enregistrée avec les autres paramètres de
+Vencord, et le code qui tourne dans la fenêtre de Discord, autres plugins
+compris, peut la lire.
 
 ## Installation
 
@@ -122,7 +129,7 @@ compris depuis l'icône de la zone de notification, et relancez-le.
 
 Sur les systèmes Linux atomiques comme Bazzite, Silverblue, Kinoite ou SteamOS,
 la même commande fonctionne : elle n'installe rien dans le système, tout
-atterrit dans `~/.aiTranslate`. Discord lui-même doit être celui de Flatpak, et
+atterrit dans `~/.ai-translate`. Discord lui-même doit être celui de Flatpak, et
 l'installateur accorde alors de lui-même à ce Flatpak l'accès à ces fichiers. Un
 Discord intégré à l'image du système avec `rpm-ostree` ne peut généralement pas
 être relié, car les dossiers système y sont en lecture seule ; installez plutôt
@@ -132,7 +139,7 @@ AI Translate est déjà activé. Ouvrez **Paramètres → Vencord → Plugins �
 AI Translate**, choisissez un fournisseur et collez votre clé.
 
 Tout ce que la commande télécharge tient dans un dossier à part :
-`%LOCALAPPDATA%\aiTranslate` sous Windows et `~/.aiTranslate` sous macOS et
+`%LOCALAPPDATA%\ai-translate` sous Windows et `~/.ai-translate` sous macOS et
 Linux. Relier Discord consiste à remplacer son fichier de démarrage par un petit
 fichier qui charge d'abord Vencord puis Discord exactement comme avant ; votre
 compte, vos paramètres et vos messages ne sont pas touchés.
@@ -152,12 +159,15 @@ désactivez-la : ce script contient déjà Vencord, et deux dans un même onglet
 font pas bon ménage.
 
 Ouvrez ensuite **Paramètres → Vencord → Plugins → AI Translate**, choisissez un
-fournisseur et collez votre clé, comme dans l'application. La clé est gardée par
-le gestionnaire de userscripts, pas par la page, et les requêtes passent aussi
-par lui. Pour l'enlever, supprimez le script dans votre gestionnaire.
+fournisseur et collez votre clé, comme dans l'application. La clé est
+enregistrée avec les autres paramètres de Vencord dans le stockage de
+discord.com de ce navigateur, où le code qui tourne sur cette page peut la lire,
+et les requêtes passent par le gestionnaire de userscripts. Pour enlever le
+plugin, supprimez le script dans votre gestionnaire ; les paramètres qu'il a
+enregistrés, votre clé comprise, restent dans le stockage de discord.com.
 
 Votre gestionnaire de userscripts cherche une nouvelle version à son rythme.
-**Rechercher les mises à jour**, en bas des paramètres du plugin, le demande
+**Rechercher des mises à jour**, en bas des paramètres du plugin, le demande
 tout de suite et, s'il y a du nouveau, ouvre le script dans votre gestionnaire :
 confirmez-le là-bas et rechargez la page.
 
@@ -167,7 +177,7 @@ Vous n'avez rien à faire. AI Translate cherche une nouvelle version tout seul
 tous les 2 jours, la télécharge en arrière-plan et affiche une notification ;
 cliquez dessus et Discord redémarre dans la nouvelle version. Si vous l'ignorez,
 la mise à jour s'applique simplement au prochain démarrage de Discord.
-**Rechercher les mises à jour**, en bas des paramètres du plugin, fait la même
+**Rechercher des mises à jour**, en bas des paramètres du plugin, fait la même
 chose tout de suite.
 
 Chaque nouvelle version emporte aussi le dernier Vencord : les corrections de
@@ -203,7 +213,7 @@ Depuis votre dossier Vencord, clonez ce dépôt dedans comme userplugin et
 recompilez :
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 
