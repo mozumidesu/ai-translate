@@ -72,8 +72,9 @@ vorbește 16 limbi și o urmează pe cea a Discordului cât timp nu îi spui alt
 
 ## Furnizori
 
-Cheia de API o aduci tu și rămâne a ta. Pluginul nu are server propriu și nu
-vede niciodată cheia nimănui.
+Cheia de API o aduci tu și rămâne a ta. Traducerile merg direct din Discord la
+furnizorul ales de tine, fără vreun server al pluginului la mijloc, și nu intră
+în joc cheia nimănui altcuiva.
 
 | Furnizor | Plan gratuit |
 |---|---|

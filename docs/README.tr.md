@@ -71,8 +71,9 @@ Discord'un dilini izler.
 
 ## Sağlayıcılar
 
-API anahtarını siz getirirsiniz ve o sizde kalır. Eklentinin kendi sunucusu
-yoktur ve kimsenin anahtarını görmez.
+API anahtarını siz getirirsiniz ve o sizde kalır. Çeviriler Discord'dan doğrudan
+seçtiğiniz sağlayıcıya gider, arada eklentinin bir sunucusu yoktur ve başka
+kimsenin anahtarı işe karışmaz.
 
 | Sağlayıcı | Ücretsiz kullanım |
 |---|---|

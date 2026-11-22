@@ -72,8 +72,9 @@ coisa.
 
 ## Provedores
 
-A chave de API é sua e continua sendo sua. O plugin não tem servidor próprio e
-nunca vê a chave de ninguém.
+A chave de API é sua e continua sendo sua. As traduções vão direto do Discord
+para o provedor que você escolheu, sem nenhum servidor do plugin no meio, e
+nenhuma outra chave entra nisso.
 
 | Provedor | Plano gratuito |
 |---|---|

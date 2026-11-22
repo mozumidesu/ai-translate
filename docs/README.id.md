@@ -71,8 +71,9 @@ Discord selama Anda tidak menentukan lain.
 
 ## Penyedia
 
-Kunci API Anda bawa sendiri, dan tetap milik Anda. Plugin ini tidak punya server
-sendiri dan tidak pernah melihat kunci milik orang lain.
+Kunci API Anda bawa sendiri, dan tetap milik Anda. Terjemahan dikirim dari
+Discord langsung ke penyedia yang Anda pilih, tanpa server plugin di tengahnya,
+dan tidak ada kunci milik orang lain yang terlibat.
 
 | Penyedia | Paket gratis |
 |---|---|

@@ -74,8 +74,9 @@ solange du nichts anderes sagst.
 
 ## Anbieter
 
-Den API-Schlüssel bringst du selbst mit, und er bleibt deiner. Das Plugin hat
-keinen eigenen Server und sieht nie den Schlüssel von jemand anderem.
+Den API-Schlüssel bringst du selbst mit, und er bleibt deiner. Übersetzungen
+gehen von Discord direkt zu dem Anbieter, den du gewählt hast, ohne einen Server
+des Plugins dazwischen, und kein fremder Schlüssel ist im Spiel.
 
 | Anbieter | Kostenloses Kontingent |
 |---|---|

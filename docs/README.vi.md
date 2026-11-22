@@ -69,8 +69,9 @@ biết thực sự cái gì đã đi ra; cái đó tắt cho đến khi bạn b�
 
 ## Nhà cung cấp
 
-Khóa API là của bạn mang theo, và vẫn là của bạn. Plugin không có máy chủ riêng
-và không bao giờ nhìn thấy khóa của ai.
+Khóa API là của bạn mang theo, và vẫn là của bạn. Các bản dịch đi thẳng từ
+Discord tới nhà cung cấp bạn chọn, không qua máy chủ nào của plugin, và không
+dùng đến khóa của ai khác.
 
 | Nhà cung cấp | Gói miễn phí |
 |---|---|

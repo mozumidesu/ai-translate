@@ -72,8 +72,9 @@ it otherwise.
 
 ## Providers
 
-You bring your own API key, and it stays yours. The plugin has no server of
-its own and never sees anyone else's key.
+You bring your own API key, and it stays yours. Translations go straight from
+Discord to the provider you chose, with no server of the plugin's in between,
+and no one else's key is involved.
 
 | Provider | Free tier |
 |---|---|

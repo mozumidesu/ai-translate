@@ -71,8 +71,9 @@ interfaz habla 16 idiomas y sigue el de Discord mientras no le digas otra cosa.
 
 ## Proveedores
 
-La clave de API la pones tú, y sigue siendo tuya. El plugin no tiene servidor
-propio y nunca ve la clave de nadie.
+La clave de API la pones tú, y sigue siendo tuya. Las traducciones van
+directamente de Discord al proveedor que elegiste, sin ningún servidor del
+plugin en medio, y no interviene la clave de nadie más.
 
 | Proveedor | Plan gratuito |
 |---|---|

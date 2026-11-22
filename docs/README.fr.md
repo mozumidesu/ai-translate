@@ -76,8 +76,9 @@ tant que vous ne dites pas le contraire.
 
 ## Fournisseurs
 
-La clé d'API, c'est vous qui l'apportez, et elle reste la vôtre. Le plugin n'a
-pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
+La clé d'API, c'est vous qui l'apportez, et elle reste la vôtre. Les traductions
+vont directement de Discord au fournisseur que vous avez choisi, sans serveur du
+plugin entre les deux, et aucune autre clé que la vôtre n'entre en jeu.
 
 | Fournisseur | Offre gratuite |
 |---|---|
