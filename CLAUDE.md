@@ -183,7 +183,7 @@ node test/prompts.mjs      # 365 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
 node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
-node test/interface.mjs    # 190 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line; needs esbuild
+node test/interface.mjs    # 190 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line, which build a copy is; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/native.mjs       # 40 checks: native.ts beside a fake Electron, every request through the plugin's own session, failures with their cause and route; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
