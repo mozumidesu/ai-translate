@@ -87,7 +87,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-quality-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext, forgetAnswers } from "./core/translate";\n`
+            + `export { translate, collectContext, forgetAnswers } from "./core/translate";\n`
             + `export { asText, clear } from "./core/log";\n`
             + `export { sameMessage, splitCorrection } from "./core/learn";\n`,
         resolveDir: PLUGIN,
@@ -102,7 +102,7 @@ await esbuild.build({
 
 // No GM_xmlhttpRequest here, so core/net.ts reaches for fetch and the requests
 // are real. That is the whole point of this file.
-const { useHost, aiTranslate, collectContext, forgetAnswers, asText, clear, sameMessage, splitCorrection }
+const { useHost, translate, collectContext, forgetAnswers, asText, clear, sameMessage, splitCorrection }
     = await import(join(out, "core.mjs"));
 
 const cases = JSON.parse(await readFile(join(HERE, "corpus", "cases.json"), "utf-8"));
@@ -250,7 +250,7 @@ for (const provider of Object.keys(PROVIDERS)) {
                 forgetAnswers();
                 clear();
                 try {
-                    answer = (await aiTranslate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
+                    answer = (await translate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
                     break;
                 } catch (e) {
                     const asked = waitAsked(e.message);

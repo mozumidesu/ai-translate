@@ -52,7 +52,7 @@ await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
             + `export { useNet } from "./core/net";\n`
-            + `export { aiTranslate, forgetAnswers } from "./core/translate";\n`
+            + `export { translate, forgetAnswers } from "./core/translate";\n`
             + `export { cleanAddress, cleanKey, keyVerdict, notAnApiKey } from "./core/providers";\n`
             + `export { baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots } from "./core/slots";\n`
             + `export { asText, clear, entries } from "./core/log";\n`
@@ -68,7 +68,7 @@ await esbuild.build({
 });
 
 const {
-    useHost, useNet, aiTranslate, forgetAnswers, cleanAddress, cleanKey, keyVerdict, notAnApiKey,
+    useHost, useNet, translate, forgetAnswers, cleanAddress, cleanKey, keyVerdict, notAnApiKey,
     baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots, asText, clear, entries, t
 } = await import(join(out, "core.mjs"));
 
@@ -159,7 +159,7 @@ check("a slot whose key is only spaces is not ready to be asked", !isReady(readS
 fresh({ providerSlots: JSON.stringify([{ id: "g", provider: "groq", keys: { groq: KEY + " " }, models: { groq: "m" } }]) });
 answer({ status: 200, data: completion("привет") });
 forgetAnswers();
-await aiTranslate("sent", "hello");
+await translate("sent", "hello");
 check("a translation goes out as Bearer and the key, nothing after it",
     seen[0]?.headers.Authorization === `Bearer ${KEY}`, JSON.stringify(seen[0]?.headers.Authorization));
 
@@ -310,7 +310,7 @@ answer({ status: WRONG.gemini[0], data: WRONG.gemini[1] });
 forgetAnswers();
 let thrown = "";
 try {
-    await aiTranslate("sent", "hello");
+    await translate("sent", "hello");
 } catch (e) {
     thrown = String(e?.message ?? e);
 }
@@ -324,7 +324,7 @@ const refused = async (provider, status, data, baseUrls) => {
     answer({ status, data });
     forgetAnswers();
     try {
-        await aiTranslate("sent", "hello");
+        await translate("sent", "hello");
     } catch (e) {
         return String(e?.message ?? e);
     }
@@ -366,7 +366,7 @@ answer({ status: WRONG.glm[0], data: WRONG.glm[1] });
 forgetAnswers();
 thrown = "";
 try {
-    await aiTranslate("sent", "hello");
+    await translate("sent", "hello");
 } catch (e) {
     thrown = String(e?.message ?? e);
 }

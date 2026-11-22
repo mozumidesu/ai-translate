@@ -40,7 +40,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-log-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { notify, aiTranslate } from "./core/translate";\n`
+            + `export { notify, translate } from "./core/translate";\n`
             + `export { record, asText, clear, howMany } from "./core/log";\n`,
         resolveDir: plugin,
         loader: "ts"
@@ -52,7 +52,7 @@ await esbuild.build({
     logLevel: "error"
 });
 
-const { useHost, notify, aiTranslate, record, asText, clear, howMany } = await import(join(out, "core.mjs"));
+const { useHost, notify, translate, record, asText, clear, howMany } = await import(join(out, "core.mjs"));
 
 /** Every toast the plugin shows, so one with nothing in it cannot hide. */
 const shown = [];
@@ -204,24 +204,24 @@ settings = {
 
 clear();
 provider({ prompt_tokens: 3105, completion_tokens: 11, prompt_tokens_details: { cached_tokens: 2944 } });
-await aiTranslate("sent", "привет");
+await translate("sent", "привет");
 check("the log says what the request cost", /3105 prompt tokens/.test(asText()));
 check("and how much of it the provider had cached", /2944 from cache/.test(asText()));
 
 clear();
 provider({ prompt_tokens: 3105, completion_tokens: 11, prompt_tokens_details: { cached_tokens: 0 } });
-await aiTranslate("sent", "как дела");
+await translate("sent", "как дела");
 check("a cache that did not hit is written down as nothing cached", /0 from cache/.test(asText()));
 
 clear();
 provider({ prompt_tokens: 3105, completion_tokens: 11 });
-await aiTranslate("sent", "давай завтра");
+await translate("sent", "давай завтра");
 check("a provider that counts tokens but not caching still reports the cost", /3105 prompt tokens/.test(asText()));
 check("and is not made to claim a cache it never mentioned", !/from cache/.test(asText()));
 
 clear();
 provider(undefined);
-await aiTranslate("sent", "спасибо");
+await translate("sent", "спасибо");
 check("a provider that counts nothing leaves the line as it was", /answered 200 in \d+ ms$/m.test(asText()));
 
 // --- a key no mask knows ---
@@ -244,7 +244,7 @@ globalThis.GM_xmlhttpRequest = o => {
 clear();
 shown.length = 0;
 let refused;
-try { await aiTranslate("sent", "проверка ключа"); } catch (e) { refused = e; }
+try { await translate("sent", "проверка ключа"); } catch (e) { refused = e; }
 notify(refused, "failure");
 check("a key of a shape no mask knows is taken out of what the provider said", !asText().includes(ODD_KEY));
 check("and out of the notice, which a host may pass on", shown.length > 0 && !shown.some(s => s.text.includes(ODD_KEY)));
@@ -259,7 +259,7 @@ check("while the rest of what it said is still there", shown.some(s => s.text.in
 
 clear();
 providerCutsOffOnce({ prompt_tokens: 4197 });
-await aiTranslate("sent", "очень длинное сообщение про всё на свете");
+await translate("sent", "очень длинное сообщение про всё на свете");
 check("a cut-off answer says so before asking again", /asking again: the answer was cut off/.test(asText()));
 check("and both requests are in the log", asText().split("answered 200").length - 1 === 2);
 

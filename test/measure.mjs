@@ -25,7 +25,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { aiTranslate, collectContext } from "./core/translate";\n`,
+        contents: `export { useHost } from "./core/host";\nexport { translate, collectContext } from "./core/translate";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -46,7 +46,7 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext } = await import(join(out, "core.mjs"));
+const { useHost, translate, collectContext } = await import(join(out, "core.mjs"));
 
 const settings = {
     provider: "groq", groqApiKey: "k", groqModel: "openai/gpt-oss-120b", baseUrl: "",
@@ -79,7 +79,7 @@ async function cost(kind, text, answer, withContext) {
     asked.length = 0;
     reply = answer;
     settings.useContext = withContext;
-    await aiTranslate(kind, text, collectContext("c")).catch(e => console.log("  (failed:", e.message, ")"));
+    await translate(kind, text, collectContext("c")).catch(e => console.log("  (failed:", e.message, ")"));
     const sent = asked[0];
     const system = sent.messages[0].content;
     const user = sent.messages[1].content;
@@ -104,6 +104,6 @@ const context = collectContext("c");
 const N = 2000;
 reply = "[ru] Yes, I really liked it, especially the ending";
 const started = performance.now();
-for (let i = 0; i < N; i++) await aiTranslate("sent", `Да, мне очень понравилось, особенно концовка ${i}`, context);
+for (let i = 0; i < N; i++) await translate("sent", `Да, мне очень понравилось, особенно концовка ${i}`, context);
 const each = (performance.now() - started) / N;
 console.log(`\nThe plugin's own work per translation, network taken out: ${each.toFixed(3)} ms (average of ${N})`);

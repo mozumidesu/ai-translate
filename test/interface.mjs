@@ -539,6 +539,23 @@ check("a copy installed before there were two channels is a release", desktopOld
 const desktopSource = await desktopBuild(null);
 check("a copy built from source has no build to name: dev", desktopSource === `${VERSION} (dev)`, desktopSource);
 
+// --- which build a copy is, for the line under the Logs button ---
+
+const DISK = "fedcba9-7654321";
+await writeFile(join(desktop, "build.json"), JSON.stringify({ build: DISK, channel: "release" }));
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "", whichBuild: () => native.whichBuild({}) } } };
+const fromMain = await testing.Bridge.whichBuild();
+check("a desktop renderer asks its main process, which reads the disk",
+    fromMain.build === DISK && fromMain.channel === "release", JSON.stringify(fromMain));
+
+// An update installed without a restart runs the new renderer against the main
+// process Discord started with, which before 0.2.4a had no whichBuild.
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "" } } };
+const fromStamp = await testing.Bridge.whichBuild();
+check("a main process from before the rename: the build stamped into the renderer answers",
+    testing.onDesktop() && fromStamp.build === OWN && fromStamp.channel === "testing", JSON.stringify(fromStamp));
+delete globalThis.VencordNative;
+
 globalThis.fetch = realFetch;
 
 await rm(out, { recursive: true, force: true });

@@ -144,7 +144,7 @@ function installedInfo(): BuildInfo | null {
 const installedBuild = () => installedInfo()?.build ?? null;
 
 /** What this copy is, for the version line in the settings. */
-export async function aiTranslateBuild(_: IpcMainInvokeEvent) {
+export async function whichBuild(_: IpcMainInvokeEvent) {
     const info = installedInfo();
     return { build: info?.build ?? "", channel: info ? info.channel ?? "release" : "" };
 }

@@ -1576,7 +1576,7 @@ function notePace(slot: Slot, chars: number, ms: number) {
 
 const expectedMs = (slot: Slot, chars: number) => paceOf(slot).base + paceOf(slot).perChar * chars;
 
-export async function aiTranslate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
+export async function translate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
     // Code, and whatever the writer fenced off with backslashes, never reaches
     // the model as words: it travels as numbered placeholders and is put back
     // verbatim at the end. Everything below works on the text with placeholders.
