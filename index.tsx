@@ -505,6 +505,6 @@ export default definePlugin({
 
     onBeforeMessageSend: (channelId: string, message: MessageObject) => translateOutgoing(channelId, message)
 
-    // No onBeforeMessageEdit, on purpose: an edit goes out exactly as typed,
-    // even where auto-translation is on, since editing is how a translation is put right.
+    // No onBeforeMessageEdit, on purpose: an edit goes out exactly as typed, \markers\
+    // and all, even where auto-translation is on, since editing is how a translation is put right.
 });
