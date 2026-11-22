@@ -118,7 +118,7 @@ from the older name `AiTranslate`.
 
 | Path | Responsible for |
 |---|---|
-| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs`, `keys.mjs`, `defaults.mjs` and `native.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
+| `test/` | The checks. `prompts.mjs`, `bare.mjs`, `interface.mjs`, `log.mjs`, `keys.mjs`, `defaults.mjs`, `native.mjs` and `installer.mjs` run in CI; `imports.mjs` and `types.mjs` need a Vencord checkout; `measure.mjs` and `rules.mjs` count tokens |
 | `test/corpus/cases.json`, `test/quality.mjs` | Whether a prompt rule works, asked of a real provider several times a case. Costs tokens, so never part of the robot. A count from before 7 November is one answer counted several times |
 | `install/install.ps1`, `install/install.sh` | The one-command install for Windows and for macOS/Linux. **Keep both**: the `.sh` is for users, not a leftover |
 | `build/github.sh` | What the build robot does. **Keep**: it runs on Ubuntu inside Actions |
@@ -186,6 +186,7 @@ node test/defaults.mjs     # does the browser build still agree with the setting
 node test/interface.mjs    # 190 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line, which build a copy is; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/native.mjs       # 40 checks: native.ts beside a fake Electron, every request through the plugin's own session, failures with their cause and route; needs esbuild
+node test/installer.mjs    # 81 checks: install.ps1 parsed, held to PowerShell 5.1, its functions run against a fake %LOCALAPPDATA%; needs pwsh
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout
 node test/types.mjs        # do the types still agree with Vencord; needs npm and that same checkout
 node test/quality.mjs      # do the rules work; needs esbuild and a provider key in the environment
