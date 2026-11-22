@@ -54,7 +54,7 @@ await esbuild.build({
             + `export { useNet } from "./core/net";\n`
             + `export { translate, forgetAnswers } from "./core/translate";\n`
             + `export { cleanAddress, cleanKey, keyVerdict, notAnApiKey } from "./core/providers";\n`
-            + `export { baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots } from "./core/slots";\n`
+            + `export { baseUrlOf, checkKey, isReady, keyOf, modelOf, providerLabel, providerName, readSlots, slotName, writeSlots } from "./core/slots";\n`
             + `export { asText, clear, entries } from "./core/log";\n`
             + `export { t } from "./core/locales";\n`,
         resolveDir: plugin,
@@ -69,7 +69,7 @@ await esbuild.build({
 
 const {
     useHost, useNet, translate, forgetAnswers, cleanAddress, cleanKey, keyVerdict, notAnApiKey,
-    baseUrlOf, checkKey, isReady, keyOf, providerName, readSlots, writeSlots, asText, clear, entries, t
+    baseUrlOf, checkKey, isReady, keyOf, modelOf, providerLabel, providerName, readSlots, slotName, writeSlots, asText, clear, entries, t
 } = await import(join(out, "core.mjs"));
 
 const KEY = "gsk_" + "A1b2C3d4E5f6G7h8J9k0L1m2N3p4Q5r6S7t8U9v0W1x2Y3z4A5b6";
@@ -172,6 +172,53 @@ answer({ status: 200, data: JSON.stringify({ data: [{ id: "m" }] }) });
 await checkKey(readSlots()[0]);
 check("and to the address as typed, without what came with the paste", seen[0]?.url === "https://llm.example.com/v1/models", seen[0]?.url);
 
+// --- Other was "Any OpenAI-compatible" under the same id, so nothing saved has to move
+
+const CLAUDE_SLOT = { id: "c1", provider: "anthropic", keys: { anthropic: "sk-ant-api03-k" }, models: { anthropic: "claude-haiku-4-5" } };
+const OTHER_SLOT = { id: "o1", provider: "openai", keys: { openai: "sk-or-v1-k" }, models: { openai: "deepseek/deepseek-chat" }, baseUrls: { openai: "https://openrouter.ai/api/v1" } };
+
+fresh({ providerSlots: JSON.stringify([CLAUDE_SLOT, OTHER_SLOT]) });
+let [claude, other] = readSlots();
+check("an Anthropic slot saved before reads as it was saved", JSON.stringify(claude) === JSON.stringify(CLAUDE_SLOT), JSON.stringify(claude));
+check("so does one saved as Any OpenAI-compatible, which the list calls Other now",
+    JSON.stringify(other) === JSON.stringify(OTHER_SLOT) && providerLabel(other.provider) === "Other", JSON.stringify(other));
+check("a sentence calls Anthropic by its name and Other by its address", slotName(claude) === "Anthropic Claude" && slotName(other) === "openrouter.ai",
+    `${slotName(claude)} / ${slotName(other)}`);
+
+answer({ status: 200, data: JSON.stringify({ content: [{ type: "text", text: "привет" }], stop_reason: "end_turn" }) });
+forgetAnswers();
+await translate("sent", "hello, Claude");
+check("Anthropic is still asked in its own API, with its own header",
+    seen[0]?.url === "https://api.anthropic.com/v1/messages" && seen[0]?.headers["x-api-key"] === "sk-ant-api03-k", seen[0]?.url);
+
+fresh({ providerSlots: JSON.stringify([OTHER_SLOT, CLAUDE_SLOT]) });
+answer({ status: 200, data: completion("привет") });
+forgetAnswers();
+await translate("sent", "hello, Other");
+check("and Other at the address its slot holds, with the key as Bearer",
+    seen[0]?.url === "https://openrouter.ai/api/v1/chat/completions" && seen[0]?.headers.Authorization === "Bearer sk-or-v1-k", seen[0]?.url);
+
+// What a copy that never opened the list still has: one provider, one backup, a key and an address each.
+fresh({
+    provider: "openai", openaiApiKey: "sk-old ", openaiModel: "m-old", baseUrl: " https://api.deepseek.com ",
+    fallbackProvider: "anthropic", anthropicApiKey: "sk-ant-old", anthropicModel: "claude-haiku-4-5"
+});
+[other, claude] = readSlots();
+check("settings from before the list read as Other, with its key, model and address",
+    other.provider === "openai" && keyOf(other) === "sk-old" && modelOf(other) === "m-old" && baseUrlOf(other) === "https://api.deepseek.com",
+    JSON.stringify(other));
+check("named by that address", slotName(other) === "api.deepseek.com", slotName(other));
+check("with Anthropic behind it, key and model", claude.provider === "anthropic" && keyOf(claude) === "sk-ant-old" && modelOf(claude) === "claude-haiku-4-5",
+    JSON.stringify(claude));
+
+// Anthropic's address in Other: its model list answers Bearer, as its documentation shows, with the ids in data.
+fresh({ providerSlots: JSON.stringify([{ id: "oa", provider: "openai", keys: { openai: "sk-ant-api03-k" }, models: {}, baseUrls: { openai: "https://api.anthropic.com/v1/" } }]) });
+answer({ status: 200, data: JSON.stringify({ data: [{ id: "claude-haiku-4-5", type: "model" }, { id: "claude-opus-5-5", type: "model" }], has_more: false }) });
+let listed = await checkKey(readSlots()[0]);
+check("Other at Anthropic's address asks its model list as Bearer",
+    seen[0]?.url === "https://api.anthropic.com/v1/models" && seen[0]?.headers.Authorization === "Bearer sk-ant-api03-k", seen[0]?.url);
+check("and reads the models from it", listed.verdict === "ok" && listed.models.join() === "claude-haiku-4-5,claude-opus-5-5", JSON.stringify(listed));
+
 // --- what each provider says about a key, from the real APIs
 
 // Each of these came back from the provider itself, asked with a wrong key, on 21 November 2026.
@@ -185,6 +232,18 @@ const WRONG = {
 
 for (const [provider, [status, data]] of Object.entries(WRONG))
     check(`${provider}'s answer to a wrong key (${status}) is a bad key`, keyVerdict(status, data) === "bad", keyVerdict(status, data));
+
+// Anthropic's OpenAI-compatible endpoints, asked the way Other asks, with the key as Bearer, on 21 November 2026.
+// Its model list takes a Bearer shaped like an API key for one; with no key at all it says "x-api-key header is required".
+const ANTHROPIC_AS_OTHER = {
+    "its chat completions": [401, `{"error":{"code":"authentication_error","message":"Invalid Anthropic API Key","type":"invalid_request_error","param":null}}`],
+    "its model list": [401, `{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"},"request_id":"req_011ChGxykLZRMJHRhYn8Md5k"}`],
+    "its model list, for a Bearer that is no API key": [401, `{"type":"error","error":{"type":"authentication_error","message":"Invalid bearer token"},"request_id":"req_011ChGy8KbXbuY72kWubYQEX"}`]
+};
+
+for (const [what, [status, data]] of Object.entries(ANTHROPIC_AS_OTHER))
+    check(`Anthropic asked as Other, ${what}: a wrong key (${status}) is a bad key`, keyVerdict(status, data) === "bad", keyVerdict(status, data));
+check("and none of it is Z.ai's value that is no key", Object.values(ANTHROPIC_AS_OTHER).every(([status, data]) => !notAnApiKey("openai", status, data)));
 
 check("as is Gemini's for a key it was told had leaked (403)",
     keyVerdict(403, `{"error":{"code":403,"message":"Your API key was reported as leaked. Please use another API key.","status":"PERMISSION_DENIED"}}`) === "bad");
@@ -347,8 +406,8 @@ check("and for that page in an error object, in the words it came with",
     thrown.endsWith(t("error.forbiddenSaid", { provider: providerName("groq"), details: "Access denied. Please check your network settings." })), thrown);
 
 thrown = await refused("openai", 403, BLOCKED["OpenAI's unsupported country (403)"][1], { openai: "https://llm.example.com/v1" });
-check("a country OpenAI turns away is quoted in OpenAI's own words, as the notice already did",
-    thrown.endsWith(t("error.forbiddenSaid", { provider: providerName("openai"), details: "Country, region, or territory not supported" })), thrown);
+check("a country OpenAI turns away is quoted in OpenAI's own words, under the host of Other's address",
+    thrown.endsWith(t("error.forbiddenSaid", { provider: "llm.example.com", details: "Country, region, or territory not supported" })), thrown);
 
 thrown = await refused("gemini", 400, BLOCKED["Gemini's unsupported location (400)"][1]);
 check("Gemini's unsupported location (400) says the network, not a raw answer", thrown.endsWith(network("gemini")), thrown);

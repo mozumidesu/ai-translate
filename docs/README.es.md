@@ -79,7 +79,7 @@ propio y nunca ve la clave de nadie.
 | Google Gemini | sí |
 | Z.ai GLM | sí, y funciona donde los otros dos están bloqueados |
 | Anthropic Claude | no |
-| Cualquiera compatible con OpenAI | depende del proveedor |
+| Otro (cualquier API compatible con OpenAI) | depende del proveedor |
 
 Se puede nombrar un segundo proveedor como reserva. Cuando el primero está
 saturado, sin cuota o rechaza la petición, la traducción pasa por el otro sin

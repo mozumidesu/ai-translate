@@ -34,6 +34,7 @@ const PREFERRED: Record<string, string[]> = {
     // on the free tier it is often "overloaded" and otherwise takes half a
     // minute or more, all of it with the message held back from sending.
     glm: ["glm-4.5-flash", "glm-4.7-flash"],
+    // Other serves whatever its address does, so there is nothing to prefer.
     openai: []
 };
 

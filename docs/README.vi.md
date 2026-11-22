@@ -77,7 +77,7 @@ và không bao giờ nhìn thấy khóa của ai.
 | Google Gemini | có |
 | Z.ai GLM | có, và dùng được ở nơi hai cái kia bị chặn |
 | Anthropic Claude | không |
-| Bất kỳ nhà cung cấp nào tương thích OpenAI | tùy nhà cung cấp |
+| Khác (bất kỳ API nào tương thích OpenAI) | tùy nhà cung cấp |
 
 Có thể chỉ định nhà cung cấp thứ hai làm dự phòng. Khi cái thứ nhất quá tải, hết
 hạn mức hoặc từ chối yêu cầu, bản dịch lặng lẽ đi qua cái còn lại mà không làm

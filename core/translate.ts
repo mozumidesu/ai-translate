@@ -23,7 +23,7 @@ import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
 import { FREE_MODELS, keyVerdict, notAnApiKey, readDuration, type TokenBudget } from "./providers";
-import { baseUrlOf, isReady, keyOf, modelOf, providerName, readSlots, Slot } from "./slots";
+import { baseUrlOf, isReady, keyOf, modelOf, readSlots, Slot, slotName } from "./slots";
 
 /** The key and the model belong to the provider in use, not to the plugin. */
 
@@ -1592,7 +1592,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
     const first = slots[0];
     const apiKey = keyOf(first);
     const model = modelOf(first);
-    const firstName = providerName(first.provider);
+    const firstName = slotName(first);
 
     if (!apiKey) throw fail("error.noKey", { provider: firstName });
     if (!model) throw fail("error.noModel", { provider: firstName });
@@ -1695,11 +1695,11 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
     let waited = 0;
 
     /** Waits out a budget, saying so, when the wait is one worth making. */
-    const waitOut = async (id: string, ms: number) => {
+    const waitOut = async (name: string, ms: number) => {
         if (!(ms > 0) || waited + ms > MAX_WAIT_MS) return false;
 
         waited += ms;
-        notify(t("message.waiting", { provider: providerName(id), seconds: Math.ceil(ms / 1000) }), "message");
+        notify(t("message.waiting", { provider: name, seconds: Math.ceil(ms / 1000) }), "message");
         await sleep(ms, signal);
         return true;
     };
@@ -1762,7 +1762,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
         }
 
         if (!answer) {
-            await waitOut(first.provider, waitFor(first.id, model, cost(first)));
+            await waitOut(firstName, waitFor(first.id, model, cost(first)));
             answer = await callProvider(first, system, roomy);
 
             // Refused for its budget after all: the estimate was off, or nothing
@@ -1771,7 +1771,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
             // endless, and the backup takes over or the error says so.
             if (answer.status === 429) {
                 const again = Math.max(readLimit(answer.data, answer.retryMs).waitMs ?? 0, waitFor(first.id, model, cost(first)));
-                if (!soonerBackup(again) && await waitOut(first.provider, again))
+                if (!soonerBackup(again) && await waitOut(firstName, again))
                     answer = await callProvider(first, system, roomy);
             }
 
@@ -1800,8 +1800,8 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
             }
         } else if (answer.slot === first.id && answer.status === 200) passedOver.delete(first.id);
 
-        const { status, data, provider: usedProvider } = answer;
-        if (status !== 200) throw refusal(answer, answer.slot === first.id ? firstName : providerName(usedProvider));
+        const { status, data, provider: usedProvider, slot: usedSlot } = answer;
+        if (status !== 200) throw refusal(answer, slotName(slots.find(slot => slot.id === usedSlot) ?? first));
 
         let out = extractText(usedProvider, data);
 

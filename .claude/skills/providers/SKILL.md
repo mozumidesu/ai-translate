@@ -18,8 +18,27 @@ the second account spent along with the first.
 A key is cleaned of every space and invisible character, `\s` and `\p{Cf}`,
 when it is saved, so the field shows it clean, and again where it is read, so a
 key saved before the cleaning is clean too: no provider's key holds either, and
-a paste once brought a no-break space along that Groq refused. An
-OpenAI-compatible address is only trimmed at its ends.
+a paste once brought a no-break space along that Groq refused. Other's
+address is only trimmed at its ends.
+
+Other is any OpenAI-compatible API at an address of the slot's own. It was "Any
+OpenAI-compatible" until November 2026 and kept its id, `openai`, which is what
+saved slots, the settings from before the list and the Telegram app's storage
+carry: nothing saved had to move, and an older build going back still reads it.
+In a sentence it is called by the host of its address, "openrouter.ai did not
+accept this key", since the word Other names nobody and two slots can each hold
+one; over its key it is "API key — Other", its label in the list. The line under
+its address says what it takes, under the field rather than in it, where typing
+would hide it.
+
+Anthropic keeps its own API, `/v1/messages` with `x-api-key`, although Other at
+`https://api.anthropic.com/v1` would work: measured on 21 November 2026, that
+layer takes the key as Bearer on chat completions and on the model list alike,
+and answers in OpenAI's shapes. Anthropic's own page calls it a way to test and
+compare models, "not considered a long-term or production-ready solution", and
+through it prompt caching is unavailable and `reasoning_effort` is ignored. The
+native API has both, and this plugin's prompt is kept byte-identical so that a
+provider can cache it.
 
 A red line under a key appears only when the provider said the key is wrong,
 and only once the field has been left. `keyVerdict` in `core/providers.ts`

@@ -14,8 +14,8 @@ import { config, set } from "../core/host";
 import { LANGUAGES } from "../core/languages";
 import { LOCALES, t } from "../core/locales";
 import {
-    baseUrlOf, canRemove, checkKey, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
-    readSlots, Slot, writeSlots
+    baseUrlOf, canRemove, checkKey, emptySlot, keyHeading, keyOf, modelOf, MOST_SLOTS, NONE, OTHER, PROVIDERS, providerLabel,
+    readSlots, Slot, slotName, writeSlots
 } from "../core/slots";
 import { addStyle, ui } from "./toast";
 
@@ -403,7 +403,7 @@ function slotList() {
 
                 void offerModels(slot, suggestions, said);
 
-                if (slot.provider === "openai") {
+                if (slot.provider === OTHER) {
                     const urlLabel = document.createElement("label");
                     urlLabel.textContent = t("baseUrl.name");
                     block.append(urlLabel);
@@ -414,7 +414,11 @@ function slotList() {
                     url.spellcheck = false;
                     url.onchange = () => change(at, s =>
                         ({ ...s, baseUrls: { ...s.baseUrls, [s.provider]: url.value } }));
-                    block.append(url);
+
+                    const takes = document.createElement("span");
+                    takes.className = "hint";
+                    takes.textContent = t("baseUrl.desc");
+                    block.append(url, takes);
                 }
             }
 
@@ -463,7 +467,7 @@ async function offerModels(slot: Slot, list: HTMLDataListElement, said: HTMLElem
     if (verdict === "bad" || verdict === "blocked") {
         // A network turned away is not the key's fault, so not in red.
         said.classList.toggle("bad", verdict === "bad");
-        said.textContent = t(verdict === "blocked" ? "apiKey.blocked" : notAKey ? "apiKey.notAKey" : "apiKey.bad", { provider: providerName(slot.provider) });
+        said.textContent = t(verdict === "blocked" ? "apiKey.blocked" : notAKey ? "apiKey.notAKey" : "apiKey.bad", { provider: slotName(slot) });
         return;
     }
 

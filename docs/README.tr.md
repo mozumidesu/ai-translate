@@ -79,7 +79,7 @@ yoktur ve kimsenin anahtarını görmez.
 | Google Gemini | var |
 | Z.ai GLM | var, ve diğer ikisinin engellendiği yerlerden erişilebilir |
 | Anthropic Claude | yok |
-| OpenAI uyumlu herhangi biri | sağlayıcıya bağlı |
+| Diğer (OpenAI uyumlu herhangi bir API) | sağlayıcıya bağlı |
 
 İkinci bir sağlayıcı yedek olarak tanımlanabilir. İlki yoğun olduğunda, kotası
 bittiğinde ya da isteği geri çevirdiğinde çeviri sizi rahatsız etmeden diğeri
