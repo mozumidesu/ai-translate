@@ -152,8 +152,8 @@ Apoi deschide **Setări → Vencord → Plugins → AI Translate**, alege un fur
 userscripturi, nu pagina, iar cererile pleacă tot prin el. Ca să îl scoți,
 șterge scriptul din manager.
 
-Managerul de userscripturi caută o versiune nouă în ritmul lui. **Verifică
-actualizările**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
+Managerul de userscripturi caută o versiune nouă în ritmul lui. **Caută
+actualizări**, în josul setărilor pluginului, întreabă pe loc și, dacă e ceva
 nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
 
 ## Actualizări
@@ -161,8 +161,8 @@ nou, deschide scriptul în manager: confirmă acolo și reîncarcă pagina.
 Nu trebuie să faci nimic. AI Translate caută singur o versiune nouă o dată la 2
 zile, o descarcă în fundal și arată o notificare; dă clic pe ea și Discordul
 repornește deja în versiunea nouă. Dacă o ignori, actualizarea se aplică pur și
-simplu data viitoare când pornești Discordul. **Verifică actualizările**, în
-josul setărilor pluginului, face același lucru pe loc.
+simplu data viitoare când pornești Discordul. **Caută actualizări**, în josul
+setărilor pluginului, face același lucru pe loc.
 
 Fiecare versiune nouă aduce și cel mai recent Vencord, așa că și reparațiile lui
 ajung pe același drum. Pe Windows și Linux legătura supraviețuiește și

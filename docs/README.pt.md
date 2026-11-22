@@ -151,17 +151,17 @@ provedor e cole sua chave, igual ao aplicativo. A chave fica com o gerenciador
 de userscripts, não com a página, e os pedidos saem por ele também. Para
 remover, apague o script no seu gerenciador.
 
-Seu gerenciador de userscripts procura uma versão nova no ritmo dele.
-**Verificar atualizações**, lá no fim das configurações do plugin, pergunta na
-hora e, se houver algo novo, abre o script no seu gerenciador: confirme lá e
-recarregue a página.
+Seu gerenciador de userscripts procura uma versão nova no ritmo dele. **Procurar
+atualizações**, lá no fim das configurações do plugin, pergunta na hora e, se
+houver algo novo, abre o script no seu gerenciador: confirme lá e recarregue a
+página.
 
 ## Atualizações
 
 Você não precisa fazer nada. O AI Translate procura uma versão nova sozinho a
 cada 2 dias, baixa em segundo plano e mostra uma notificação; clique nela e o
 Discord reinicia já na versão nova. Se você ignorar, a atualização simplesmente
-é aplicada na próxima vez que o Discord abrir. **Verificar atualizações**, lá no
+é aplicada na próxima vez que o Discord abrir. **Procurar atualizações**, lá no
 fim das configurações do plugin, faz o mesmo na hora.
 
 Cada versão nova traz também o Vencord mais recente, então as correções do
