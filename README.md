@@ -82,9 +82,10 @@ its own and never sees anyone else's key.
 | Anthropic Claude | no |
 | Other (any OpenAI-compatible API) | depends on the provider |
 
-A second provider can be named as a backup. When the first one is overloaded,
-out of quota or refuses the request, the translation goes through the other one
-without bothering you about it.
+Up to four backup providers can stand behind the first one. When the first one
+is overloaded, out of quota or refuses the request, the translation goes through
+the next one by itself. If the first one refused, a short notice says why, once
+and not with every message.
 
 Requests are made from Discord's background process, so your key never enters
 the part of Discord that a web page could reach.

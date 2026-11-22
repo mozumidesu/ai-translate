@@ -81,9 +81,10 @@ sendiri dan tidak pernah melihat kunci milik orang lain.
 | Anthropic Claude | tidak |
 | Lainnya (API apa pun yang kompatibel dengan OpenAI) | tergantung penyedianya |
 
-Penyedia kedua bisa ditunjuk sebagai cadangan. Kalau yang pertama sedang penuh,
-kuotanya habis, atau menolak permintaan, terjemahan lewat yang satunya tanpa
-mengganggu Anda.
+Hingga empat penyedia cadangan bisa berdiri di belakang yang pertama. Kalau yang
+pertama sedang penuh, kuotanya habis, atau menolak permintaan, terjemahan lewat
+yang berikutnya dengan sendirinya. Kalau yang pertama menolak, sebuah
+pemberitahuan singkat menyebut alasannya, sekali saja dan tidak di setiap pesan.
 
 Permintaan dikirim dari proses latar Discord, jadi kunci Anda tidak pernah masuk
 ke bagian Discord yang bisa dijangkau halaman web.

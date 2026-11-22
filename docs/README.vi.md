@@ -79,9 +79,10 @@ và không bao giờ nhìn thấy khóa của ai.
 | Anthropic Claude | không |
 | Khác (bất kỳ API nào tương thích OpenAI) | tùy nhà cung cấp |
 
-Có thể chỉ định nhà cung cấp thứ hai làm dự phòng. Khi cái thứ nhất quá tải, hết
-hạn mức hoặc từ chối yêu cầu, bản dịch lặng lẽ đi qua cái còn lại mà không làm
-phiền bạn.
+Có thể đặt tới bốn nhà cung cấp dự phòng đứng sau nhà cung cấp đầu tiên. Khi cái
+thứ nhất quá tải, hết hạn mức hoặc từ chối yêu cầu, bản dịch tự đi qua cái kế
+tiếp. Nếu cái thứ nhất từ chối, một thông báo ngắn nói lý do, chỉ một lần chứ
+không phải mỗi tin nhắn.
 
 Các yêu cầu được gửi từ tiến trình nền của Discord, nên khóa của bạn không bao
 giờ vào phần Discord mà một trang web có thể chạm tới.

@@ -86,9 +86,10 @@ pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
 | Anthropic Claude | non |
 | Autre (toute API compatible OpenAI) | selon le fournisseur |
 
-Un deuxième fournisseur peut être désigné comme secours. Quand le premier est
-saturé, à court de quota ou refuse la requête, la traduction passe par l'autre
-sans vous déranger avec ça.
+Jusqu'à quatre fournisseurs de secours peuvent se placer derrière le premier.
+Quand le premier est saturé, à court de quota ou refuse la requête, la
+traduction passe d'elle-même par le suivant. Si le premier a refusé, une courte
+notification en donne la raison, une fois et non à chaque message.
 
 Les requêtes partent du processus d'arrière-plan de Discord : votre clé n'entre
 donc jamais dans la partie de Discord qu'une page web pourrait atteindre.

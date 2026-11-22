@@ -81,9 +81,10 @@ yoktur ve kimsenin anahtarını görmez.
 | Anthropic Claude | yok |
 | Diğer (OpenAI uyumlu herhangi bir API) | sağlayıcıya bağlı |
 
-İkinci bir sağlayıcı yedek olarak tanımlanabilir. İlki yoğun olduğunda, kotası
-bittiğinde ya da isteği geri çevirdiğinde çeviri sizi rahatsız etmeden diğeri
-üzerinden gider.
+İlkinin arkasına dört yedek sağlayıcıya kadar konabilir. İlki yoğun olduğunda,
+kotası bittiğinde ya da isteği geri çevirdiğinde çeviri kendiliğinden sıradakine
+geçer. İlki geri çevirdiyse kısa bir bildirim nedenini söyler, her mesajda
+değil, bir kez.
 
 İstekler Discord'un arka plan sürecinden gönderilir, yani anahtarınız
 Discord'un bir web sayfasının ulaşabileceği kısmına hiç girmez.

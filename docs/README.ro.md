@@ -82,9 +82,10 @@ vede niciodată cheia nimănui.
 | Anthropic Claude | nu |
 | Altul (orice API compatibil cu OpenAI) | depinde de furnizor |
 
-Poți pune un al doilea furnizor ca rezervă. Când primul e aglomerat, a rămas
-fără cotă sau refuză cererea, traducerea trece prin celălalt fără să te
-deranjeze cu asta.
+Până la patru furnizori de rezervă pot sta în spatele primului. Când primul e
+aglomerat, a rămas fără cotă sau refuză cererea, traducerea trece de la sine
+prin următorul. Dacă primul a refuzat, o notificare scurtă spune de ce, o
+singură dată și nu la fiecare mesaj.
 
 Cererile pleacă din procesul de fundal al Discordului, așa că cheia ta nu ajunge
 niciodată în partea de Discord la care ar putea ajunge o pagină web.

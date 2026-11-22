@@ -81,9 +81,10 @@ propio y nunca ve la clave de nadie.
 | Anthropic Claude | no |
 | Otro (cualquier API compatible con OpenAI) | depende del proveedor |
 
-Se puede nombrar un segundo proveedor como reserva. Cuando el primero está
-saturado, sin cuota o rechaza la petición, la traducción pasa por el otro sin
-molestarte con ello.
+Hasta cuatro proveedores de reserva pueden ir detrás del primero. Cuando el
+primero está saturado, sin cuota o rechaza la petición, la traducción pasa por
+el siguiente por sí sola. Si el primero la rechazó, un aviso breve dice por qué,
+una vez y no con cada mensaje.
 
 Las peticiones salen del proceso en segundo plano de Discord, así que tu clave
 nunca entra en la parte de Discord a la que podría llegar una página web.

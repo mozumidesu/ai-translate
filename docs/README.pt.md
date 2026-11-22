@@ -82,9 +82,10 @@ nunca vê a chave de ninguém.
 | Anthropic Claude | não |
 | Outro (qualquer API compatível com OpenAI) | depende do provedor |
 
-Dá para indicar um segundo provedor como reserva. Quando o primeiro está
-sobrecarregado, sem cota ou recusa o pedido, a tradução passa pelo outro sem te
-incomodar com isso.
+Até quatro provedores de reserva podem ficar atrás do primeiro. Quando o
+primeiro está sobrecarregado, sem cota ou recusa o pedido, a tradução passa pelo
+seguinte por conta própria. Se o primeiro recusou, uma notificação curta diz por
+quê, uma vez e não a cada mensagem.
 
 Os pedidos saem do processo de segundo plano do Discord, então sua chave nunca
 entra na parte do Discord que uma página da web poderia alcançar.

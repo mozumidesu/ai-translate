@@ -84,9 +84,11 @@ keinen eigenen Server und sieht nie den Schlüssel von jemand anderem.
 | Anthropic Claude | nein |
 | Anderer Anbieter (jede OpenAI-kompatible API) | hängt vom Anbieter ab |
 
-Ein zweiter Anbieter lässt sich als Reserve eintragen. Wenn der erste überlastet
-ist, sein Kontingent aufgebraucht hat oder die Anfrage ablehnt, läuft die
-Übersetzung über den anderen, ohne dich damit zu behelligen.
+Bis zu vier Anbieter lassen sich als Reserve hinter dem ersten eintragen. Wenn
+der erste überlastet ist, sein Kontingent aufgebraucht hat oder die Anfrage
+ablehnt, läuft die Übersetzung von selbst über den nächsten. Hat der erste
+abgelehnt, nennt eine kurze Benachrichtigung den Grund, einmal und nicht bei
+jeder Nachricht.
 
 Die Anfragen gehen aus dem Hintergrundprozess von Discord raus, dein Schlüssel
 landet also nie in dem Teil von Discord, an den eine Webseite herankommt.
