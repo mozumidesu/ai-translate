@@ -27,12 +27,16 @@ when `release` moves.
   `~/.ai-translate` on macOS and Linux, `%LOCALAPPDATA%\ai-translate` on
   Windows. Running the command again moves a copy from the folder of the old
   name: the files arrive in the new folder, Discord is patched again to load
-  them from there, and only then is the old folder deleted, so Discord never
-  points at a folder that is gone. Your settings and keys are kept by Vencord
-  in a folder of its own and stay as they are. Until you run it, a copy in the
-  old folder goes on updating itself there. If you build the plugin yourself,
-  its folder in Vencord is `src/userplugins/ai-translate`, and `tools sync`
-  moves a copy it made under the old name.
+  them from there, and the command asks whether another Discord on the same
+  computer (PTB, Canary, a Flatpak beside a native one) had AI Translate too.
+  Answer Yes and it patches that one as well, and asks again until the answer
+  is No. Only when every patch has worked is the old folder deleted, so no
+  Discord points at a folder that is gone; if a patch fails or is cancelled,
+  the old folder stays and the next run moves again. Your settings and keys
+  are kept by Vencord in a folder of its own and stay as they are. Until you
+  run it, a copy in the old folder goes on updating itself there. If you build
+  the plugin yourself, its folder in Vencord is `src/userplugins/ai-translate`,
+  and `tools sync` moves a copy it made under the old name.
 
 ### Fixed
 
