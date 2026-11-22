@@ -697,7 +697,7 @@ const ro: Strings = {
     "showOriginal.desc": "Adaugă sub mesajele tale un rând discret cu ce ai scris de fapt. Vizibil doar pentru tine",
 
     "explain.name": "Adaugă «Explică» în meniul de clic dreapta",
-    "explain.desc": "Pentru mesajele pe care nici traducerea nu le lămurește: prescurtări, cuvinte regionale, glume interne. îți spune în ce limbă e, desface prescurtările și zice ce s-a vrut spus",
+    "explain.desc": "Pentru mesajele pe care nici traducerea nu le lămurește: prescurtări, cuvinte regionale, glume interne. Îți spune în ce limbă e, desface prescurtările și zice ce s-a vrut spus",
     "learn.name": "AI Learn: corectează ce scriu eu însumi",
     "learn.desc": "Tot ce scrii cu alfabetul limbii în care traduci pleacă așa cum l-ai scris și nu se traduce, iar sub el apare varianta pe care ar fi scris-o un vorbitor nativ. O vezi doar tu. O cerere pe mesaj și numai în conversațiile unde traducerea e pornită",
     "message.native": "un vorbitor nativ ar scrie:",
