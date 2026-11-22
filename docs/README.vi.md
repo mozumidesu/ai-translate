@@ -48,8 +48,8 @@ mà bạn thật sự cần. Nhấp chuột trái vào nút dịch trên thanh n
 
 Bất kỳ tin nhắn nào bạn nhận đều có thể dịch từ menu chuột phải. Khi ngay cả
 bản dịch cũng không giúp bạn hiểu, vì viết tắt, vì một từ chỉ dùng ở một nước
-hay một câu đùa riêng của hai người, **AI Explain** trong cùng menu đó sẽ gọi
-tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì.
+hay một câu đùa riêng của hai người, mục **Giải thích** trong cùng menu đó sẽ
+gọi tên ngôn ngữ, mở các chữ viết tắt ra và nói ý người ta muốn nói là gì.
 
 Vài tin nhắn gần nhất của cuộc trò chuyện đi kèm mỗi yêu cầu, nên một câu "ừ"
 trống trơn hay "không dán được" đến nơi đúng như ý. Bạn cũng có thể ghim từ vựng

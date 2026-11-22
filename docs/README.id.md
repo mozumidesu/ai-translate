@@ -49,7 +49,7 @@ klik kanan menyalakan atau mematikan obrolan yang sedang dibuka.
 
 Pesan apa pun yang Anda terima bisa diterjemahkan lewat menu klik kanan. Kalau
 terjemahannya pun tidak menolong, karena singkatan, kata yang hanya dipakai di
-satu negara, atau lelucon antara dua orang, **AI Explain** di menu yang sama
+satu negara, atau lelucon antara dua orang, opsi **Jelaskan** di menu yang sama
 menyebut bahasanya, membuka singkatannya, dan menjelaskan maksudnya.
 
 Beberapa pesan terakhir percakapan ikut dikirim bersama setiap permintaan, jadi

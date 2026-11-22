@@ -53,8 +53,8 @@ salon en cours.
 N'importe quel message reçu peut être traduit depuis le menu du clic droit.
 Quand même la traduction ne vous avance à rien, à cause d'abréviations, d'un mot
 qu'on n'emploie que dans un pays ou d'une blague entre deux personnes,
-**AI Explain** dans ce même menu nomme la langue, développe les abréviations et
-dit ce qui était voulu.
+l'entrée **Expliquer** de ce même menu nomme la langue, développe les
+abréviations et dit ce qui était voulu.
 
 Les derniers messages de la conversation partent avec chaque requête, si bien
 qu'un simple « oui » ou « ça ne se colle pas » arrive comme il le devait. Vous

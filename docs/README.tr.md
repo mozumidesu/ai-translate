@@ -49,7 +49,7 @@ paneli açar, sağ tıklamak o anki sohbeti açıp kapatır.
 
 Gelen her mesaj sağ tık menüsünden çevrilebilir. Çeviri bile bir şey anlatmadığı
 zaman, kısaltmalar, yalnızca bir ülkede kullanılan bir kelime ya da iki kişi
-arasındaki bir şaka yüzünden, aynı menüdeki **AI Explain** dilin hangisi
+arasındaki bir şaka yüzünden, aynı menüdeki **Açıkla** seçeneği dilin hangisi
 olduğunu söyler, kısaltmaları açar ve neyin kastedildiğini anlatır.
 
 Konuşmanın son birkaç mesajı her istekle birlikte gider, böylece kuru bir

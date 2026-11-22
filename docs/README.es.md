@@ -49,8 +49,8 @@ el chat actual.
 
 Cualquier mensaje que recibas se puede traducir desde el menú del clic derecho.
 Cuando ni la traducción aclara nada, por abreviaturas, por una palabra que solo
-se usa en un país o por una broma entre dos, **AI Explain** en ese mismo menú
-nombra el idioma, desarrolla las abreviaturas y dice qué se quiso decir.
+se usa en un país o por una broma entre dos, la opción **Explicar** de ese mismo
+menú nombra el idioma, desarrolla las abreviaturas y dice qué se quiso decir.
 
 Los últimos mensajes de la conversación viajan con cada petición, así un simple
 «sí» o «no se pega» llega como debía llegar. También puedes fijar tu propio

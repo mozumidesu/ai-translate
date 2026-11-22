@@ -50,7 +50,7 @@ abre o painel; clique direito liga ou desliga a conversa atual.
 
 Qualquer mensagem recebida pode ser traduzida pelo menu do clique direito.
 Quando nem a tradução esclarece, por causa de abreviações, de uma palavra que só
-se usa em um país ou de uma piada entre duas pessoas, o **AI Explain** nesse
+se usa em um país ou de uma piada entre duas pessoas, a opção **Explicar** nesse
 mesmo menu diz qual é o idioma, abre as abreviações e conta o que se quis dizer.
 
 As últimas mensagens da conversa vão junto com cada pedido, então um simples

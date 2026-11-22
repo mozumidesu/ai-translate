@@ -52,8 +52,8 @@ aus.
 Jede empfangene Nachricht lässt sich über das Rechtsklickmenü übersetzen. Wenn
 selbst die Übersetzung nicht weiterhilft, wegen Abkürzungen, eines Wortes, das
 nur in einem Land benutzt wird, oder eines Witzes zwischen zwei Leuten, nennt
-**AI Explain** im selben Menü die Sprache, schreibt die Abkürzungen aus und sagt,
-was gemeint war.
+der Eintrag **Erklären** im selben Menü die Sprache, schreibt die Abkürzungen
+aus und sagt, was gemeint war.
 
 Die letzten Nachrichten des Gesprächs gehen mit jeder Anfrage mit, damit ein
 bloßes „ja“ oder „es fügt sich nicht ein“ so ankommt, wie es gemeint war. Du
