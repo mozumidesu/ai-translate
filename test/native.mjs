@@ -62,7 +62,7 @@ await esbuild.build({
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate } from "./core/translate";\n`
+            + `export { translate } from "./core/translate";\n`
             + `export { checkKey } from "./core/slots";\n`
             + `export { asText, clear } from "./core/log";\n`,
         resolveDir: plugin,
@@ -303,13 +303,13 @@ check("the key check's line in the Logs ends with the route",
 
 core.clear();
 sessionAnswers = () => answer(401, '{"error":{"message":"Invalid API Key"}}');
-await core.aiTranslate("sent", "привет").catch(() => { });
+await core.translate("sent", "привет").catch(() => { });
 check("and so does a translation's",
     /groq openai\/gpt-oss-120b answered 401 in \d+ ms, via Chromium, PROXY 127\.0\.0\.1:2080$/m.test(core.asText()), core.asText());
 
 core.clear();
 sessionAnswers = () => answer(200, JSON.stringify({ choices: [{ message: { content: "[en] hello" }, finish_reason: "stop" }] }));
-await core.aiTranslate("sent", "привет, как ты");
+await core.translate("sent", "привет, как ты");
 check("a translation that worked is written down as before", /answered 200 in \d+ ms$/m.test(core.asText()), core.asText());
 delete globalThis.VencordNative;
 

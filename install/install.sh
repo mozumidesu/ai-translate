@@ -8,12 +8,20 @@
 # build robot puts it whenever Vencord or the plugin changes. Vencord's own
 # installer then points Discord at it.
 #
-# Everything lives in ~/.aiTranslate. Running this again updates the files, or
+# Everything lives in ~/.ai-translate. Running this again updates the files, or
 # removes them.
 
 set -u
 
-AIT_HOME="${AIT_HOME:-$HOME/.aiTranslate}"
+# A copy installed before 0.2.4a lives in OLD_HOME, and Discord loads it from
+# there until it is patched again. Only the default folder is ever moved: one
+# named in AIT_HOME stays where its owner put it.
+OLD_HOME=""
+if [ -z "${AIT_HOME:-}" ]; then
+    AIT_HOME="$HOME/.ai-translate"
+    # The folder's name before 0.2.4a, read only to move a copy out of it.
+    [ -d "$HOME/.aiTranslate" ] && OLD_HOME="$HOME/.aiTranslate"
+fi
 DIST="$AIT_HOME/dist"
 BUILDS="https://builds.zolatau.com"
 
@@ -150,12 +158,15 @@ vencord_installer() {
 install_or_update() {
     first=0
     # "ait-build.json" is what the file was called before it was renamed.
-    [ -f "$DIST/build.json" ] || [ -f "$DIST/ait-build.json" ] || first=1
+    [ -f "$DIST/build.json" ] || [ -f "$DIST/ait-build.json" ] || [ -n "$OLD_HOME" ] || first=1
 
     # The first installer built Vencord in a folder of its own, and Discord
-    # keeps pointing there until it is patched again.
+    # keeps pointing there until it is patched again. So does a copy in the
+    # old folder: the files arrive in the new one, Discord is pointed at them,
+    # and only then does the old folder go, so Discord never points at nothing.
     moving=0
     [ -d "$AIT_HOME/Vencord" ] && moving=1
+    [ -n "$OLD_HOME" ] && moving=1
 
     mkdir -p "$DIST" || stop "Could not create $DIST."
 
@@ -183,8 +194,13 @@ install_or_update() {
     fi
 
     if [ "$patch" = 1 ]; then
+        [ -n "$OLD_HOME" ] && say "AI Translate moves from $OLD_HOME to $AIT_HOME, so Discord is patched again."
         vencord_installer --install || stop "Patching Discord failed."
-        [ "$moving" = 1 ] && rm -rf "$AIT_HOME/Vencord"
+        rm -rf "$AIT_HOME/Vencord"
+        if [ -n "$OLD_HOME" ]; then
+            rm -rf "$OLD_HOME" || say "Could not delete $OLD_HOME. Delete it by hand."
+            say "If another Discord on this computer had AI Translate too, run this again and patch that one."
+        fi
     fi
 
     say ""
@@ -195,6 +211,11 @@ install_or_update() {
 }
 
 remove() {
+    # A copy never moved out of the old folder is removed where it is.
+    if [ ! -d "$AIT_HOME" ] && [ -n "$OLD_HOME" ]; then
+        AIT_HOME=$OLD_HOME
+        OLD_HOME=""
+    fi
     [ -d "$AIT_HOME" ] || stop "Nothing to remove: $AIT_HOME does not exist."
 
     say "Removing the patch from Discord..."
@@ -202,7 +223,7 @@ remove() {
 
     choose "Also delete the downloaded files in $AIT_HOME?" "No" "Yes"
     if [ "$CHOICE" = 1 ]; then
-        cd "$HOME" && rm -rf "$AIT_HOME" && say "Deleted $AIT_HOME."
+        cd "$HOME" && rm -rf "$AIT_HOME" ${OLD_HOME:+"$OLD_HOME"} && say "Deleted $AIT_HOME."
     fi
 
     say ""

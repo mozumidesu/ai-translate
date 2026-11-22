@@ -11,14 +11,36 @@ when `release` moves.
 
 ### Changed
 
+- **"Any OpenAI-compatible" is called Other.** It takes the address of any
+  OpenAI-compatible API, as before, and the line under that address now says
+  so, with two examples: `https://openrouter.ai/api/v1` and
+  `https://api.openai.com/v1`. A message about it names the address it went to,
+  "openrouter.ai did not accept this key", rather than "OpenAI-compatible".
+  Nothing saved has to change: a provider set up before keeps its key, model
+  and address. Anthropic Claude stays in the list with its own API.
 - **An edited message goes out exactly as you typed it.** An edit used to be
   translated like a new message, so putting right one word of a translation
   sent the whole of it to the model again, and it could come back reworded.
   Now an edit is never translated, in a chat with auto-translation on as well,
   on the desktop and in a browser alike. New messages are translated as before.
+- **The install command's folder is called `ai-translate` now:**
+  `~/.ai-translate` on macOS and Linux, `%LOCALAPPDATA%\ai-translate` on
+  Windows. Running the command again moves a copy from the folder of the old
+  name: the files arrive in the new folder, Discord is patched again to load
+  them from there, and only then is the old folder deleted, so Discord never
+  points at a folder that is gone. Your settings and keys are kept by Vencord
+  in a folder of its own and stay as they are. Until you run it, a copy in the
+  old folder goes on updating itself there. If you build the plugin yourself,
+  its folder in Vencord is `src/userplugins/ai-translate`, and `tools sync`
+  moves a copy it made under the old name.
 
 ### Fixed
 
+- **Claude from 4.7 on translates, and so does any model like it.** Those
+  models take no temperature but their own and refuse any other with an error,
+  as Anthropic's documentation says, and the plugin always asked for 0.2, so
+  with such a model no message was translated. A model that refuses it is now
+  asked again without one, and without one from then on.
 - **A message you write on one line goes out on one line.** Three sentences
   typed on one line could arrive as three lines, one a sentence, however the
   prompt asked: the plugin put line breaks right only in a message that had

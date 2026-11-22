@@ -19,7 +19,7 @@
 import { isChannelEnabled } from "../core/chats";
 import { config, notice } from "../core/host";
 import { keepPieces } from "../core/keep";
-import { aiTranslate, isNotWorthTranslating } from "../core/translate";
+import { isNotWorthTranslating, translate } from "../core/translate";
 
 /** Thrown instead of a translation when the message must not go out. */
 class Held extends Error { }
@@ -83,7 +83,7 @@ export async function patchPayload(channelId: string, raw: string): Promise<stri
         if (!waiting) {
             // The conversation above the message would go here. The browser
             // host cannot read it yet, and the core does without.
-            waiting = aiTranslate("sent", original).then(result => result.text);
+            waiting = translate("sent", original).then(result => result.text);
             inFlight.set(key, waiting);
 
             // The failure is dealt with below, where it is awaited. Hanging
@@ -182,13 +182,16 @@ export function install(scope: any = window) {
     const send = scope.XMLHttpRequest?.prototype?.send;
     if (!open || !send) return;
 
+    // Which chat a request posts a message to, kept on it from open() to send().
+    const CHANNEL = "ai-translate-channel";
+
     scope.XMLHttpRequest.prototype.open = function (method: string, url: string, ...rest: any[]) {
-        (this as any).__aiTranslate = outgoingChannel(method, url);
+        (this as any)[CHANNEL] = outgoingChannel(method, url);
         return open.call(this, method, url, ...rest);
     };
 
     scope.XMLHttpRequest.prototype.send = function (body?: any) {
-        const channelId = (this as any).__aiTranslate;
+        const channelId = (this as any)[CHANNEL];
         if (!channelId) return send.call(this, body);
 
         const ready = typeof body === "string"

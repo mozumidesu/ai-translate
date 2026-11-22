@@ -20,7 +20,10 @@ import { Config } from "../core/host";
 declare const GM_getValue: (<T>(name: string, fallback: T) => T) | undefined;
 declare const GM_setValue: ((name: string, value: unknown) => void) | undefined;
 
-const KEY = "aiTranslateSettings";
+const KEY = "ai-translate-settings";
+
+// The key's name before 0.2.4a, read only while nothing is saved under the new one.
+const OLD_KEY = "aiTranslateSettings";
 
 export const DEFAULTS: Config = {
     locale: "auto",
@@ -64,7 +67,8 @@ function stored(): Config {
 
     let saved: Partial<Config> = {};
     try {
-        saved = (typeof GM_getValue === "function" ? GM_getValue<Partial<Config>>(KEY, {}) : {}) ?? {};
+        if (typeof GM_getValue === "function")
+            saved = GM_getValue<Partial<Config> | undefined>(KEY, undefined) ?? GM_getValue<Partial<Config>>(OLD_KEY, {}) ?? {};
     } catch {
         // A manager without storage, or storage refused: defaults it is.
     }

@@ -144,20 +144,32 @@ for (const lang of LANGUAGES.filter(l => l !== "en" && blocks[l])) {
 // --- what a provider is called ---
 
 locale = "en";
-check("the generic provider reads \"Any OpenAI-compatible\", with no API at the end",
-    providerLabel("openai", true) === "Any OpenAI-compatible", providerLabel("openai", true));
-check("in a backup's list too", providerLabel("openai") === "Any OpenAI-compatible");
-check("its key is headed \"API key — any OpenAI-compatible\"",
-    keyHeading("openai") === "API key — any OpenAI-compatible", keyHeading("openai"));
+check("the provider with an address of its own reads \"Other\"", providerLabel("openai", true) === "Other", providerLabel("openai", true));
+check("in a backup's list too", providerLabel("openai") === "Other");
+check("its key is headed \"API key — Other\"", keyHeading("openai") === "API key — Other", keyHeading("openai"));
 check("another provider's key is headed with its name", keyHeading("groq") === "API key — Groq", keyHeading("groq"));
 check("advice stays on the first provider only",
     providerLabel("groq", true) === "Groq (recommended)" && providerLabel("groq") === "Groq");
-check("in a sentence it is called by what it speaks, not by a label that starts with Any",
-    providerName("openai") === "OpenAI-compatible" && providerName("groq") === "Groq");
+check("what Other takes is said under its address, with the example addresses",
+    /OpenAI-compatible/.test(t("baseUrl.desc")) && t("baseUrl.desc").includes("https://openrouter.ai/api/v1"), t("baseUrl.desc"));
+
+// "Other did not accept this key" names nobody, and two slots can each have an Other.
+const NAMED_BY_HOST = [
+    ["https://openrouter.ai/api/v1", "openrouter.ai"],
+    [" https://api.deepseek.com \n", "api.deepseek.com"],
+    ["http://user:secret@LOCALHOST:11434/v1", "localhost"],
+    ["https://[::1]:8080/v1", "[::1]"]
+];
+for (const [address, host] of NAMED_BY_HOST)
+    check(`in a sentence Other is called by its address's host: ${host}`, providerName("openai", address) === host, providerName("openai", address));
+check("and by its label while there is no address to name it by",
+    providerName("openai") === "Other" && providerName("openai", "openrouter.ai/api/v1") === "Other", providerName("openai", "openrouter.ai/api/v1"));
+check("another provider keeps its name whatever address its slot holds",
+    providerName("groq", "https://openrouter.ai/api/v1") === "Groq" && providerName("anthropic") === "Anthropic Claude");
 
 locale = "ru";
-check("in Russian the key heading follows the same pattern",
-    keyHeading("openai") === "Ключ API — любой, совместимый с OpenAI", keyHeading("openai"));
+check("in Russian the key heading follows the same pattern", keyHeading("openai") === "Ключ API — Другой", keyHeading("openai"));
+check("and Other is still called by its host", providerName("openai", "https://openrouter.ai/api/v1") === "openrouter.ai");
 locale = "en";
 
 // --- the minus ---
@@ -538,6 +550,23 @@ check("a copy installed before there were two channels is a release", desktopOld
 
 const desktopSource = await desktopBuild(null);
 check("a copy built from source has no build to name: dev", desktopSource === `${VERSION} (dev)`, desktopSource);
+
+// --- which build a copy is, for the line under the Logs button ---
+
+const DISK = "fedcba9-7654321";
+await writeFile(join(desktop, "build.json"), JSON.stringify({ build: DISK, channel: "release" }));
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "", whichBuild: () => native.whichBuild({}) } } };
+const fromMain = await testing.Bridge.whichBuild();
+check("a desktop renderer asks its main process, which reads the disk",
+    fromMain.build === DISK && fromMain.channel === "release", JSON.stringify(fromMain));
+
+// An update installed without a restart runs the new renderer against the main
+// process Discord started with, which before 0.2.4a had no whichBuild.
+globalThis.VencordNative = { pluginHelpers: { "AI Translate": { makeAiTranslateRequest: async () => "" } } };
+const fromStamp = await testing.Bridge.whichBuild();
+check("a main process from before the rename: the build stamped into the renderer answers",
+    testing.onDesktop() && fromStamp.build === OWN && fromStamp.channel === "testing", JSON.stringify(fromStamp));
+delete globalThis.VencordNative;
 
 globalThis.fetch = realFetch;
 

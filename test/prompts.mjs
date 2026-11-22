@@ -42,7 +42,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, scriptShare } from "./core/translate";\n`
+            + `export { translate, collectContext, isJustAName, isNotWorthTranslating, scriptShare } from "./core/translate";\n`
             + `export * as languages from "./core/languages";\n`
             + `export { keepPieces, literalBackslashes } from "./core/keep";\n`
             + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
@@ -62,7 +62,7 @@ await esbuild.build({
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { aiTranslate, scriptShare } from "./core/translate";\n`
+            + `export { translate, scriptShare } from "./core/translate";\n`
             + `export * as languages from "./core/languages";\n`,
         resolveDir: plugin,
         loader: "ts"
@@ -108,7 +108,7 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, aiTranslate, collectContext, isJustAName, isNotWorthTranslating, scriptShare, languages,
+const { useHost, translate, collectContext, isJustAName, isNotWorthTranslating, scriptShare, languages,
     keepPieces, literalBackslashes,
     changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
     isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
@@ -143,7 +143,7 @@ useHost(host);
 async function translated(kind, text, ...replies) {
     asked.length = 0;
     answers = replies;
-    const result = await aiTranslate(kind, text);
+    const result = await translate(kind, text);
     return result.text;
 }
 
@@ -151,7 +151,7 @@ async function translated(kind, text, ...replies) {
 async function promptFor(kind, text, reply) {
     asked.length = 0;
     answers = [reply];
-    await aiTranslate(kind, text).catch(() => { });
+    await translate(kind, text).catch(() => { });
     if (!asked.length) throw new Error("the provider was never asked");
 
     // Groq takes OpenAI's shape, where the rules are the first message.
@@ -545,7 +545,7 @@ await behaves(
     "[FAQ](https://example.com/faq) has it all"
 );
 answers = ["[FAQ](https://example.com/faq) — там всё есть"];
-const linkRead = await aiTranslate("received", "The [FAQ](https://example.com/faq) has it all");
+const linkRead = await translate("received", "The [FAQ](https://example.com/faq) has it all");
 await behaves("nor in an answer that came without a code", linkRead.text, "[FAQ](https://example.com/faq) — там всё есть");
 await behaves("and the link is not the language the message came from", linkRead.sourceLanguage, undefined);
 
@@ -555,7 +555,7 @@ await behaves("and the link is not the language the message came from", linkRead
 async function promptWithContext(kind, text, reply) {
     asked.length = 0;
     answers = [reply];
-    await aiTranslate(kind, text, collectContext("c")).catch(() => { });
+    await translate(kind, text, collectContext("c")).catch(() => { });
     return { name: "context", text: asked[0]?.messages?.[0]?.content ?? "" };
 }
 
@@ -831,7 +831,7 @@ lang("and without capitals, and with the marks of its alphabet",
     [more.languages.hasCase("न"), more.languages.closingOf("नमस्ते।", "Konkani").plain], [false, "."]);
 settings.sentLanguage = "Konkani";
 answers = ["[ru] मी घरी आहे।"];
-await behaves("and its answers are put right by them", more.aiTranslate("sent", "Я дома.").then(result => result.text), "मी घरी आहे।");
+await behaves("and its answers are put right by them", more.translate("sent", "Я дома.").then(result => result.text), "मी घरी आहे।");
 settings.sentLanguage = "English";
 
 // --- a name in another alphabet is a name
@@ -1130,7 +1130,7 @@ learn("but a changed word is", sameMessage("see you tomorow", "see you tomorrow"
 const budgetFor = async text => {
     asked.length = 0;
     answers = ["[ru] " + text];
-    await aiTranslate("sent", text).catch(() => { });
+    await translate("sent", text).catch(() => { });
     return asked[0]?.max_tokens;
 };
 
@@ -1167,7 +1167,7 @@ async function failure(name, kind, text, reply, want) {
     asked.length = 0;
     answers = [reply];
     let said = "";
-    try { await aiTranslate(kind, text); } catch (e) { said = e.message; }
+    try { await translate(kind, text); } catch (e) { said = e.message; }
     const ok = said.includes(want);
     ok ? pass++ : fail++;
     console.log(ok ? "PASS" : "FAIL", `result: ${name}`);
@@ -1219,7 +1219,7 @@ async function carried(text, ...replies) {
     notices.length = 0;
     answers = replies;
     let said;
-    try { said = (await aiTranslate("sent", text)).text; } catch (e) { said = `threw: ${e.message}`; }
+    try { said = (await translate("sent", text)).text; } catch (e) { said = `threw: ${e.message}`; }
     return { said, models: asked.map(a => a.model), shown: notices.map(n => n.text) };
 }
 
@@ -1254,8 +1254,20 @@ again = await carried("запасной опять", refused(401, "Invalid API K
 backed("and its refusal after that is news again", again.shown.map(text => text.includes("rejected the API key (401)")), [true]);
 
 // A request the first slot calls malformed is malformed for any slot.
-again = await carried("запасной не нужен", refused(400, "Invalid value for 'temperature'"), "[ru] never asked");
+again = await carried("запасной не нужен", refused(400, "Unrecognized request argument supplied: frobnicate"), "[ru] never asked");
 backed("a 400 that says nothing of the model is not handed on", [again.said.startsWith("threw: AI Translate: HTTP 400"), again.models], [true, ["main"]]);
+
+// Claude from 4.7 on refuses any temperature but its own with a 400, by Anthropic's documentation. The wording is an example, not a measured answer.
+const ownTemperature = refused(400, "Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported.");
+settings.providerSlots = JSON.stringify([
+    { id: "t3mp", provider: "groq", keys: { groq: "temp-key" }, models: { groq: "own-temperature" } },
+    { id: "b4ckup5lot", provider: "glm", keys: { glm: "backup-key" }, models: { glm: "spare" } }
+]);
+again = await carried("своя температура", ownTemperature, "[ru] asked again without one");
+backed("a 400 that names the temperature is asked again without one, of the same model",
+    [again.said, again.models, asked.map(body => "temperature" in body)], ["asked again without one", ["own-temperature", "own-temperature"], [true, false]]);
+again = await carried("снова своя температура", "[ru] asked without one at once");
+backed("and that model is asked without one from then on", [again.said, asked.map(body => "temperature" in body)], ["asked without one at once", [false]]);
 
 // A slot made on the settings page has an id of its own, and the paces measured
 // for each provider were looked up by that id, so none of them ever applied: a

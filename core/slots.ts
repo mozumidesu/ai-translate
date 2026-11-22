@@ -24,6 +24,9 @@ import { cleanAddress, cleanKey, KeyVerdict, keyVerdict, notAnApiKey } from "./p
 
 export const PROVIDERS = ["groq", "gemini", "glm", "anthropic", "openai"];
 
+/** Other: any OpenAI-compatible address. Its id is the one saved settings already carry. */
+export const OTHER = "openai";
+
 /** A backup slot that is there but not in use. Only a backup may be one. */
 export const NONE = "none";
 
@@ -34,17 +37,20 @@ const withoutAdvice = (label: string) => label.replace(/\s*\(.*\)\s*$/, "");
 export const providerLabel = (id: string, first = false) =>
     first ? t(`provider.${id}`) : withoutAdvice(t(`provider.${id}`));
 
-/**
- * What a provider is called inside a sentence: "No API key set for Groq". The
- * generic one is not named by its label, which begins with "Any", but by what
- * it speaks, the way the others are named by who they are.
- */
-export const providerName = (id: string) =>
-    id === "openai" ? "OpenAI-compatible" : withoutAdvice(t(`provider.${id}`));
+/** The host an address names, "openrouter.ai" for https://openrouter.ai/api/v1, or nothing. */
+const hostOf = (address: string) =>
+    /^[a-z][\w+.-]*:\/\/(?:[^/?#@]*@)?(\[[^\]]*\]|[^/?#:]+)/i.exec(cleanAddress(address))?.[1].toLowerCase() ?? "";
 
-/** The line over a slot's key: "API key — Groq", "API key — any OpenAI-compatible". */
-export const keyHeading = (id: string) =>
-    `${t("apiKey.name")} — ${id === "openai" ? t("provider.openaiInline") : providerName(id)}`;
+/**
+ * What a provider is called inside a sentence: "No API key set for Groq". Other
+ * is called by the host of its address, "openrouter.ai did not accept this
+ * key": the word Other names nobody, and two slots can each have one.
+ */
+export const providerName = (id: string, address = "") =>
+    (id === OTHER && hostOf(address)) || withoutAdvice(t(`provider.${id}`));
+
+/** The line over a slot's key: "API key — Groq", "API key — Other". */
+export const keyHeading = (id: string) => `${t("apiKey.name")} — ${providerLabel(id)}`;
 
 /** One to ask and four behind it. Past that a message would wait all day. */
 export const MOST_SLOTS = 5;
@@ -63,7 +69,7 @@ export interface Slot {
     provider: string;
     keys: Record<string, string>;
     models: Record<string, string>;
-    /** An OpenAI-compatible provider has an address, and it is this slot's own. */
+    /** Other has an address, and it is this slot's own. */
     baseUrls?: Record<string, string>;
 }
 
@@ -71,6 +77,9 @@ export interface Slot {
 export const keyOf = (slot: Slot) => cleanKey(slot.keys?.[slot.provider]);
 export const modelOf = (slot: Slot) => slot.models?.[slot.provider] ?? "";
 export const baseUrlOf = (slot: Slot) => cleanAddress(slot.baseUrls?.[slot.provider]);
+
+/** A slot's provider as a sentence names it. */
+export const slotName = (slot: Slot) => providerName(slot.provider, baseUrlOf(slot));
 
 const cleaned = <T>(values: Record<string, T> | undefined, clean: (value: T) => string) =>
     values && Object.fromEntries(Object.entries(values).map(([id, value]) => [id, clean(value)]));

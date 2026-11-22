@@ -25,8 +25,7 @@ const en: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (free, for countries with regional restrictions)",
-    "provider.openai": "Any OpenAI-compatible",
-    "provider.openaiInline": "any OpenAI-compatible",
+    "provider.openai": "Other",
 
     "apiKey.name": "API key",
     "apiKey.desc": "Your key for the provider selected above",
@@ -37,7 +36,7 @@ const en: Strings = {
     "model.desc": "Check the provider's current model list and pick a small, fast one: translation needs speed, not reasoning power",
 
     "baseUrl.name": "Base URL",
-    "baseUrl.desc": "Address of the provider's API, without the /chat/completions part, for example https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Address of any OpenAI-compatible API, without the /chat/completions part, for example https://openrouter.ai/api/v1 or https://api.openai.com/v1",
 
 
     "mode.name": "Auto-translate outgoing messages",
@@ -241,8 +240,7 @@ const ru: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (бесплатный, для стран с региональными ограничениями)",
-    "provider.openai": "Любой, совместимый с OpenAI",
-    "provider.openaiInline": "любой, совместимый с OpenAI",
+    "provider.openai": "Другой",
 
     "apiKey.name": "Ключ API",
     "apiKey.desc": "Ваш ключ для выбранного выше провайдера",
@@ -253,7 +251,7 @@ const ru: Strings = {
     "model.desc": "Посмотрите актуальный список моделей провайдера и выберите небольшую и быструю: переводу нужна скорость, а не глубина рассуждений",
 
     "baseUrl.name": "Адрес API",
-    "baseUrl.desc": "Адрес API провайдера без части /chat/completions, например https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Адрес любого API, совместимого с OpenAI, без части /chat/completions, например https://openrouter.ai/api/v1 или https://api.openai.com/v1",
 
 
     "mode.name": "Автоперевод отправляемых сообщений",
@@ -455,8 +453,7 @@ const uk: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (безкоштовний, для країн із регіональними обмеженнями)",
-    "provider.openai": "Будь-який, сумісний з OpenAI",
-    "provider.openaiInline": "будь-який, сумісний з OpenAI",
+    "provider.openai": "Інший",
 
     "apiKey.name": "Ключ API",
     "apiKey.desc": "Ваш ключ для обраного вище провайдера",
@@ -467,7 +464,7 @@ const uk: Strings = {
     "model.desc": "Подивіться актуальний перелік моделей провайдера й оберіть невелику та швидку: перекладу потрібна швидкість, а не глибина міркувань",
 
     "baseUrl.name": "Адреса API",
-    "baseUrl.desc": "Адреса API провайдера без частини /chat/completions, наприклад https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Адреса будь-якого API, сумісного з OpenAI, без частини /chat/completions, наприклад https://openrouter.ai/api/v1 або https://api.openai.com/v1",
 
 
     "mode.name": "Автопереклад надісланих повідомлень",
@@ -669,8 +666,7 @@ const ro: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (gratuit, pentru țări cu restricții regionale)",
-    "provider.openai": "Oricare compatibil cu OpenAI",
-    "provider.openaiInline": "oricare compatibil cu OpenAI",
+    "provider.openai": "Altul",
 
     "apiKey.name": "Cheie API",
     "apiKey.desc": "Cheia ta pentru furnizorul ales mai sus",
@@ -681,7 +677,7 @@ const ro: Strings = {
     "model.desc": "Verifică lista actuală de modele a furnizorului și alege unul mic și rapid: traducerea are nevoie de viteză, nu de putere de raționament",
 
     "baseUrl.name": "Adresă API",
-    "baseUrl.desc": "Adresa API-ului furnizorului, fără partea /chat/completions, de exemplu https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Adresa oricărui API compatibil cu OpenAI, fără partea /chat/completions, de exemplu https://openrouter.ai/api/v1 sau https://api.openai.com/v1",
 
 
     "mode.name": "Traducere automată a mesajelor trimise",
@@ -882,8 +878,7 @@ const de: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (kostenlos, für Länder mit regionalen Sperren)",
-    "provider.openai": "Jeder OpenAI-kompatible Anbieter",
-    "provider.openaiInline": "jeder OpenAI-kompatible Anbieter",
+    "provider.openai": "Anderer Anbieter",
     "apiKey.name": "API-Schlüssel",
     "apiKey.desc": "Dein Schlüssel für den oben gewählten Anbieter",
     "apiKey.show": "Schlüssel anzeigen",
@@ -891,7 +886,7 @@ const de: Strings = {
     "model.name": "Modell",
     "model.desc": "Sieh dir die aktuelle Modellliste des Anbieters an und nimm ein kleines, schnelles Modell: Übersetzen braucht Tempo, keine Denkleistung",
     "baseUrl.name": "API-Adresse",
-    "baseUrl.desc": "Adresse der Anbieter-API ohne den Teil /chat/completions, zum Beispiel https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Adresse einer beliebigen OpenAI-kompatiblen API ohne den Teil /chat/completions, zum Beispiel https://openrouter.ai/api/v1 oder https://api.openai.com/v1",
     "mode.name": "Ausgehende Nachrichten automatisch übersetzen",
     "mode.desc": "Pro Chat ist bequemer: Linksklick auf die Übersetzen-Schaltfläche öffnet das Fenster, Rechtsklick schaltet den aktuellen Chat ein oder aus",
     "mode.perChannel": "Nur in Chats, die ich eingeschaltet habe",
@@ -1081,8 +1076,7 @@ const es: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (gratis, para países con restricciones regionales)",
-    "provider.openai": "Cualquiera compatible con OpenAI",
-    "provider.openaiInline": "cualquiera compatible con OpenAI",
+    "provider.openai": "Otro",
     "apiKey.name": "Clave de API",
     "apiKey.desc": "Tu clave para el proveedor elegido arriba",
     "apiKey.show": "Mostrar la clave",
@@ -1090,7 +1084,7 @@ const es: Strings = {
     "model.name": "Modelo",
     "model.desc": "Consulta la lista actual de modelos del proveedor y elige uno pequeño y rápido: traducir necesita velocidad, no capacidad de razonamiento",
     "baseUrl.name": "Dirección de la API",
-    "baseUrl.desc": "Dirección de la API del proveedor, sin la parte /chat/completions, por ejemplo https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Dirección de cualquier API compatible con OpenAI, sin la parte /chat/completions, por ejemplo https://openrouter.ai/api/v1 o https://api.openai.com/v1",
     "mode.name": "Traducir automáticamente los mensajes que envío",
     "mode.desc": "Por conversación es más cómodo: clic izquierdo en el botón de traducción abre el panel, clic derecho activa o desactiva la conversación actual",
     "mode.perChannel": "Solo en las conversaciones que activé",
@@ -1280,8 +1274,7 @@ const fr: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (gratuit, pour les pays soumis à des restrictions régionales)",
-    "provider.openai": "Tout fournisseur compatible OpenAI",
-    "provider.openaiInline": "tout fournisseur compatible OpenAI",
+    "provider.openai": "Autre",
     "apiKey.name": "Clé API",
     "apiKey.desc": "Votre clé pour le fournisseur choisi ci-dessus",
     "apiKey.show": "Afficher la clé",
@@ -1289,7 +1282,7 @@ const fr: Strings = {
     "model.name": "Modèle",
     "model.desc": "Consultez la liste actuelle des modèles du fournisseur et prenez-en un petit et rapide : la traduction demande de la vitesse, pas de la puissance de raisonnement",
     "baseUrl.name": "Adresse de l'API",
-    "baseUrl.desc": "Adresse de l'API du fournisseur, sans la partie /chat/completions, par exemple https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Adresse de n'importe quelle API compatible OpenAI, sans la partie /chat/completions, par exemple https://openrouter.ai/api/v1 ou https://api.openai.com/v1",
     "mode.name": "Traduire automatiquement mes messages",
     "mode.desc": "Par conversation, c'est plus pratique : un clic gauche sur le bouton de traduction ouvre le panneau, un clic droit active ou désactive la conversation en cours",
     "mode.perChannel": "Seulement dans les conversations que j'ai activées",
@@ -1479,8 +1472,7 @@ const pt: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (grátis, para países com restrições regionais)",
-    "provider.openai": "Qualquer provedor compatível com OpenAI",
-    "provider.openaiInline": "qualquer provedor compatível com OpenAI",
+    "provider.openai": "Outro",
     "apiKey.name": "Chave de API",
     "apiKey.desc": "Sua chave para o provedor escolhido acima",
     "apiKey.show": "Mostrar a chave",
@@ -1488,7 +1480,7 @@ const pt: Strings = {
     "model.name": "Modelo",
     "model.desc": "Veja a lista atual de modelos do provedor e escolha um pequeno e rápido: traduzir precisa de velocidade, não de capacidade de raciocínio",
     "baseUrl.name": "Endereço da API",
-    "baseUrl.desc": "Endereço da API do provedor, sem a parte /chat/completions, por exemplo https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Endereço de qualquer API compatível com OpenAI, sem a parte /chat/completions, por exemplo https://openrouter.ai/api/v1 ou https://api.openai.com/v1",
     "mode.name": "Traduzir automaticamente as mensagens que envio",
     "mode.desc": "Por conversa é mais prático: clique esquerdo no botão de tradução abre o painel, clique direito liga ou desliga a conversa atual",
     "mode.perChannel": "Só nas conversas que eu liguei",
@@ -1678,8 +1670,7 @@ const ja: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM（無料、地域制限のある国向け）",
-    "provider.openai": "OpenAI 互換ならどれでも",
-    "provider.openaiInline": "OpenAI 互換ならどれでも",
+    "provider.openai": "その他",
     "apiKey.name": "API キー",
     "apiKey.desc": "上で選んだプロバイダーのキー",
     "apiKey.show": "キーを表示",
@@ -1687,7 +1678,7 @@ const ja: Strings = {
     "model.name": "モデル",
     "model.desc": "プロバイダーの最新モデル一覧を確認し、小さくて速いものを選んでください。翻訳に必要なのは速さで、推論力ではありません",
     "baseUrl.name": "API アドレス",
-    "baseUrl.desc": "プロバイダー API のアドレス。/chat/completions は含めません。例: https://openrouter.ai/api/v1",
+    "baseUrl.desc": "OpenAI 互換の API ならどれでも使えます。アドレスに /chat/completions は含めません。例: https://openrouter.ai/api/v1、https://api.openai.com/v1",
     "mode.name": "送信するメッセージを自動翻訳",
     "mode.desc": "チャットごとが便利です。チャット欄の翻訳ボタンを左クリックでパネル、右クリックで現在のチャットのオン・オフ",
     "mode.perChannel": "オンにしたチャットだけ",
@@ -1877,8 +1868,7 @@ const zh: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM（免费，适用于有地区限制的国家）",
-    "provider.openai": "任何兼容 OpenAI 的服务",
-    "provider.openaiInline": "任何兼容 OpenAI 的服务",
+    "provider.openai": "其他",
     "apiKey.name": "API 密钥",
     "apiKey.desc": "上方所选服务商的密钥",
     "apiKey.show": "显示密钥",
@@ -1886,7 +1876,7 @@ const zh: Strings = {
     "model.name": "模型",
     "model.desc": "查看服务商当前的模型列表，挑一个小而快的：翻译需要的是速度，不是推理能力",
     "baseUrl.name": "API 地址",
-    "baseUrl.desc": "服务商 API 的地址，不含 /chat/completions 部分，例如 https://openrouter.ai/api/v1",
+    "baseUrl.desc": "任何兼容 OpenAI 的 API 的地址，不含 /chat/completions 部分，例如 https://openrouter.ai/api/v1 或 https://api.openai.com/v1",
     "mode.name": "自动翻译我发出的消息",
     "mode.desc": "按聊天设置更方便：左键点击输入框旁的翻译按钮打开面板，右键开关当前聊天",
     "mode.perChannel": "仅在我开启的聊天中",
@@ -2076,8 +2066,7 @@ const th: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (ฟรี สำหรับประเทศที่มีข้อจำกัดด้านภูมิภาค)",
-    "provider.openai": "บริการใดก็ได้ที่เข้ากันได้กับ OpenAI",
-    "provider.openaiInline": "บริการใดก็ได้ที่เข้ากันได้กับ OpenAI",
+    "provider.openai": "อื่น ๆ",
     "apiKey.name": "คีย์ API",
     "apiKey.desc": "คีย์ของคุณสำหรับผู้ให้บริการที่เลือกไว้ด้านบน",
     "apiKey.show": "แสดงคีย์",
@@ -2093,7 +2082,7 @@ const th: Strings = {
     "model.builtin": "ผู้ให้บริการนี้ไม่เปิดเผยรายการโมเดล จึงแสดงรุ่นที่ปลั๊กอินรู้จัก",
     "model.pick": "เลือกโมเดล",
     "baseUrl.name": "ที่อยู่ API",
-    "baseUrl.desc": "ที่อยู่ API ของผู้ให้บริการ โดยไม่ต้องใส่ส่วน /chat/completions เช่น https://openrouter.ai/api/v1",
+    "baseUrl.desc": "ที่อยู่ของ API ใดก็ได้ที่เข้ากันได้กับ OpenAI โดยไม่ต้องใส่ส่วน /chat/completions เช่น https://openrouter.ai/api/v1 หรือ https://api.openai.com/v1",
     "mode.name": "แปลข้อความที่ส่งออกโดยอัตโนมัติ",
     "mode.desc": "แยกตามแชทจะสะดวกกว่า คลิกซ้ายที่ปุ่มแปลข้างช่องพิมพ์เพื่อเปิดแผง คลิกขวาเพื่อเปิดหรือปิดแชทนี้",
     "mode.perChannel": "เฉพาะแชทที่ฉันเปิดไว้",
@@ -2275,8 +2264,7 @@ const vi: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (miễn phí, cho các nước có hạn chế khu vực)",
-    "provider.openai": "Bất kỳ nhà cung cấp nào tương thích OpenAI",
-    "provider.openaiInline": "bất kỳ nhà cung cấp nào tương thích OpenAI",
+    "provider.openai": "Khác",
     "apiKey.name": "Khoá API",
     "apiKey.desc": "Khoá của bạn cho nhà cung cấp đã chọn ở trên",
     "apiKey.show": "Hiện khoá",
@@ -2292,7 +2280,7 @@ const vi: Strings = {
     "model.builtin": "Nhà cung cấp này không công bố danh sách, nên đây là các mô hình mà plugin biết",
     "model.pick": "Chọn mô hình",
     "baseUrl.name": "Địa chỉ API",
-    "baseUrl.desc": "Địa chỉ API của nhà cung cấp, không kèm phần /chat/completions, ví dụ https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Địa chỉ của bất kỳ API nào tương thích OpenAI, không kèm phần /chat/completions, ví dụ https://openrouter.ai/api/v1 hoặc https://api.openai.com/v1",
     "mode.name": "Tự động dịch tin nhắn bạn gửi",
     "mode.desc": "Theo từng cuộc trò chuyện thì tiện hơn: nhấp chuột trái vào nút dịch để mở bảng, nhấp chuột phải để bật hoặc tắt cho cuộc trò chuyện hiện tại",
     "mode.perChannel": "Chỉ trong các cuộc trò chuyện tôi đã bật",
@@ -2474,8 +2462,7 @@ const tr: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (ücretsiz, bölgesel kısıtlamaları olan ülkeler için)",
-    "provider.openai": "OpenAI uyumlu herhangi biri",
-    "provider.openaiInline": "OpenAI uyumlu herhangi biri",
+    "provider.openai": "Diğer",
     "apiKey.name": "API anahtarı",
     "apiKey.desc": "Yukarıda seçilen sağlayıcı için anahtarınız",
     "apiKey.show": "Anahtarı göster",
@@ -2491,7 +2478,7 @@ const tr: Strings = {
     "model.builtin": "Bu sağlayıcı model listesi yayımlamıyor, burada eklentinin bildiği modeller var",
     "model.pick": "Bir model seçin",
     "baseUrl.name": "API adresi",
-    "baseUrl.desc": "Sağlayıcının API adresi, /chat/completions kısmı olmadan, örneğin https://openrouter.ai/api/v1",
+    "baseUrl.desc": "OpenAI uyumlu herhangi bir API'nin adresi, /chat/completions kısmı olmadan, örneğin https://openrouter.ai/api/v1 veya https://api.openai.com/v1",
     "mode.name": "Gönderdiğim mesajları otomatik çevir",
     "mode.desc": "Sohbet başına daha kullanışlı: yazı alanındaki çeviri düğmesine sol tıklayınca panel açılır, sağ tıklayınca o sohbet açılır veya kapanır",
     "mode.perChannel": "Yalnızca açtığım sohbetlerde",
@@ -2674,8 +2661,7 @@ const id: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (gratis, untuk negara dengan pembatasan regional)",
-    "provider.openai": "Penyedia apa pun yang kompatibel dengan OpenAI",
-    "provider.openaiInline": "penyedia apa pun yang kompatibel dengan OpenAI",
+    "provider.openai": "Lainnya",
 
     "apiKey.name": "Kunci API",
     "apiKey.desc": "Kunci Anda untuk penyedia yang dipilih di atas",
@@ -2686,7 +2672,7 @@ const id: Strings = {
     "model.desc": "Periksa daftar model terbaru dari penyedia dan pilih yang kecil dan cepat: terjemahan butuh kecepatan, bukan kemampuan bernalar",
 
     "baseUrl.name": "URL dasar",
-    "baseUrl.desc": "Alamat API penyedia, tanpa bagian /chat/completions, misalnya https://openrouter.ai/api/v1",
+    "baseUrl.desc": "Alamat API apa pun yang kompatibel dengan OpenAI, tanpa bagian /chat/completions, misalnya https://openrouter.ai/api/v1 atau https://api.openai.com/v1",
 
 
     "mode.name": "Terjemahkan otomatis pesan keluar",
@@ -2888,8 +2874,7 @@ const ar: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (مجاني، للدول التي عليها قيود إقليمية)",
-    "provider.openai": "أي مزوّد متوافق مع OpenAI",
-    "provider.openaiInline": "أي مزوّد متوافق مع OpenAI",
+    "provider.openai": "مزوّد آخر",
 
     "apiKey.name": "مفتاح API",
     "apiKey.desc": "مفتاحك للمزوّد المحدد أعلاه",
@@ -2900,7 +2885,7 @@ const ar: Strings = {
     "model.desc": "راجع قائمة النماذج الحالية لدى المزوّد واختر نموذجًا سريعًا، فالترجمة تحتاج إلى السرعة لا إلى قدرة الاستدلال",
 
     "baseUrl.name": "عنوان URL الأساسي",
-    "baseUrl.desc": "عنوان واجهة API لدى المزوّد، من دون الجزء ‎/chat/completions، مثلًا ‎https://openrouter.ai/api/v1",
+    "baseUrl.desc": "عنوان أي واجهة API متوافقة مع OpenAI، من دون الجزء ‎/chat/completions، مثلًا ‎https://openrouter.ai/api/v1 أو ‎https://api.openai.com/v1",
 
 
     "mode.name": "الترجمة التلقائية للرسائل الصادرة",
@@ -3102,8 +3087,7 @@ const ko: Strings = {
     "provider.gemini": "Google Gemini",
     "provider.anthropic": "Anthropic Claude",
     "provider.glm": "Z.ai GLM (무료, 지역 제한이 있는 국가용)",
-    "provider.openai": "OpenAI 호환이면 무엇이든",
-    "provider.openaiInline": "OpenAI 호환이면 무엇이든",
+    "provider.openai": "기타",
 
     "apiKey.name": "API 키",
     "apiKey.desc": "위에서 선택한 제공자의 키",
@@ -3114,7 +3098,7 @@ const ko: Strings = {
     "model.desc": "제공자의 최신 모델 목록에서 작고 빠른 모델을 고르세요. 번역에는 추론 능력보다 속도가 중요합니다",
 
     "baseUrl.name": "기본 주소",
-    "baseUrl.desc": "제공자 API의 주소입니다. /chat/completions 부분은 빼고 적습니다. 예: https://openrouter.ai/api/v1",
+    "baseUrl.desc": "OpenAI와 호환되는 API라면 무엇이든 됩니다. 주소에서 /chat/completions 부분은 빼고 적습니다. 예: https://openrouter.ai/api/v1, https://api.openai.com/v1",
 
 
     "mode.name": "보내는 메시지 자동 번역",

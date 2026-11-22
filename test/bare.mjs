@@ -89,7 +89,7 @@ await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
             + `export { timeoutSignal, useNet } from "./core/net";\n`
-            + `export { aiTranslate, forgetAnswers } from "./core/translate";\n`
+            + `export { translate, forgetAnswers } from "./core/translate";\n`
             + `export { currentLocale, t } from "./core/locales";\n`,
         resolveDir: plugin,
         loader: "ts"
@@ -114,7 +114,7 @@ for (const name of [...PAGE, "fetch", "GM_xmlhttpRequest"]) {
     });
 }
 
-const { useHost, useNet, timeoutSignal, aiTranslate, forgetAnswers, currentLocale, t } = await import(join(out, "core.mjs"));
+const { useHost, useNet, timeoutSignal, translate, forgetAnswers, currentLocale, t } = await import(join(out, "core.mjs"));
 
 const settings = {
     provider: "groq", groqApiKey: "k", groqModel: "m", baseUrl: "",
@@ -147,7 +147,7 @@ useNet(async request => {
 async function sentFor(text) {
     forgetAnswers();
     seen.length = 0;
-    const result = await aiTranslate("sent", text);
+    const result = await translate("sent", text);
     return { result, request: seen[0], body: seen[0] && JSON.parse(seen[0].body) };
 }
 
@@ -203,7 +203,7 @@ settings.locale = "auto";
 useHost({ ...host, appLocale: () => "ru-RU" });
 forgetAnswers();
 let said = "";
-try { await aiTranslate("sent", "hello"); } catch (e) { said = e.message; }
+try { await translate("sent", "hello"); } catch (e) { said = e.message; }
 settings.locale = "ru";
 check("a refused key is explained in the app's language", said === "AI Translate: " + t("error.badKey", { provider: "Groq", status: 401 }), said);
 answer = { status: 200, data: completion("[en] привет") };

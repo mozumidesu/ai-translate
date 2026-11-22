@@ -133,7 +133,7 @@ export function LogsPanel() {
     const [stamp, setStamp] = useState("");
 
     useEffect(() => {
-        Bridge.aiTranslateBuild()
+        Bridge.whichBuild()
             .then(({ build, channel }) => {
                 if (channel === "testing") setStamp(build ? ` · testing · ${build}` : " · testing");
             })

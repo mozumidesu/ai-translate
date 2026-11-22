@@ -150,9 +150,14 @@ export const Bridge = {
      * What this copy is, for the one line in the interface that says so. A
      * desktop copy reads it off the disk; a browser copy was stamped at build
      * time, and a copy somebody built themselves has nothing to show.
+     *
+     * A main process from before 0.2.4a, still running after an update until
+     * Discord restarts, has this under its old name and not under this one.
+     * The stamp then answers instead, and says the same: the robot writes it
+     * into the desktop build too, and the files on the disk are that build.
      */
-    aiTranslateBuild(): Promise<{ build: string; channel: string; }> {
-        const native = desktop().aiTranslateBuild;
+    whichBuild(): Promise<{ build: string; channel: string; }> {
+        const native = desktop().whichBuild;
         if (native) return native();
 
         const published = BROWSER_CHANNEL === "release" || BROWSER_CHANNEL === "testing";

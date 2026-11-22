@@ -80,7 +80,7 @@ its own and never sees anyone else's key.
 | Google Gemini | yes |
 | Z.ai GLM | yes, and reachable where the other two are blocked |
 | Anthropic Claude | no |
-| Any OpenAI-compatible | depends on the provider |
+| Other (any OpenAI-compatible API) | depends on the provider |
 
 A second provider can be named as a backup. When the first one is overloaded,
 out of quota or refuses the request, the translation goes through the other one
@@ -117,7 +117,7 @@ Then quit Discord completely, from the tray icon too, and start it again.
 
 On atomic Linux systems, such as Bazzite, Silverblue, Kinoite or SteamOS, the
 same command works: it installs nothing into the system, everything lands in
-`~/.aiTranslate`. Discord itself should be the Flatpak one, and the installer
+`~/.ai-translate`. Discord itself should be the Flatpak one, and the installer
 then grants that Flatpak access to those files on its own. A Discord layered
 into the system image with `rpm-ostree` usually cannot be patched, because the
 system folders are read-only there; install the Flatpak instead.
@@ -126,7 +126,7 @@ AI Translate is already switched on. Open **Settings → Vencord → Plugins →
 AI Translate**, choose a provider and paste your key.
 
 Everything the command downloads lives in one folder of its own:
-`%LOCALAPPDATA%\aiTranslate` on Windows and `~/.aiTranslate` on macOS and
+`%LOCALAPPDATA%\ai-translate` on Windows and `~/.ai-translate` on macOS and
 Linux. Patching Discord means swapping its startup file for a small one that
 loads Vencord first and then Discord exactly as before; your Discord account,
 settings and messages are not touched.
@@ -192,7 +192,7 @@ downloaded files, so they are still there if you ever install again.
 From your Vencord folder, clone this repository in as a userplugin and rebuild:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

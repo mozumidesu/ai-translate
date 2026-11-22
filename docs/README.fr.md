@@ -84,7 +84,7 @@ pas de serveur à lui et ne voit jamais la clé de quelqu'un d'autre.
 | Google Gemini | oui |
 | Z.ai GLM | oui, et accessible là où les deux autres sont bloqués |
 | Anthropic Claude | non |
-| Tout fournisseur compatible OpenAI | selon le fournisseur |
+| Autre (toute API compatible OpenAI) | selon le fournisseur |
 
 Un deuxième fournisseur peut être désigné comme secours. Quand le premier est
 saturé, à court de quota ou refuse la requête, la traduction passe par l'autre
@@ -122,7 +122,7 @@ compris depuis l'icône de la zone de notification, et relancez-le.
 
 Sur les systèmes Linux atomiques comme Bazzite, Silverblue, Kinoite ou SteamOS,
 la même commande fonctionne : elle n'installe rien dans le système, tout
-atterrit dans `~/.aiTranslate`. Discord lui-même doit être celui de Flatpak, et
+atterrit dans `~/.ai-translate`. Discord lui-même doit être celui de Flatpak, et
 l'installateur accorde alors de lui-même à ce Flatpak l'accès à ces fichiers. Un
 Discord intégré à l'image du système avec `rpm-ostree` ne peut généralement pas
 être relié, car les dossiers système y sont en lecture seule ; installez plutôt
@@ -132,7 +132,7 @@ AI Translate est déjà activé. Ouvrez **Paramètres → Vencord → Plugins �
 AI Translate**, choisissez un fournisseur et collez votre clé.
 
 Tout ce que la commande télécharge tient dans un dossier à part :
-`%LOCALAPPDATA%\aiTranslate` sous Windows et `~/.aiTranslate` sous macOS et
+`%LOCALAPPDATA%\ai-translate` sous Windows et `~/.ai-translate` sous macOS et
 Linux. Relier Discord consiste à remplacer son fichier de démarrage par un petit
 fichier qui charge d'abord Vencord puis Discord exactement comme avant ; votre
 compte, vos paramètres et vos messages ne sont pas touchés.
@@ -203,7 +203,7 @@ Depuis votre dossier Vencord, clonez ce dépôt dedans comme userplugin et
 recompilez :
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

@@ -55,7 +55,7 @@ API 키는 직접 가져오고, 계속 당신의 것입니다. 이 플러그인�
 | Google Gemini | 있음 |
 | Z.ai GLM | 있음, 그리고 앞의 둘이 막힌 곳에서도 닿습니다 |
 | Anthropic Claude | 없음 |
-| OpenAI 호환이면 무엇이든 | 제공자에 따라 다름 |
+| 기타 (OpenAI와 호환되는 API라면 무엇이든) | 제공자에 따라 다름 |
 
 두 번째 제공자를 예비로 지정할 수 있습니다. 첫 번째가 혼잡하거나 한도를 다 썼거나 요청을 거부하면, 번역은 당신을 번거롭게 하지 않고 다른 쪽으로 갑니다.
 
@@ -79,11 +79,11 @@ sh -c "$(curl -fsSL https://builds.zolatau.com/install.sh)"
 
 화살표 키로 **Install or update**를 고르고 Enter를 누르세요. 어떤 Discord에 연결할지 물으면 같은 방법으로 쓰는 것을 고르세요. Windows에서는 명령이 연결 전에 Discord를 알아서 닫습니다. Linux에서는 비밀번호를 물을 수 있는데, Discord가 보통 관리자만 쓸 수 있는 곳에 있기 때문입니다. 그다음 트레이 아이콘에서까지 Discord를 완전히 끄고 다시 시작하세요.
 
-Bazzite, Silverblue, Kinoite, SteamOS 같은 아토믹 Linux에서도 같은 명령이 동작합니다. 시스템에는 아무것도 설치되지 않고 모두 `~/.aiTranslate`에 들어갑니다. Discord 자체는 Flatpak 판이어야 하며, 그러면 설치 프로그램이 그 Flatpak에 해당 파일 접근 권한을 알아서 줍니다. `rpm-ostree`로 시스템 이미지에 넣은 Discord는 보통 연결할 수 없습니다. 거기서는 시스템 폴더가 읽기 전용이기 때문입니다. 대신 Flatpak 판을 설치하세요.
+Bazzite, Silverblue, Kinoite, SteamOS 같은 아토믹 Linux에서도 같은 명령이 동작합니다. 시스템에는 아무것도 설치되지 않고 모두 `~/.ai-translate`에 들어갑니다. Discord 자체는 Flatpak 판이어야 하며, 그러면 설치 프로그램이 그 Flatpak에 해당 파일 접근 권한을 알아서 줍니다. `rpm-ostree`로 시스템 이미지에 넣은 Discord는 보통 연결할 수 없습니다. 거기서는 시스템 폴더가 읽기 전용이기 때문입니다. 대신 Flatpak 판을 설치하세요.
 
 AI Translate는 이미 켜져 있습니다. **설정 → Vencord → Plugins → AI Translate**를 열고 제공자를 고른 뒤 키를 붙여 넣으세요.
 
-명령이 내려받는 것은 모두 전용 폴더에 들어갑니다. Windows에서는 `%LOCALAPPDATA%\aiTranslate`, macOS와 Linux에서는 `~/.aiTranslate`입니다. Discord를 연결한다는 것은 시작 파일을 작은 파일로 바꿔, 먼저 Vencord를 불러오고 그다음 Discord를 전과 똑같이 불러오게 한다는 뜻입니다. 계정과 설정, 메시지는 건드리지 않습니다.
+명령이 내려받는 것은 모두 전용 폴더에 들어갑니다. Windows에서는 `%LOCALAPPDATA%\ai-translate`, macOS와 Linux에서는 `~/.ai-translate`입니다. Discord를 연결한다는 것은 시작 파일을 작은 파일로 바꿔, 먼저 Vencord를 불러오고 그다음 Discord를 전과 똑같이 불러오게 한다는 뜻입니다. 계정과 설정, 메시지는 건드리지 않습니다.
 
 ## 브라우저에서
 
@@ -116,7 +116,7 @@ API 키와 설정은 내려받은 파일이 아니라 Vencord의 설정과 함�
 Vencord 폴더에서 이 저장소를 userplugin으로 안에 클론하고 다시 빌드하세요.
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

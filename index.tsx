@@ -30,7 +30,7 @@ import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
 import { changedWords, keepCorrection, looksLikeOwnAttempt, Part, sameMessage, splitCorrection } from "./core/learn";
-import { aiTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, TranslationResult, wasCancelled } from "./core/translate";
+import { collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, translate, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -279,7 +279,7 @@ async function translateMessage(message: Message) {
         const context = collectContext(message.channel_id, message.id)
             + (author ? `\n\nThe message below was written by ${author}.` : "");
 
-        showUnderMessage(message.id, await aiTranslate("received", content, context, mine));
+        showUnderMessage(message.id, await translate("received", content, context, mine));
     } catch (e) {
         notify(e, "failure");
     }
@@ -294,7 +294,7 @@ async function explainMessage(message: Message) {
         const context = collectContext(message.channel_id, message.id)
             + (author ? `\n\nThe message below was written by ${author}.` : "");
 
-        const result = await aiTranslate("explain", content, context);
+        const result = await translate("explain", content, context);
         showUnderMessage(message.id, { ...result, explained: true });
     } catch (e) {
         notify(e, "failure");
@@ -360,7 +360,7 @@ const inFlight = new Set<string>();
  */
 async function askForCorrection(channelId: string, sent: string, asked = false) {
     try {
-        const { text } = await aiTranslate("correct", sent, collectContext(channelId));
+        const { text } = await translate("correct", sent, collectContext(channelId));
         if (!text) return;
 
         const { native, why } = splitCorrection(text);
@@ -427,7 +427,7 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         document.addEventListener("keydown", onKey, true);
 
         try {
-            message.content = (await aiTranslate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
+            message.content = (await translate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
         } finally {
             document.removeEventListener("keydown", onKey, true);
             inFlight.delete(sending);

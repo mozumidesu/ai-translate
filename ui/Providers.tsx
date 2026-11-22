@@ -22,8 +22,8 @@ import { SearchableSelect, TextInput, useState } from "@webpack/common";
 
 import { t } from "../core/locales";
 import {
-    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, MOST_SLOTS, NONE, PROVIDERS, providerLabel, providerName,
-    readSlots, Slot, writeSlots
+    baseUrlOf, canRemove, emptySlot, keyHeading, keyOf, MOST_SLOTS, NONE, OTHER, PROVIDERS, providerLabel, readSlots,
+    Slot, slotName, writeSlots
 } from "../core/slots";
 import { ModelPicker, Verdict } from "./ModelPicker";
 
@@ -150,18 +150,18 @@ export function Providers() {
 
                                 {(verdicts[slot.id] === "bad" || verdicts[slot.id] === "notAKey") && (
                                     <Paragraph className={cl("warning")} defaultColor={false}>
-                                        {t(verdicts[slot.id] === "notAKey" ? "apiKey.notAKey" : "apiKey.bad", { provider: providerName(slot.provider) })}
+                                        {t(verdicts[slot.id] === "notAKey" ? "apiKey.notAKey" : "apiKey.bad", { provider: slotName(slot) })}
                                     </Paragraph>
                                 )}
 
                                 {/* Not the key's fault, so not in red. */}
                                 {verdicts[slot.id] === "blocked" && (
                                     <Paragraph className="vc-aitrans-quiet" defaultColor={false}>
-                                        {t("apiKey.blocked", { provider: providerName(slot.provider) })}
+                                        {t("apiKey.blocked", { provider: slotName(slot) })}
                                     </Paragraph>
                                 )}
 
-                                {slot.provider === "openai" && (
+                                {slot.provider === OTHER && (
                                     <>
                                         <Heading className={`${Margins.top16} ${Margins.bottom8} vc-aitrans-label`} defaultColor={false}>
                                             {t("baseUrl.name")}
@@ -169,11 +169,15 @@ export function Providers() {
                                         <div onBlur={() => bump(slot.id)}>
                                             <TextInput
                                                 value={baseUrlOf(slot)}
-                                                placeholder={t("baseUrl.desc")}
                                                 onChange={(value: string) => change(at, s =>
                                                     ({ ...s, baseUrls: { ...s.baseUrls, [s.provider]: value } }))}
                                             />
                                         </div>
+                                        {/* Under the field rather than in it, where typing would hide
+                                            the one line that says what Other takes. */}
+                                        <Paragraph className="vc-aitrans-quiet" defaultColor={false}>
+                                            {t("baseUrl.desc")}
+                                        </Paragraph>
                                     </>
                                 )}
 

@@ -5,7 +5,7 @@ are sent, chat by chat, and incoming messages on request from the right-click
 menu, using an AI provider's API with the user's own key.
 
 This folder is the plugin itself. In a working Vencord checkout it sits at
-`src/userplugins/aiTranslate/`.
+`src/userplugins/ai-translate/`.
 
 Details live in skills under `.claude/skills/`, each the full text this file
 summarises. Load the one a task reaches before starting it:
@@ -141,7 +141,9 @@ field has been left; a network or a country turned away gets a line of its own,
 not red. `keyVerdict` in `core/providers.ts` is the one rule for both, used by
 every settings page, by the Telegram panel and by the notice a translation shows. Settings from before the list
 are still read when no list exists, which is what `web/` and every test hand
-over.
+over. Other takes any OpenAI-compatible address under the id `openai`, the one
+saved settings already carry, and a sentence calls it by its address's host.
+Anthropic keeps its own API: its OpenAI-compatible layer is meant for testing.
 
 ## Prompt rules
 
@@ -177,11 +179,11 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 365 checks; needs esbuild
+node test/prompts.mjs      # 367 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
-node test/keys.mjs         # 86 checks: a pasted key cleaned, each provider's answers judged, the check logged, a translation's notice for them; needs esbuild
+node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
-node test/interface.mjs    # 181 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line; needs esbuild
+node test/interface.mjs    # 190 checks on strings, provider names, the echo, an edit left as typed, the headings, browser updating, the report's build line, which build a copy is; needs esbuild
 node test/bare.mjs         # 44 checks: the core on a bare engine, a fake Net and Host, no DOM globals; needs esbuild
 node test/native.mjs       # 40 checks: native.ts beside a fake Electron, every request through the plugin's own session, failures with their cause and route; needs esbuild
 node test/imports.mjs      # are the Vencord imports still real; needs esbuild and a Vencord checkout

@@ -77,7 +77,7 @@ và không bao giờ nhìn thấy khóa của ai.
 | Google Gemini | có |
 | Z.ai GLM | có, và dùng được ở nơi hai cái kia bị chặn |
 | Anthropic Claude | không |
-| Bất kỳ nhà cung cấp nào tương thích OpenAI | tùy nhà cung cấp |
+| Khác (bất kỳ API nào tương thích OpenAI) | tùy nhà cung cấp |
 
 Có thể chỉ định nhà cung cấp thứ hai làm dự phòng. Khi cái thứ nhất quá tải, hết
 hạn mức hoặc từ chối yêu cầu, bản dịch lặng lẽ đi qua cái còn lại mà không làm
@@ -114,7 +114,7 @@ khay hệ thống, rồi mở lại.
 
 Trên các hệ thống Linux atomic như Bazzite, Silverblue, Kinoite hay SteamOS,
 vẫn là câu lệnh đó: nó không cài gì vào hệ thống, mọi thứ nằm trong
-`~/.aiTranslate`. Bản Discord nên là bản Flatpak, khi đó trình cài đặt tự cấp
+`~/.ai-translate`. Bản Discord nên là bản Flatpak, khi đó trình cài đặt tự cấp
 cho Flatpak ấy quyền truy cập những tệp này. Một bản Discord được nhúng vào ảnh
 hệ thống bằng `rpm-ostree` thường không nối được, vì ở đó các thư mục hệ thống
 chỉ đọc; hãy cài bản Flatpak.
@@ -123,7 +123,7 @@ AI Translate đã bật sẵn. Mở **Cài đặt → Vencord → Plugins → AI
 một nhà cung cấp và dán khóa của bạn.
 
 Mọi thứ câu lệnh tải về đều nằm trong một thư mục riêng:
-`%LOCALAPPDATA%\aiTranslate` trên Windows và `~/.aiTranslate` trên macOS và
+`%LOCALAPPDATA%\ai-translate` trên Windows và `~/.ai-translate` trên macOS và
 Linux. Nối Discord nghĩa là đổi tệp khởi động của nó thành một tệp nhỏ, nạp
 Vencord trước rồi nạp Discord y như cũ; tài khoản, cài đặt và tin nhắn Discord
 của bạn không bị đụng đến.
@@ -186,7 +186,7 @@ trong các tệp đã tải, nên chúng vẫn còn đó nếu sau này bạn c�
 Từ thư mục Vencord của bạn, clone kho này vào làm userplugin rồi dựng lại:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 

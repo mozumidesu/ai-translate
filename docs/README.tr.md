@@ -79,7 +79,7 @@ yoktur ve kimsenin anahtarını görmez.
 | Google Gemini | var |
 | Z.ai GLM | var, ve diğer ikisinin engellendiği yerlerden erişilebilir |
 | Anthropic Claude | yok |
-| OpenAI uyumlu herhangi biri | sağlayıcıya bağlı |
+| Diğer (OpenAI uyumlu herhangi bir API) | sağlayıcıya bağlı |
 
 İkinci bir sağlayıcı yedek olarak tanımlanabilir. İlki yoğun olduğunda, kotası
 bittiğinde ya da isteği geri çevirdiğinde çeviri sizi rahatsız etmeden diğeri
@@ -116,7 +116,7 @@ Ardından Discord'u tepsi simgesinden de olmak üzere tamamen kapatıp yeniden
 başlatın.
 
 Bazzite, Silverblue, Kinoite ya da SteamOS gibi atomik Linux sistemlerinde aynı
-komut çalışır: sisteme hiçbir şey kurulmaz, her şey `~/.aiTranslate` içine
+komut çalışır: sisteme hiçbir şey kurulmaz, her şey `~/.ai-translate` içine
 iner. Discord'un kendisi Flatpak sürümü olmalı, o zaman kurulum programı o
 Flatpak'e bu dosyalara erişimi kendiliğinden verir. `rpm-ostree` ile sistem
 imajına gömülmüş bir Discord genelde bağlanamaz, çünkü orada sistem klasörleri
@@ -126,7 +126,7 @@ AI Translate zaten açık. **Ayarlar → Vencord → Plugins → AI Translate** 
 açın, bir sağlayıcı seçin ve anahtarınızı yapıştırın.
 
 Komutun indirdiği her şey kendi klasöründe durur: Windows'ta
-`%LOCALAPPDATA%\aiTranslate`, macOS ve Linux'ta `~/.aiTranslate`. Discord'u
+`%LOCALAPPDATA%\ai-translate`, macOS ve Linux'ta `~/.ai-translate`. Discord'u
 bağlamak, açılış dosyasını önce Vencord'u sonra Discord'u eskisi gibi yükleyen
 küçük bir dosyayla değiştirmek demektir; hesabınıza, ayarlarınıza ve
 mesajlarınıza dokunulmaz.
@@ -194,7 +194,7 @@ Vencord klasörünüzden bu depoyu içeri userplugin olarak klonlayıp yeniden
 derleyin:
 
 ```
-git clone https://github.com/mozumidesu/ai-translate src/userplugins/aiTranslate
+git clone https://github.com/mozumidesu/ai-translate src/userplugins/ai-translate
 pnpm build
 ```
 
