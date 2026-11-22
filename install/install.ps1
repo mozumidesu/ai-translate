@@ -122,21 +122,39 @@
         Development = "DiscordDevelopment"
     }
 
+    # Each Discord where Vencord's installer looks: the folder --location
+    # takes, its line in the menu, and the app.asar it runs. It patches, and
+    # Discord runs, only the app-* whose resources path sorts last byte by
+    # byte, as Go compares it; older ones stay behind after Discord updates
+    # itself. Each version has one folder, so its name is line enough.
+    function Get-Discords {
+        foreach ($version in $DiscordVersions.Keys) {
+            $path = Join-Path $env:LOCALAPPDATA $DiscordVersions[$version]
+            $newest = $null
+            foreach ($dir in @(Get-ChildItem -LiteralPath $path -Directory -Force -ErrorAction SilentlyContinue)) {
+                if (-not $dir.Name.StartsWith("app-", [StringComparison]::Ordinal)) { continue }
+                $resources = Join-Path $dir.FullName "resources"
+                if (-not (Test-Path -LiteralPath $resources)) { continue }
+                $key = $dir.Name + "\resources"
+                if (-not $newest -or [string]::CompareOrdinal($key, $newest.Key) -gt 0) {
+                    $newest = @{ Key = $key; Resources = $resources }
+                }
+            }
+            if ($newest) {
+                [pscustomobject]@{ Label = $version; Path = $path; Asar = (Join-Path $newest.Resources "app.asar") }
+            }
+        }
+    }
+
     # Vencord's installer asks which Discord to work on itself, but by then
     # Discord has had to be closed already, and nothing here knows which one to
     # close. So the question is asked first and the answer handed to it.
     function Select-Discord([string]$Title) {
-        $found = @()
-        $options = @()
-        foreach ($version in $DiscordVersions.Keys) {
-            $path = Join-Path $env:LOCALAPPDATA $DiscordVersions[$version]
-            if (Test-Path $path) {
-                $found += [pscustomobject]@{ Label = "$version - $path"; Path = $path }
-                $options += "$version - $path"
-            }
-        }
-
+        $found = @(Get-Discords)
         # Built in the loop: @($found.Label) of an empty list is one blank item.
+        $options = @()
+        foreach ($discord in $found) { $options += $discord.Label }
+
         $index = Select-Option $Title ($options + "Another folder")
         if ($index -lt $found.Count) { return $found[$index].Path }
 
@@ -162,18 +180,21 @@
 
     # Vencord's own installer, told to point Discord at these files instead of
     # downloading plain Vencord, and told which Discord to work on so that it
-    # does not ask a second time.
-    function Invoke-VencordInstaller([string]$Action, [string]$Title, [string]$Failure) {
+    # does not ask a second time. It is downloaded once a run.
+    $Downloaded = @{ Cli = $false }
+    function Invoke-VencordInstaller([string]$Action, [string]$Discord, [string]$Failure) {
         $cli = Join-Path $AitHome "VencordInstallerCli.exe"
-        Get-File $VencordInstaller $cli
+        if (-not $Downloaded.Cli) {
+            Get-File $VencordInstaller $cli
+            $Downloaded.Cli = $true
+        }
 
-        $discord = Select-Discord $Title
-        Close-Discord $discord
+        Close-Discord $Discord
 
         $env:VENCORD_USER_DATA_DIR = $AitHome
         $env:VENCORD_DEV_INSTALL = "1"
         try {
-            & $cli $Action --location $discord
+            & $cli $Action --location $Discord
             if ($LASTEXITCODE -ne 0) { Stop-Here $Failure }
         }
         finally {
@@ -202,39 +223,45 @@
         return $Path.Replace('/', '\').StartsWith($Folder, [StringComparison]::OrdinalIgnoreCase)
     }
 
-    # Each Discord that still loads AI Translate from inside a folder, of those
-    # Vencord's installer looks for. It patches, and Discord runs, only the
-    # app-* whose resources path sorts last byte by byte, as Go compares it;
-    # older ones stay behind after Discord updates itself.
+    # Each Discord that still loads AI Translate from inside a folder.
     function Get-DiscordLoadingFrom([string]$Folder) {
-        foreach ($name in $DiscordVersions.Values) {
-            $path = Join-Path $env:LOCALAPPDATA $name
-            $newest = $null
-            foreach ($dir in @(Get-ChildItem -LiteralPath $path -Directory -Force -ErrorAction SilentlyContinue)) {
-                if (-not $dir.Name.StartsWith("app-", [StringComparison]::Ordinal)) { continue }
-                $resources = Join-Path $dir.FullName "resources"
-                if (-not (Test-Path -LiteralPath $resources)) { continue }
-                $key = $dir.Name + "\resources"
-                if (-not $newest -or [string]::CompareOrdinal($key, $newest.Key) -gt 0) {
-                    $newest = @{ Key = $key; Resources = $resources }
-                }
-            }
-            if (-not $newest) { continue }
-            $required = Get-RequiredPath (Join-Path $newest.Resources "app.asar")
-            if ($required -and (Test-Inside $required $Folder)) { $path }
+        foreach ($discord in @(Get-Discords)) {
+            $required = Get-RequiredPath $discord.Asar
+            if ($required -and (Test-Inside $required $Folder)) { $discord }
         }
     }
 
-    # A folder about to be deleted stays while a Discord still loads AI
-    # Translate from it, and the run stops there, so the next one patches again.
-    function Stop-WhileLoaded([string]$Folder) {
+    # A folder about to go may still be loaded by another Discord on this
+    # computer (PTB, Canary), which would no longer start. Those Discords are
+    # named and, on Yes, patched too; on No the folder stays and the run
+    # stops, so the next one moves again.
+    function Update-StillLoading([string]$Folder) {
         if (-not (Test-Path -LiteralPath $Folder -PathType Container)) { return }
         $left = @(Get-DiscordLoadingFrom $Folder)
         if ($left.Count -eq 0) { return }
         Write-Host ""
         Write-Host "A Discord still loads AI Translate from $($Folder):"
-        foreach ($path in $left) { Write-Host "  $path" }
-        Stop-Here "So $Folder is kept. Run this again and patch that Discord too."
+        foreach ($discord in $left) { Write-Host "  $($discord.Label)" }
+        $question = "Patch that Discord too?"
+        if ($left.Count -gt 1) { $question = "Patch those Discords too?" }
+        if ((Select-Option $question @("Yes", "No")) -ne 0) {
+            Stop-Here "So $Folder is kept. Run this again and patch that Discord too."
+        }
+        foreach ($discord in $left) { Invoke-VencordInstaller "--install" $discord.Path "Patching Discord failed." }
+    }
+
+    # A folder about to be deleted stays while a Discord still loads AI
+    # Translate from it, and the run stops there, so the next one patches again.
+    # $Message, when given, says so instead of the line about patching.
+    function Stop-WhileLoaded([string]$Folder, [string]$Message) {
+        if (-not (Test-Path -LiteralPath $Folder -PathType Container)) { return }
+        $left = @(Get-DiscordLoadingFrom $Folder)
+        if ($left.Count -eq 0) { return }
+        if (-not $Message) { $Message = "So $Folder is kept. Run this again and patch that Discord too." }
+        Write-Host ""
+        Write-Host "A Discord still loads AI Translate from $($Folder):"
+        foreach ($discord in $left) { Write-Host "  $($discord.Label)" }
+        Stop-Here $Message
     }
 
     function Install-AiTranslate {
@@ -265,9 +292,9 @@
 
         # Discord only needs patching once: after that it loads these files
         # from disk, so an update is simply new files. On the first install
-        # there is nothing to ask about, and the installer asks which Discord
-        # itself. Only a Discord update of its own can undo the patch, and that
-        # is the one case worth a question.
+        # there is nothing to ask about but which Discord. Only a Discord
+        # update of its own can undo the patch, and that is the one case worth
+        # a question.
         $patch = if ($first -or $moving) { $true }
         else {
             (Select-Option "Patch Discord again? Only needed if AI Translate vanished after Discord updated." @("No", "Yes")) -eq 1
@@ -275,26 +302,18 @@
 
         if ($patch) {
             if ($OldHome) { Write-Host "AI Translate moves from $OldHome to $AitHome, so Discord is patched again." }
-            Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
+            $discord = Select-Discord "Which Discord should be patched?"
+            Invoke-VencordInstaller "--install" $discord "Patching Discord failed."
 
-            # Another Discord on this computer (PTB, Canary) may have been
-            # patched to the old folder, and fails to start once that is
-            # deleted. The old folder goes only after every one of them is
-            # patched; a failed or cancelled patch throws from here with it
-            # kept, and the next run moves again.
-            if ($OldHome) {
-                while ((Select-Option "Did another Discord on this computer have AI Translate too?" @("No", "Yes")) -eq 1) {
-                    Invoke-VencordInstaller "--install" "Which Discord should be patched?" "Patching Discord failed."
-                }
-            }
-
-            # Answering No above can leave a Discord still patched to a folder
-            # about to go, and it would no longer start.
+            # Each folder goes only once no Discord loads from it any more.
+            # Stop-WhileLoaded looks again for itself: a patch can fail silently.
             if ($moving) {
+                Update-StillLoading $old
                 Stop-WhileLoaded $old
                 Remove-Item -LiteralPath $old -Recurse -Force -ErrorAction SilentlyContinue
             }
             if ($OldHome) {
+                Update-StillLoading $OldHome
                 Stop-WhileLoaded $OldHome
                 try { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }
                 catch { Write-Host "Could not delete $OldHome. Delete it by hand." -ForegroundColor Yellow }
@@ -313,9 +332,13 @@
         if (-not (Test-Path $AitHome)) { Stop-Here "Nothing to remove: $AitHome does not exist." }
 
         Write-Host "Removing the patch from Discord..."
-        Invoke-VencordInstaller "--uninstall" "Which Discord should the patch be removed from?" "Removing the patch failed."
+        $discord = Select-Discord "Which Discord should the patch be removed from?"
+        Invoke-VencordInstaller "--uninstall" $discord "Removing the patch failed."
 
         if ((Select-Option "Also delete the downloaded files in $($AitHome)?" @("No", "Yes")) -eq 1) {
+            foreach ($folder in @($AitHome, $OldHome)) {
+                if ($folder) { Stop-WhileLoaded $folder "So $folder is kept. Run this again and remove the patch from that Discord too." }
+            }
             try {
                 Remove-Item -LiteralPath $AitHome -Recurse -Force -ErrorAction Stop
                 if ($OldHome) { Remove-Item -LiteralPath $OldHome -Recurse -Force -ErrorAction Stop }

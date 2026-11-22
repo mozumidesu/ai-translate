@@ -37,7 +37,13 @@ VENCORD_INSTALLER="https://github.com/Vencord/Installer/releases/latest/download
 # What Discord loads, named as Vencord's own updater names them.
 FILES="patcher.js preload.js renderer.js renderer.css"
 
+TAB=$(printf '\t')
+# The VencordInstallerCli already downloaded in this run.
+CLI_READY=""
+
 say() { printf '%s\n' "$*"; }
+
+has_tty() { (: < /dev/tty) 2> /dev/null; }
 
 stop() {
     printf '\n%s\n' "$*" >&2
@@ -114,8 +120,153 @@ download() {
     curl -fsSL --retry 2 -o "$2" "$1" || stop "Could not download $1. Check your connection and try again."
 }
 
+# A path as a person reads it, with the home folder as ~.
+short() {
+    case "$1" in
+        "$HOME"/*) printf '%s/%s' "~" "${1#"$HOME"/}" ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
+# Which Discord a folder's name says, as Vencord's installer reads it.
+branch() {
+    case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+        *canary) printf 'Canary' ;;
+        *development) printf 'Development' ;;
+        *ptb) printf 'PTB' ;;
+        *) printf 'Stable' ;;
+    esac
+}
+
+# The resources folder of the app-* a self-updating Discord runs, and the one
+# Vencord's installer patches: the path that sorts last byte by byte, as Go
+# compares it. Older app-* folders stay behind after an update.
+newest_resources() {
+    for dir in "$1"/app-*/; do
+        [ -e "${dir}resources" ] && printf '%s\n' "${dir}resources"
+    done | LC_ALL=C sort | tail -n 1
+}
+
+# One line for a Discord: what --location takes, its line in the menu, and
+# the app.asar it runs.
+found() {
+    printf '%s\t%s\t%s\n' "$1" "$2" "$3"
+}
+
+# Each Discord in the places Vencord's installer looks, which are also the
+# only places it could have patched without a typed folder.
+discords() {
+    if [ "$(uname -s)" = Darwin ]; then
+        discords_macos Discord discord
+        discords_macos "Discord PTB" discordptb
+        discords_macos "Discord Canary" discordcanary
+        discords_macos "Discord Development" discorddev
+        return 0
+    fi
+
+    for dir in /usr/share /usr/lib64 /opt "$HOME/.local/share" "$HOME/.dvm" \
+        /var/lib/flatpak/app "$HOME/.local/share/flatpak/app"; do
+        for name in Discord DiscordPTB DiscordCanary DiscordDevelopment \
+            discord discordptb discordcanary discorddevelopment \
+            discord-ptb discord-canary discord-development \
+            com.discordapp.Discord com.discordapp.DiscordPTB \
+            com.discordapp.DiscordCanary com.discordapp.DiscordDevelopment; do
+            [ -d "$dir/$name" ] || continue
+            case "$dir/$name" in
+                */flatpak/*)
+                    # A Flatpak is handed over as its app folder, which tells
+                    # the installer to let it read these files. Discord is
+                    # inside, as .../current/active/files/discord-ptb.
+                    case "$name" in com.discordapp.*) ;; *) continue ;; esac
+                    inner=$(printf '%s' "${name#com.discordapp.}" | tr '[:upper:]' '[:lower:]')
+                    [ "$inner" = discord ] || inner="discord-${inner#discord}"
+                    files="$dir/$name/current/active/files/$inner"
+                    label="$(branch "$name") (Flatpak)"
+                    case "$dir" in /var/*) label="$(branch "$name") (Flatpak, system)" ;; esac
+                    ;;
+                *)
+                    files="$dir/$name"
+                    label="$(branch "$name") - $(short "$files")"
+                    ;;
+            esac
+            [ -f "$files/resources/app.asar" ] && found "$dir/$name" "$label" "$files/resources/app.asar"
+        done
+    done
+
+    # A Discord that updates itself keeps its versions in app-* folders.
+    for base in "$HOME/.config/discord" "$HOME/.config/discordcanary" "$HOME/.config/discordptb" \
+        "$HOME/.var/app/com.discordapp.Discord/config/discord" \
+        "$HOME/.var/app/com.discordapp.DiscordCanary/config/discord" \
+        "$HOME/.var/app/com.discordapp.DiscordPTB/config/discord"; do
+        resources=$(newest_resources "$base")
+        [ -n "$resources" ] || continue
+        case "$base" in
+            */.var/app/*) name=${base%/config/discord} ;;
+            *) name=$base ;;
+        esac
+        found "$base" "$(branch "$name") - $(short "$base")" "$resources/app.asar"
+    done
+    return 0
+}
+
+# On macOS Vencord's installer looks in the Applications folders, and only
+# where it finds nothing there, in the app-* folders Discord updates into.
+discords_macos() {
+    seen=0
+    for app in "/Applications/$1.app" "$HOME/Applications/$1.app"; do
+        [ -f "$app/Contents/Resources/app.asar" ] || continue
+        found "$app" "$(branch "$1") - $(short "$app")" "$app/Contents/Resources/app.asar"
+        seen=1
+    done
+    [ "$seen" = 1 ] && return 0
+    for app in "$HOME/Library/Application Support/$2"/app-*/"$1.app"; do
+        [ -f "$app/Contents/Resources/app.asar" ] || continue
+        found "$app" "$(branch "$1") - $(short "${app%/*}")" "$app/Contents/Resources/app.asar"
+    done
+    return 0
+}
+
+# Asks which Discord to work on and leaves what --location takes in DISCORD.
+# Vencord's installer has a menu of its own, but a line wider than the
+# terminal makes it draw every frame a row lower, and it leaves on Ctrl+C as
+# if it had patched. So the question is asked here, in lines that fit.
+pick_discord() {
+    title=$1
+    list=$(discords)
+    set --
+    while IFS=$TAB read -r location label _; do
+        [ -n "$location" ] && set -- "$@" "$label"
+    done << EOF
+$list
+EOF
+
+    choose "$title" "$@" "Another folder"
+    if [ "$CHOICE" -lt "$#" ]; then
+        DISCORD=$(printf '%s\n' "$list" | sed -n "$((CHOICE + 1))p" | cut -f 1)
+        return 0
+    fi
+
+    # Without -r, read takes back the backslashes of a folder dragged into
+    # the terminal; quotes around it go too, and ~ is the home folder.
+    printf 'Path to the Discord folder: '
+    typed=""
+    # shellcheck disable=SC2162
+    has_tty && read typed < /dev/tty
+    case "$typed" in
+        \"*\" | \'*\') typed=${typed#?}; typed=${typed%?} ;;
+    esac
+    case "$typed" in
+        "~") typed=$HOME ;;
+        "~"/*) typed="$HOME/${typed#"~"/}" ;;
+    esac
+    [ -n "$typed" ] || stop "Nothing was typed, so nothing was changed."
+    [ -d "$typed" ] || stop "There is no folder $typed."
+    DISCORD=$(cd "$typed" && pwd) || stop "There is no folder $typed."
+}
+
 # Vencord's own installer, told to point Discord at these files instead of
-# downloading plain Vencord. It asks which Discord to patch.
+# downloading plain Vencord, and told which Discord to work on: $1 is
+# --install or --uninstall, $2 what pick_discord left.
 vencord_installer() {
     case "$(uname -s)" in
         Darwin) name="VencordInstallerCli-darwin" ;;
@@ -129,10 +280,13 @@ vencord_installer() {
     esac
 
     cli="$AIT_HOME/VencordInstallerCli"
-    download "$VENCORD_INSTALLER/$name" "$cli"
-    chmod +x "$cli"
+    if [ "$CLI_READY" != "$cli" ]; then
+        download "$VENCORD_INSTALLER/$name" "$cli"
+        chmod +x "$cli"
+        CLI_READY=$cli
+    fi
 
-    set -- env VENCORD_USER_DATA_DIR="$AIT_HOME" VENCORD_DEV_INSTALL=1 "$cli" "$1"
+    set -- env VENCORD_USER_DATA_DIR="$AIT_HOME" VENCORD_DEV_INSTALL=1 "$cli" "$1" --location "$2"
 
     # On Linux Discord usually sits where only an administrator can write, so
     # the installer runs with sudo, the way Vencord's own install script runs
@@ -146,12 +300,12 @@ vencord_installer() {
         fi
     fi
 
-    # It reads the arrow keys from the terminal, even if this script came
-    # through a pipe.
-    if (: < /dev/tty) 2> /dev/null; then
+    # It asks nothing now, but never gets to read this script, should that
+    # have come through a pipe.
+    if has_tty; then
         "$@" < /dev/tty
     else
-        "$@"
+        "$@" < /dev/null
     fi
 }
 
@@ -161,42 +315,55 @@ loads_from() {
     [ -f "$1" ] && grep -qF "$2/" "$1" 2> /dev/null
 }
 
-# Each Discord that still loads AI Translate from a folder, of those in the
-# places Vencord's installer looks. Of the app-* folders a Discord updates
-# itself into, only the newest runs.
+# The lines of discords for each Discord that still loads AI Translate from a
+# folder.
 still_loading_from() {
-    for asar in /usr/share/[Dd]iscord*/resources/app.asar \
-        /usr/lib64/[Dd]iscord*/resources/app.asar /opt/[Dd]iscord*/resources/app.asar \
-        "$HOME"/.local/share/[Dd]iscord*/resources/app.asar \
-        "$HOME"/.dvm/[Dd]iscord*/resources/app.asar \
-        /var/lib/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
-        "$HOME"/.local/share/flatpak/app/com.discordapp.*/current/active/files/*/resources/app.asar \
-        /Applications/Discord*.app/Contents/Resources/app.asar \
-        "$HOME"/Applications/Discord*.app/Contents/Resources/app.asar; do
-        loads_from "$asar" "$1" || continue
-        asar=${asar%/resources/app.asar}
-        say "  ${asar%/Contents/Resources/app.asar}"
+    discords | while IFS=$TAB read -r location label asar; do
+        loads_from "$asar" "$1" && found "$location" "$label" "$asar"
     done
-    for base in "$HOME"/.config/discord* "$HOME"/.var/app/com.discordapp.*/config/discord \
-        "$HOME/Library/Application Support"/discord*; do
-        newest=""
-        for asar in "$base"/app-*/resources/app.asar "$base"/app-*/Discord*.app/Contents/Resources/app.asar; do
-            [ -f "$asar" ] && newest=$asar
-        done
-        loads_from "$newest" "$1" && say "  $base"
-    done
+    return 0
+}
+
+# Their menu lines, indented.
+labels() {
+    printf '%s\n' "$1" | cut -f 2 | sed 's/^/  /'
+}
+
+# A folder about to go may still be loaded by another Discord on this
+# computer (PTB, Canary, a Flatpak beside a native one), which would no longer
+# start. Those Discords are named and, on Yes, patched too; on No the folder
+# stays and the run stops, so the next one moves again.
+patch_the_rest() {
+    [ -d "$1" ] || return 0
+    left=$(still_loading_from "$1")
+    [ -n "$left" ] || return 0
+    say ""
+    say "A Discord still loads AI Translate from $1:"
+    labels "$left"
+    if [ "$(printf '%s\n' "$left" | wc -l)" -gt 1 ]; then
+        choose "Patch those Discords too?" "Yes" "No"
+    else
+        choose "Patch that Discord too?" "Yes" "No"
+    fi
+    [ "$CHOICE" = 0 ] || stop "So $1 is kept. Run this again and patch that Discord too."
+    while IFS=$TAB read -r location _; do
+        vencord_installer --install "$location" || stop "Patching Discord failed."
+    done << EOF
+$left
+EOF
 }
 
 # A folder about to be deleted stays while a Discord still loads AI Translate
-# from it, and the run stops there, so the next one patches again.
+# from it, and the run stops there, so the next one patches again. $2, when
+# given, says so instead of the line about patching.
 keep_while_loaded() {
     [ -d "$1" ] || return 0
     left=$(still_loading_from "$1")
     [ -n "$left" ] || return 0
     say ""
     say "A Discord still loads AI Translate from $1:"
-    say "$left"
-    stop "So $1 is kept. Run this again and patch that Discord too."
+    labels "$left"
+    stop "${2:-"So $1 is kept. Run this again and patch that Discord too."}"
 }
 
 install_or_update() {
@@ -227,9 +394,8 @@ install_or_update() {
 
     # Discord only needs patching once: after that it loads these files from
     # disk, so an update is simply new files. On the first install there is
-    # nothing to ask about, and the installer asks which Discord itself. Only a
-    # Discord update of its own can undo the patch, and that is the one case
-    # worth a question.
+    # nothing to ask about but which Discord. Only a Discord update of its own
+    # can undo the patch, and that is the one case worth a question.
     if [ "$first" = 1 ] || [ "$moving" = 1 ]; then
         patch=1
     else
@@ -239,26 +405,16 @@ install_or_update() {
 
     if [ "$patch" = 1 ]; then
         [ -n "$OLD_HOME" ] && say "AI Translate moves from $OLD_HOME to $AIT_HOME, so Discord is patched again."
-        vencord_installer --install || stop "Patching Discord failed."
+        pick_discord "Which Discord should be patched?"
+        vencord_installer --install "$DISCORD" || stop "Patching Discord failed."
 
-        # Another Discord on this computer (PTB, Canary, a Flatpak beside a
-        # native one) may have been patched to the old folder, and fails to
-        # start once that is deleted. The old folder goes only after every one
-        # of them is patched; a failed or cancelled patch stops here with it
-        # kept, and the next run moves again.
-        if [ -n "$OLD_HOME" ]; then
-            while :; do
-                choose "Did another Discord on this computer have AI Translate too?" "No" "Yes"
-                [ "$CHOICE" = 1 ] || break
-                vencord_installer --install || stop "Patching Discord failed."
-            done
-        fi
-
-        # Vencord's installer leaves its own menu on Ctrl+C with the exit
-        # status of a patch that worked, so its word alone is not enough.
+        # Each folder goes only once no Discord loads from it any more.
+        # keep_while_loaded looks again for itself: a patch can fail silently.
+        patch_the_rest "$AIT_HOME/Vencord"
         keep_while_loaded "$AIT_HOME/Vencord"
         rm -rf "$AIT_HOME/Vencord"
         if [ -n "$OLD_HOME" ]; then
+            patch_the_rest "$OLD_HOME"
             keep_while_loaded "$OLD_HOME"
             rm -rf "$OLD_HOME" || say "Could not delete $OLD_HOME. Delete it by hand."
         fi
@@ -280,10 +436,14 @@ remove() {
     [ -d "$AIT_HOME" ] || stop "Nothing to remove: $AIT_HOME does not exist."
 
     say "Removing the patch from Discord..."
-    vencord_installer --uninstall || stop "Removing the patch failed."
+    pick_discord "Which Discord should the patch be removed from?"
+    vencord_installer --uninstall "$DISCORD" || stop "Removing the patch failed."
 
     choose "Also delete the downloaded files in $AIT_HOME?" "No" "Yes"
     if [ "$CHOICE" = 1 ]; then
+        for gone in "$AIT_HOME" ${OLD_HOME:+"$OLD_HOME"}; do
+            keep_while_loaded "$gone" "So $gone is kept. Run this again and remove the patch from that Discord too."
+        done
         cd "$HOME" && rm -rf "$AIT_HOME" ${OLD_HOME:+"$OLD_HOME"} && say "Deleted $AIT_HOME."
     fi
 
