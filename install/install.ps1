@@ -127,12 +127,17 @@
     # close. So the question is asked first and the answer handed to it.
     function Select-Discord([string]$Title) {
         $found = @()
+        $options = @()
         foreach ($version in $DiscordVersions.Keys) {
             $path = Join-Path $env:LOCALAPPDATA $DiscordVersions[$version]
-            if (Test-Path $path) { $found += [pscustomobject]@{ Label = "$version - $path"; Path = $path } }
+            if (Test-Path $path) {
+                $found += [pscustomobject]@{ Label = "$version - $path"; Path = $path }
+                $options += "$version - $path"
+            }
         }
 
-        $index = Select-Option $Title (@($found.Label) + "Another folder")
+        # Built in the loop: @($found.Label) of an empty list is one blank item.
+        $index = Select-Option $Title ($options + "Another folder")
         if ($index -lt $found.Count) { return $found[$index].Path }
 
         $typed = (Read-Host "Path to the Discord folder").Trim('"', " ")

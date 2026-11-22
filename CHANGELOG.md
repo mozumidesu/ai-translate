@@ -11,6 +11,9 @@ when `release` moves.
 
 ### Fixed
 
+- **On Windows, when no Discord is found, the install command's menu no
+  longer starts with an empty line.** Asked which Discord to patch, it now
+  offers only "Another folder" instead of a blank first choice.
 - **On Windows too, the install command keeps the old folder while a Discord
   still loads from it.** Moving out of `%LOCALAPPDATA%\aiTranslate`, it asks
   whether another Discord on the computer had AI Translate too, and answering
