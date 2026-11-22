@@ -256,6 +256,21 @@ const isTransient = (result: Result) =>
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * Newer models take only their own temperature and answer the plugin's 0.2
+ * with a 400 that names it: Claude from 4.7 on, OpenAI's reasoning models. A
+ * model that refused it once is asked without one from then on, so a message
+ * does not pay for the refusal again.
+ */
+const ownTemperature = new Set<string>();
+
+const temperatureOf = (body: any) => body.temperature ?? body.generationConfig?.temperature;
+
+const withoutTemperature = (body: any) => {
+    delete body.temperature;
+    delete body.generationConfig?.temperature;
+};
+
 async function sendWithRetry(send: (payload: any) => Promise<Result>, body: any): Promise<Result> {
     let result = await send(body);
 
@@ -357,6 +372,9 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
         }
     }
 
+    const sampled = `${url} ${model}`;
+    if (ownTemperature.has(sampled)) withoutTemperature(body);
+
     // One budget for the whole exchange, retries included. Without it a request
     // the provider never answers waits for ever: no translation appears and no
     // error either, and from the outside the plugin looks simply dead.
@@ -390,6 +408,13 @@ export async function sendChat(net: Net, payload: string): Promise<Result> {
         delete body.reasoning_effort;
         delete body.include_reasoning;
         delete body.thinking;
+        result = await sendWithRetry(send, body);
+    }
+
+    // And newer ones the temperature, which they would rather choose themselves.
+    if (result.status === 400 && /temperature/i.test(result.data) && temperatureOf(body) !== undefined) {
+        ownTemperature.add(sampled);
+        withoutTemperature(body);
         result = await sendWithRetry(send, body);
     }
 

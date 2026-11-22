@@ -40,6 +40,11 @@ through it prompt caching is unavailable and `reasoning_effort` is ignored. The
 native API has both, and this plugin's prompt is kept byte-identical so that a
 provider can cache it.
 
+Every request asks for a temperature of 0.2. Claude from 4.7 on and OpenAI's
+reasoning models take none but their own and answer it with a 400 that names
+the temperature; `sendChat` then asks again without one, and remembers that
+address and model, so the next message goes without one at once.
+
 A red line under a key appears only when the provider said the key is wrong,
 and only once the field has been left. `keyVerdict` in `core/providers.ts`
 decides, one rule for the Vencord page, `web/` and the Telegram panel: a 401 is

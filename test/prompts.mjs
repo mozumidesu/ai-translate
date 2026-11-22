@@ -1254,8 +1254,20 @@ again = await carried("запасной опять", refused(401, "Invalid API K
 backed("and its refusal after that is news again", again.shown.map(text => text.includes("rejected the API key (401)")), [true]);
 
 // A request the first slot calls malformed is malformed for any slot.
-again = await carried("запасной не нужен", refused(400, "Invalid value for 'temperature'"), "[ru] never asked");
+again = await carried("запасной не нужен", refused(400, "Unrecognized request argument supplied: frobnicate"), "[ru] never asked");
 backed("a 400 that says nothing of the model is not handed on", [again.said.startsWith("threw: AI Translate: HTTP 400"), again.models], [true, ["main"]]);
+
+// Claude from 4.7 on and OpenAI's reasoning models refuse any temperature but their own, with a 400 that names it.
+const ownTemperature = refused(400, "Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported.");
+settings.providerSlots = JSON.stringify([
+    { id: "t3mp", provider: "groq", keys: { groq: "temp-key" }, models: { groq: "own-temperature" } },
+    { id: "b4ckup5lot", provider: "glm", keys: { glm: "backup-key" }, models: { glm: "spare" } }
+]);
+again = await carried("своя температура", ownTemperature, "[ru] asked again without one");
+backed("a 400 that names the temperature is asked again without one, of the same model",
+    [again.said, again.models, asked.map(body => "temperature" in body)], ["asked again without one", ["own-temperature", "own-temperature"], [true, false]]);
+again = await carried("снова своя температура", "[ru] asked without one at once");
+backed("and that model is asked without one from then on", [again.said, asked.map(body => "temperature" in body)], ["asked without one at once", [false]]);
 
 // A slot made on the settings page has an id of its own, and the paces measured
 // for each provider were looked up by that id, so none of them ever applied: a

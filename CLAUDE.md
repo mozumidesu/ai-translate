@@ -179,7 +179,7 @@ menu, it always answers, "nothing to correct here" included.
 ## Running things
 
 ```
-node test/prompts.mjs      # 365 checks; needs esbuild
+node test/prompts.mjs      # 367 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
 node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild
