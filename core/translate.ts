@@ -1153,12 +1153,16 @@ function readable(text: string, names: Map<string, string>) {
         .replace(/https?:\/\/\S+|www\.\S+/g, "(link)"));
 }
 
+// Without the writer's name, their gender was guessed wherever the target marks it, as Russian past tense does.
+const writtenBy = (author: string) => `\n\nThe message below was written by ${author}.`;
+
 /**
  * A message on its own is often ambiguous: "да", "его", "не вставляется" only
  * make sense next to what came before. Handing the model the last few messages
- * costs a few hundred tokens and fixes most of those misreadings.
+ * costs a few hundred tokens and fixes most of those misreadings. Who wrote the
+ * message being read is said whether context is on or not.
  */
-export function collectContext(channelId: string, beforeId?: string): string {
+export function collectContext(channelId: string, beforeId?: string, author?: string): string {
     const protectedWords = new Set(
         config().glossary.split(",")
             .map(e => e.split("=")[0].trim())
@@ -1214,7 +1218,9 @@ export function collectContext(channelId: string, beforeId?: string): string {
         + ` form built from them: ${[...protectedWords].join(", ")}.`
         : "";
 
-    return names + conversation;
+    const writer = asName(author);
+
+    return names + conversation + (writer ? writtenBy(writer) : "");
 }
 
 /**

@@ -276,8 +276,7 @@ async function translateMessage(message: Message) {
 
         const author = (message.author as any)?.globalName || message.author?.username;
         const mine = message.author?.id === UserStore.getCurrentUser()?.id;
-        const context = collectContext(message.channel_id, message.id)
-            + (author ? `\n\nThe message below was written by ${author}.` : "");
+        const context = collectContext(message.channel_id, message.id, author);
 
         showUnderMessage(message.id, await translate("received", content, context, mine));
     } catch (e) {
@@ -291,8 +290,7 @@ async function explainMessage(message: Message) {
 
     try {
         const author = (message.author as any)?.globalName || message.author?.username;
-        const context = collectContext(message.channel_id, message.id)
-            + (author ? `\n\nThe message below was written by ${author}.` : "");
+        const context = collectContext(message.channel_id, message.id, author);
 
         const result = await translate("explain", content, context);
         showUnderMessage(message.id, { ...result, explained: true });
