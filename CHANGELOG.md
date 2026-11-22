@@ -7,6 +7,46 @@ commits, which is what the releases before this file have. What is on `main`
 and not yet released waits under Unreleased, which takes the version's name
 when `release` moves.
 
+## 0.2.5a
+
+Released on 22 November 2026.
+
+### Changed
+
+- **The install command lists the Discords itself.** On macOS and Linux it no
+  longer shows the menu of Vencord's installer, which drew itself wrong when a
+  Discord's folder was wider than the terminal, as a Flatpak's is: every arrow
+  press left the menu a row lower and pieces of it behind. Its own lines fit
+  an 80-column terminal, with "Stable (Flatpak)" for a Flatpak and ~ for the
+  home folder, and "Another folder" takes one typed by hand. On Windows a
+  Discord is listed by its name alone, and only when Vencord's installer can
+  patch it. Removing AI Translate uses the same list.
+- **Moving out of the old folder asks only what it has to.** Instead of asking
+  whether another Discord on the computer had AI Translate too, the install
+  command looks for itself: it names each Discord that still loads AI
+  Translate from the old folder and offers to patch it as well, and when there
+  is none it asks nothing. Answering No keeps the old folder, as before.
+
+### Fixed
+
+- **Removing AI Translate keeps its files while another Discord still loads
+  them.** Removing the patch from one Discord and deleting the downloaded
+  files left a second Discord patched to files that were gone, and it no
+  longer started. Now the files stay, that Discord is named, and running the
+  command again removes the patch from it too.
+
+- **On Windows, when no Discord is found, the install command's menu no
+  longer starts with an empty line.** Asked which Discord to patch, it now
+  offers only "Another folder" instead of a blank first choice.
+- **On Windows too, the install command keeps the old folder while a Discord
+  still loads from it.** Moving out of `%LOCALAPPDATA%\aiTranslate`, it asks
+  whether another Discord on the computer had AI Translate too, and answering
+  No while one still did deleted the folder that Discord loads from, so it no
+  longer started. Now the command first looks at every Discord where Vencord's
+  installer finds them, and while one still loads from the old folder it
+  keeps the folder, says which Discord that is and stops. Run it again and it
+  moves again, patching that Discord too.
+
 ## 0.2.4a
 
 Released on 22 November 2026.
