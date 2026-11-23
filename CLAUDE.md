@@ -126,6 +126,7 @@ from the older name `AiTranslate`.
 | `.github/workflows/checks.yml` | The tests, on every push to `main` and on every pull request |
 | `CHANGELOG.md` | What changed in each version, under Added, Changed and Fixed; the robot puts the matching section into the release on GitHub |
 | `docs/` | The 15 translated READMEs and the banner |
+| `design/` | Agreed designs not yet built, each with its prototype's source: `themes-and-settings.md` is the Themes window, the settings layout and right-to-left |
 | `web/` | A standalone browser build with no Vencord, which nothing publishes. What people run in a browser is the userscript the robot builds with Vencord's own `pnpm buildWeb`: the whole plugin, AI Learn included, updated by its userscript manager. Say which of the two you mean |
 | `tools/` | A Rust binary of its own, `ai-translate-tools`: `css`, `header`, `tokens`, `preview` and `sync`, upkeep for this repository and the website's. Nothing here imports it, and `tools sync` leaves it out of the copy into Vencord |
 | `.claude/` | `settings.json`, which sets the effort level, and the skills this file points to |
