@@ -186,7 +186,7 @@ fewer for a longer message, none past 200 characters.
 ## Running things
 
 ```
-node test/prompts.mjs      # 424 checks; needs esbuild
+node test/prompts.mjs      # 443 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
 node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild

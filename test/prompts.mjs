@@ -690,7 +690,7 @@ const toReader = async (name, want, { direct = true, gender = "female", mine = f
     asked.length = 0;
     answers = ["[en] ok"];
     // A message going out is asked about with no author, as index.tsx asks.
-    const context = kind === "sent" ? collectContext("c") : collectContext("c", undefined, "Hoshi", mine);
+    const context = kind === "sent" ? collectContext("c") : collectContext("c", undefined, "Hoshi", { mine });
     await translate(kind, "you were right", context, mine).catch(() => { });
     const text = asked[0]?.messages?.[0]?.content ?? "";
     useHost(host);
@@ -1423,6 +1423,15 @@ const BATCH = { name: "batch", text: run.system };
 // Built from the incoming prompt itself, so a rule the incoming prompt carries is carried here too.
 for (const [name, phrase] of RULES.slice(0, 6)) check(name, BATCH, phrase);
 check("the batch says how each message comes back", BATCH, "its header with the number alone, such as === 1 ===");
+absent("a batch outside a one-to-one chat says nothing of the reader", BATCH, "is the reader, who is");
+useHost({ ...host, isDirect: () => true });
+settings.gender = "female";
+const DIRECT = await batched([["d1", "you were right", "Kaii"], ["d2", "are you ready?", "Kaii"]],
+    "=== 1 ===\n[en] ты была права\n=== 2 ===\n[en] ты готова?");
+useHost(host);
+settings.gender = "unset";
+check("in a one-to-one chat a batch says the reader's gender once, for all its messages", { name: "batch", text: DIRECT.system },
+    "\n\nThis is a one-to-one chat, so \"you\" in the messages below is the reader, who is female.");
 absent("and nothing of the single answer's format is left", BATCH, "For a Spanish message the whole answer looks like: [es]");
 same("the incoming prompt for one message is still the one it was", head(incoming).startsWith("Translate this Discord message into Russian."), true);
 
