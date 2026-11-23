@@ -9,6 +9,34 @@ when `release` moves.
 
 ## Unreleased
 
+### Added
+
+- **Translate all below, in a message's right-click menu.** Right after
+  AI Translate, it translates that message and every one under it that
+  someone else wrote, in one request for a screenful instead of one request
+  each, and shows each translation under its own message as AI Translate
+  does. It is offered only when at least two such messages are below the one
+  clicked. Your own messages, ones already shown translated and ones already
+  in the language you read are left out. Up to 15 messages and 1500
+  characters go in one request and up to 45 messages in one click; more take
+  another request. Ten short messages cost one request and about 3,400 tokens
+  instead of ten requests and about 30,000. A message the answer leaves out
+  or gets wrong is translated on its own, and each translation is remembered,
+  so translating one of them again afterwards costs nothing.
+
+### Changed
+
+- **The conversation sent along with a message is smaller.** Up to three
+  earlier messages go with one you send and up to four with one you read,
+  and fewer when they cannot help: two for a message of a sentence or two,
+  none for a long one that carries its own sense, and the whole allowance for
+  a short reply such as "yes" or "same". Messages older than half an hour
+  before it are left out, and all the lines share 480 characters, newest
+  first. AI Explain still gets four.
+- **A translation shown under a message stays until Discord restarts.** Past
+  200 of them, the oldest is forgotten, one at a time, where before all of
+  them went at once. Translations kept to be reused work the same way.
+
 ### Fixed
 
 - **The install command on macOS and Linux no longer deletes the old folder

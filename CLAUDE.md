@@ -55,7 +55,7 @@ effort level is set in `.claude/settings.json`.
 
 | File | Responsible for |
 |---|---|
-| `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context and pacing. The biggest file and the one that matters most |
+| `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context and pacing, and "Translate all below": several messages in one request, split back by number. The biggest file and the one that matters most |
 | `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices, and optionally the chat's name, its dialect and the app's language. Answers empty, not throwing, until a host is installed |
 | `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes), what Telegram draws (marks around text, @username), and a plain dialect with none of that. The host chooses; Discord when it does not |
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
@@ -176,10 +176,17 @@ changed, a last line beginning `why:` in the language the person reads.
 Unasked, it stays silent when the message was right; asked from the right-click
 menu, it always answers, "nothing to correct here" included.
 
+"Translate all below" is the incoming prompt with its first line and its answer
+format for several messages, each under a numbered header; never a copy of its
+rules. A message the answer leaves out, numbers twice or gets wrong goes to a
+single translation, and each is cached as a single translation would be. How
+much conversation goes along is `contextLines`: three lines out, four in,
+fewer for a longer message, none past 200 characters.
+
 ## Running things
 
 ```
-node test/prompts.mjs      # 377 checks; needs esbuild
+node test/prompts.mjs      # 424 checks; needs esbuild
 node test/log.mjs          # 36 checks on the log and on error notices; needs esbuild
 node test/keys.mjs         # 100 checks: a pasted key cleaned, each provider's answers judged, saved slots read, the check logged, a translation's notice for them; needs esbuild
 node test/defaults.mjs     # does the browser build still agree with the settings page; needs esbuild

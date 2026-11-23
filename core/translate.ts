@@ -18,7 +18,7 @@ import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
 import { appName, config, dialect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
-import { closeIn, closingOf, hasCase, LANGUAGES, onOneLine, scriptPattern, writtenIn } from "./languages";
+import { closeIn, closingOf, hasCase, languageNamed, LANGUAGES, onOneLine, scriptPattern, UNLISTED, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
 import { t } from "./locales";
 import { record, withoutKey } from "./log";
@@ -613,9 +613,23 @@ function explainPrompt(target: string) {
     ].join("\n");
 }
 
-function incomingPrompt(target: string, mine: boolean, has: Involved) {
+/**
+ * Several messages are handed over in one request, each under a header of its
+ * own, and come back the same way. The number is what puts each translation
+ * under its own message, so the writer's name travels only on the way in.
+ */
+const batchHeader = (n: number, author = "") => `=== ${n}${author ? `, by ${author}` : ""} ===`;
+
+/** A header line in an answer, however a model dressed it up: "=== 3 ===", "**== 3, by Kaii ==**". */
+const BATCH_HEADER = /^[ \t*#]*={2,}[ \t]*(\d{1,3})(?!\d)[^\n]*$/gm;
+
+function incomingPrompt(target: string, mine: boolean, has: Involved, batch = false) {
     return [
-        `Translate this ${appName()} message into ${target}.`,
+        batch
+            ? `Translate each of these ${appName()} messages into ${target}. They come one after another from one`
+            + " conversation, each under a numbered header, so each is the context of the others; translate every one"
+            + " as a message of its own."
+            : `Translate this ${appName()} message into ${target}.`,
         "",
         `The reader should feel they are hearing the person who wrote it, not reading a machine. Write the way a ${target} speaker actually writes to a friend.`,
         "",
@@ -669,8 +683,13 @@ mine && GENDER_RULES[config().gender]
         glossaryRule(),
         isLanguage(target, "english") ? "" : `- ${RELATED_LANGUAGES_WARNING}`,
         "",
-        "Answer format: one square-bracketed ISO 639-1 code for the language the message is written in — the language it is translated FROM, never the one you translate into — then a space, then the translation. Nothing else: no second code, no copy of the original, no notes.",
-        "For a Spanish message the whole answer looks like: [es] followed by the translation.",
+        ...(batch ? [
+            "Answer format: for every message, in the same order, its header with the number alone, such as === 1 ===, then on the next line one square-bracketed ISO 639-1 code for the language that message is written in — the language it is translated FROM, never the one you translate into — then a space, then its translation. A message already written in " + target + " gets its code and nothing after it. Every message gets its header, even one with nothing to translate. Nothing else: no copy of the originals, no notes.",
+            "For a Spanish message and then an English one, the whole answer looks like:\n=== 1 ===\n[es] followed by the translation\n=== 2 ===\n[en] followed by the translation"
+        ] : [
+            "Answer format: one square-bracketed ISO 639-1 code for the language the message is written in — the language it is translated FROM, never the one you translate into — then a space, then the translation. Nothing else: no second code, no copy of the original, no notes.",
+            "For a Spanish message the whole answer looks like: [es] followed by the translation.",
+        ])
     ].filter(Boolean).join("\n");
 }
 
@@ -1126,8 +1145,43 @@ function readLanguageTag(out: string, original: string) {
 /** The provider stopped because the answer budget ran out, not because it was done. */
 const CUT_OFF = /"finish_reason"\s*:\s*"length"|"finishReason"\s*:\s*"MAX_TOKENS"|"stop_reason"\s*:\s*"max_tokens"/;
 
-/** How many earlier messages are shown to the model when context is switched on. */
+/** How many earlier messages are shown to the model when nothing says what the context is for. */
 const CONTEXT_MESSAGES = 4;
+
+/**
+ * Earlier messages cost every request they travel with, and a free key's
+ * limits count them. A message being read is often an answer to what came
+ * before it; one being written mostly carries its own sense.
+ */
+const CONTEXT_LINES: Record<Kind, number> = { sent: 3, correct: 3, received: 4, explain: 4 };
+
+/** All the context lines together, newest first: one long line no longer crowds out the rest for free. */
+const CONTEXT_CHARS = 480;
+
+/** Lines from longer ago than this before the message say nothing about it: the conversation has moved on. */
+const CONTEXT_WINDOW_MS = 30 * 60_000;
+
+/** What the context is for: the kind of request and the message itself. */
+export interface ContextFor {
+    kind?: Kind;
+    text?: string;
+}
+
+/**
+ * How many earlier lines a message needs. "yes", "nooo" or "same" mean
+ * nothing without what they answer; a paragraph carries its own sense, and
+ * lines handed to it only cost tokens. An explanation is asked for because
+ * a message was not understood, so it always gets the whole allowance.
+ */
+export function contextLines({ kind, text }: ContextFor) {
+    const most = kind ? CONTEXT_LINES[kind] : CONTEXT_MESSAGES;
+    if (text === undefined || kind === "explain") return most;
+
+    const length = Array.from(writingOf(text).trim()).length;
+    if (length <= 60) return most;
+    if (length <= 200) return Math.min(most, 2);
+    return 0;
+}
 
 /**
  * Other people's text goes into the rules, where a line break of theirs would
@@ -1162,7 +1216,7 @@ const writtenBy = (author: string) => `\n\nThe message below was written by ${au
  * costs a few hundred tokens and fixes most of those misreadings. Who wrote the
  * message being read is said whether context is on or not.
  */
-export function collectContext(channelId: string, beforeId?: string, author?: string): string {
+export function collectContext(channelId: string, beforeId?: string, author?: string, about: ContextFor = {}): string {
     const protectedWords = new Set(
         config().glossary.split(",")
             .map(e => e.split("=")[0].trim())
@@ -1175,8 +1229,12 @@ export function collectContext(channelId: string, beforeId?: string, author?: st
         const me = meId();
 
         let said = recent(channelId);
+        // The message being read is the moment the context is measured from;
+        // one being written is being written now.
+        let now: number | undefined = Date.now();
         if (beforeId) {
             const index = said.findIndex(m => m.id === beforeId);
+            now = index >= 0 ? said[index].at : undefined;
             if (index > 0) said = said.slice(0, index);
             else if (index === 0) said = [];
         }
@@ -1191,19 +1249,31 @@ export function collectContext(channelId: string, beforeId?: string, author?: st
             if (m.authorId && name) names.set(m.authorId, name);
         }
 
-        const lines: string[] = [];
-        for (const m of said.slice(-CONTEXT_MESSAGES)) {
-            const name = asName(m.authorName);
+        // A host that does not say when a line was written keeps it.
+        const recentEnough = said.filter(m => now === undefined || m.at === undefined || now - m.at <= CONTEXT_WINDOW_MS);
+        const nearest = recentEnough.slice(-(about.kind ? CONTEXT_LINES[about.kind] : CONTEXT_MESSAGES));
+        const wanted = contextLines(about);
 
-            // Whoever is talking here is a person the message may name.
+        // Whoever is talking here is a person the message may name, even when
+        // the message is long enough to need none of their lines.
+        for (const m of nearest) {
+            const name = asName(m.authorName);
             if (name) protectedWords.add(name);
+        }
+
+        const lines: string[] = [];
+        let room = CONTEXT_CHARS;
+        for (const m of nearest.slice(nearest.length - Math.min(wanted, nearest.length)).reverse()) {
+            if (room <= 0) break;
 
             // A message that was nothing but an emoji or a mention is empty
             // once cleaned, and an empty line only costs tokens.
-            const content = readable(m.content, names).slice(0, 300);
-            if (!content) continue;
+            const content = Array.from(readable(m.content, names)).slice(0, room);
+            if (!content.length) continue;
 
-            lines.push(`${m.authorId === me ? "Me" : (name || "Them")}: ${content}`);
+            room -= content.length;
+            const name = asName(m.authorName);
+            lines.unshift(`${m.authorId === me ? "Me" : (name || "Them")}: ${content.join("")}`);
         }
 
         if (lines.length)
@@ -1254,6 +1324,30 @@ export interface TranslationResult {
 
 /** Repeated phrases are common in chat; caching them saves a round trip. */
 const cache = new Map<string, TranslationResult>();
+
+/** Past this many answers the oldest is forgotten: a batch of messages fills the cache fast. */
+const CACHE_SIZE = 300;
+
+function remember(key: string, result: TranslationResult) {
+    cache.delete(key);
+    if (cache.size >= CACHE_SIZE) cache.delete(cache.keys().next().value!);
+    cache.set(key, result);
+}
+
+/**
+ * Every setting that can change the wording belongs in the key, or a cached
+ * answer from before the change would be served. So does the chat the host is
+ * in: its name is in the prompt and its dialect in the answer. A correction's
+ * reason is written in the language the person reads.
+ */
+function answerKey(kind: Kind, first: Slot, model: string, target: string, context: string, mine: boolean, typed: string) {
+    const { extraInstructions, formality } = config();
+    return [
+        kind, appName(), dialect().name, first.provider, model, target, extraInstructions,
+        formality, config().gender, config().glossary, context, mine,
+        kind === "correct" ? config().receivedLanguage : "", typed
+    ].join("|");
+}
 
 /**
  * For test/quality.mjs: three runs of one message are three questions only if
@@ -1412,6 +1506,13 @@ const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, 
  * reported as an error that says when to try again.
  */
 const MAX_WAIT_MS = 8_000;
+
+/**
+ * A batch holds back no chat box, and one request for fifteen messages is
+ * half of Groq's free minute: the next one, or a message left over from it,
+ * waits for the minute rather than fail.
+ */
+const BATCH_WAIT_MS = 60_000;
 
 interface Budget {
     limit: number;
@@ -1582,17 +1683,12 @@ function notePace(slot: Slot, chars: number, ms: number) {
 
 const expectedMs = (slot: Slot, chars: number) => paceOf(slot).base + paceOf(slot).perChar * chars;
 
-export async function translate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
-    // Code, and whatever the writer fenced off with backslashes, never reaches
-    // the model as words: it travels as numbered placeholders and is put back
-    // verbatim at the end. Everything below works on the text with placeholders.
-    const kept = kind === "explain" || kind === "correct" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
-    const text = kept?.masked ?? typed;
-
-    // Nothing left once the kept parts are out — "\ok\", a bare code block.
-    if (kept?.pieces.length && isNotWorthTranslating(kept.bare(text)))
-        return { text: kept.restore(text) ?? typed };
-
+/**
+ * The slots one message, or one batch of them, is asked of, and the waits it
+ * has had so far. `text` is what goes to the provider as the message: its
+ * length is what the budgets and the pace are estimated from.
+ */
+function askerFor(kind: Kind, text: string, signal?: AbortSignal, patience = MAX_WAIT_MS) {
     // The first is the one asked; the rest are behind it, in their own order.
     const slots = readSlots();
     const first = slots[0];
@@ -1602,40 +1698,6 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
 
     if (!apiKey) throw fail("error.noKey", { provider: firstName });
     if (!model) throw fail("error.noModel", { provider: firstName });
-
-    // An explanation is read, not sent, so it comes in the reading language.
-    // A correction is written in the language the person is writing in, which
-    // is the one they translate into, not the one they read in.
-    const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
-    /** How much of an answer is in the target's alphabet, the names the message already had left out. */
-    const shareOf = (answer: string) => scriptShare(answer, target, text);
-    // Every setting that can change the wording belongs in the key, or a
-    // cached answer from before the change would be served. So does the chat
-    // the host is in: its name is in the prompt and its dialect in the answer.
-    // A correction's reason is written in the language the person reads.
-    const { extraInstructions, formality } = config();
-    const cacheKey = [
-        kind, appName(), dialect().name, first.provider, model, target, extraInstructions,
-        formality, config().gender, config().glossary, context, mine,
-        kind === "correct" ? config().receivedLanguage : "", typed
-    ].join("|");
-    const hit = cache.get(cacheKey);
-    if (hit !== undefined) return hit;
-
-    const lines = lineCount(text);
-
-    const has = involved(target, text);
-    const basePrompt = (kind === "sent"
-        ? outgoingPrompt(target, has)
-        : kind === "explain" ? explainPrompt(target)
-            : kind === "correct" ? correctPrompt(target, config().receivedLanguage) : incomingPrompt(target, mine, has))
-        + messageRules(kind, text, has)
-        + (lines > 1 && kind !== "explain" && kind !== "correct"
-            ? `\n\nThe text is written on ${lines} separate lines. Your answer must be on ${lines}`
-            + " lines too, broken in the same places. Never join two lines into one."
-            : "")
-        + (kept?.note() ?? "")
-        + context;
 
     // A backup with no key or no model would only fail slower than not asking.
     const backups = slots.slice(1).filter(isReady);
@@ -1702,7 +1764,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
 
     /** Waits out a budget, saying so, when the wait is one worth making. */
     const waitOut = async (name: string, ms: number) => {
-        if (!(ms > 0) || waited + ms > MAX_WAIT_MS) return false;
+        if (!(ms > 0) || waited + ms > patience) return false;
 
         waited += ms;
         notify(t("message.waiting", { provider: name, seconds: Math.ceil(ms / 1000) }), "message");
@@ -1715,7 +1777,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
      * a log showing two requests without saying which is unreadable: that is
      * how a cut-off answer and a rate limit looked like one event for a week.
      */
-    const ask = async (system: string, roomy = false, why = ""): Promise<TranslationResult & { inTarget?: boolean; }> => {
+    const raw = async (system: string, roomy = false, why = ""): Promise<string> => {
         if (why) record("info", kind, `asking again: ${why}`);
 
         const cost = (slot: Slot) => estimateTokens(`${slot.id}|${kind}`, system.length + text.length);
@@ -1742,7 +1804,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
         const soonerBackup = (wait: number) => backups.find(slot =>
             !tried.has(slot.id)
             && waitFor(slot.id, modelOf(slot), cost(slot)) === 0
-            && (waited + wait > MAX_WAIT_MS
+            && (waited + wait > patience
                 || expectedMs(slot, text.length) < wait + expectedMs(first, text.length)));
 
         let answer: Answer | undefined;
@@ -1809,7 +1871,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
         const { status, data, provider: usedProvider, slot: usedSlot } = answer;
         if (status !== 200) throw refusal(answer, slotName(slots.find(slot => slot.id === usedSlot) ?? first));
 
-        let out = extractText(usedProvider, data);
+        const out = extractText(usedProvider, data);
 
         // The budget ran out before the answer did — on a long message a
         // reasoning model can spend all of it thinking. One more go with three
@@ -1817,11 +1879,66 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
         // message that needs it. A half-written answer counts too: sending half
         // a sentence under someone's name is worse than sending nothing.
         if (CUT_OFF.test(data)) {
-            if (!roomy) return ask(system, true, "the answer was cut off where the budget ran out");
+            if (!roomy) return raw(system, true, "the answer was cut off where the budget ran out");
             throw fail("error.truncated");
         }
 
         if (!out) throw fail("error.empty", { details: data.slice(0, 300) });
+
+        return out;
+    };
+
+    return { first, model, raw };
+}
+
+export function translate(kind: Kind, typed: string, context = "", mine = false, signal?: AbortSignal): Promise<TranslationResult> {
+    return translateWaiting(kind, typed, context, mine, signal, MAX_WAIT_MS);
+}
+
+/** One translation that may wait this long, all waits together, for a provider's budget. */
+async function translateWaiting(kind: Kind, typed: string, context: string, mine: boolean, signal: AbortSignal | undefined, patience: number): Promise<TranslationResult> {
+    // Code, and whatever the writer fenced off with backslashes, never reaches
+    // the model as words: it travels as numbered placeholders and is put back
+    // verbatim at the end. Everything below works on the text with placeholders.
+    const kept = kind === "explain" || kind === "correct" ? undefined : keepPieces(typed, kind === "sent", glossaryKeeps());
+    const text = kept?.masked ?? typed;
+
+    // Nothing left once the kept parts are out — "\ok\", a bare code block.
+    if (kept?.pieces.length && isNotWorthTranslating(kept.bare(text)))
+        return { text: kept.restore(text) ?? typed };
+
+    // The first is the one asked; the rest are behind it, in their own order.
+    const asking = askerFor(kind, text, signal, patience);
+    const { first, model } = asking;
+
+    // An explanation is read, not sent, so it comes in the reading language.
+    // A correction is written in the language the person is writing in, which
+    // is the one they translate into, not the one they read in.
+    const target = kind === "sent" || kind === "correct" ? config().sentLanguage : config().receivedLanguage;
+    /** How much of an answer is in the target's alphabet, the names the message already had left out. */
+    const shareOf = (answer: string) => scriptShare(answer, target, text);
+    const cacheKey = answerKey(kind, first, model, target, context, mine, typed);
+    const hit = cache.get(cacheKey);
+    if (hit !== undefined) return hit;
+
+    const lines = lineCount(text);
+
+    const has = involved(target, text);
+    const basePrompt = (kind === "sent"
+        ? outgoingPrompt(target, has)
+        : kind === "explain" ? explainPrompt(target)
+            : kind === "correct" ? correctPrompt(target, config().receivedLanguage) : incomingPrompt(target, mine, has))
+        + messageRules(kind, text, has)
+        + (lines > 1 && kind !== "explain" && kind !== "correct"
+            ? `\n\nThe text is written on ${lines} separate lines. Your answer must be on ${lines}`
+            + " lines too, broken in the same places. Never join two lines into one."
+            : "")
+        + (kept?.note() ?? "")
+        + context;
+
+    /** One answer, read: its language code taken off and the text put right. */
+    const ask = async (system: string, roomy = false, why = ""): Promise<TranslationResult & { inTarget?: boolean; }> => {
+        let out = await asking.raw(system, roomy, why);
 
         // Translations both ways are prefixed with "[es] " by the prompt.
         let sourceLanguage: string | undefined;
@@ -1859,7 +1976,7 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
 
         if (result.inTarget && sameMessage(text, result.text)) {
             const asTyped = { text: kept?.restore(text) ?? typed };
-            cache.set(cacheKey, asTyped);
+            remember(cacheKey, asTyped);
             return asTyped;
         }
     }
@@ -1967,8 +2084,233 @@ export async function translate(kind: Kind, typed: string, context = "", mine = 
         result = { ...result, text: restored };
     }
 
-    if (cache.size > 300) cache.clear();
-    cache.set(cacheKey, result);
+    remember(cacheKey, result);
     return result;
 }
 
+
+// --- several messages in one request
+
+/** A message someone else wrote, to be read. */
+export interface BatchItem {
+    id: string;
+    text: string;
+    author?: string;
+}
+
+/**
+ * At most this many messages in one request, and this many characters of
+ * them: a screenful, in an answer the budget can hold. The rest of the prompt
+ * is the same whatever the count, so the more messages share it the less each
+ * one costs.
+ */
+const BATCH_MESSAGES = 15;
+const BATCH_CHARS = 1500;
+
+/** At most this many for one click: a long history is not worth a day's limit. */
+const BATCH_MOST = 45;
+
+/** Fewer than this many below, and one at a time is what a person would do anyway. */
+export const BELOW_AT_LEAST = 2;
+
+/** Whether a language's alphabet is its own, so a message in it can only be in that language. */
+const ownAlphabet = (language: string) => {
+    const script = languageNamed(language)?.script;
+    return !!script && [...LANGUAGES, ...UNLISTED].filter(l => l.script.some(s => script.includes(s))).length === 1;
+};
+
+/**
+ * The messages from `fromId` down that "translate all below" would ask about:
+ * other people's, with something to translate, not shown translated already,
+ * and not already written in the reader's language where the alphabet alone
+ * says so. Where it cannot, Ukrainian beside Russian, the answer's language
+ * code says it instead. Nothing when fewer than BELOW_AT_LEAST of them come
+ * after the one clicked: that is when the menu offers nothing.
+ */
+export function belowToTranslate(channelId: string, fromId: string, shown: (id: string) => boolean = () => false): BatchItem[] {
+    const said = recent(channelId);
+    const from = said.findIndex(m => m.id === fromId);
+    if (from < 0) return [];
+
+    const me = meId();
+    const reader = config().receivedLanguage;
+    const sameAlphabet = ownAlphabet(reader);
+
+    const items = said.slice(from)
+        .filter(m => m.content.trim() && (!me || m.authorId !== me) && !shown(m.id)
+            && !isNotWorthTranslating(m.content) && !isJustAName(m.content, channelId)
+            && !(sameAlphabet && scriptShare(m.content, reader) >= 0.97))
+        .slice(0, BATCH_MOST)
+        .map(m => ({ id: m.id, text: m.content, author: m.authorName }));
+
+    return items.filter(item => item.id !== fromId).length >= BELOW_AT_LEAST ? items : [];
+}
+
+/** One message of a batch, as the request carries it and as a single translation would be cached. */
+interface Pending extends BatchItem {
+    kept: ReturnType<typeof keepPieces>;
+    key: string;
+    context: string;
+}
+
+/**
+ * An answer split back into its messages, by number. A number given twice
+ * is given to nobody: putting a translation under the wrong message is worse
+ * than putting none there.
+ */
+export function splitBatch(answer: string, count: number) {
+    const heads = [...answer.matchAll(BATCH_HEADER)];
+    const found = new Map<number, string>();
+    const doubled = new Set<number>();
+
+    heads.forEach((head, at) => {
+        const n = Number(head[1]);
+        if (n < 1 || n > count) return;
+        const end = at + 1 < heads.length ? heads[at + 1].index : answer.length;
+        if (found.has(n)) doubled.add(n);
+        found.set(n, answer.slice(head.index + head[0].length, end).replace(/^\n+|\s+$/g, ""));
+    });
+
+    for (const n of doubled) found.delete(n);
+    return found;
+}
+
+/**
+ * Reads one message's part of a batch answer the way a single translation is
+ * read. Anything a single translation would ask again about, a lost line
+ * break, lost capitals, a placeholder, words left in another alphabet, is
+ * left to a single translation, which knows how to ask. Undefined means just
+ * that; null means the message is already in the reader's language.
+ */
+function readBatchItem(item: Pending, part: string, target: string): TranslationResult | null | undefined {
+    const text = item.kept.masked;
+    const read = readLanguageTag(part, text);
+    const body = read.text.trim();
+
+    if (read.language && isSameLanguage(read.language, target)) {
+        // The model's word alone would leave a message in another alphabet unread.
+        return scriptShare(item.kept.bare(text), target) >= 0.5 ? null : undefined;
+    }
+
+    if (!body) return undefined;
+
+    let out = postProcess(text, body, target, "received");
+    const keptWhole = /^\S+$/.test(lettersOf(text)) && lettersOf(out) === lettersOf(text);
+    if (!keptWhole && scriptShare(out, target, text) < 0.97) return undefined;
+    if (lineCount(out) !== lineCount(text)) return undefined;
+    if (SHOUTED.test(item.text) && !SHOUTED.test(out)) return undefined;
+
+    if (item.kept.pieces.length) {
+        if (!item.kept.complete(out)) return undefined;
+        const restored = item.kept.restore(out);
+        if (restored === null) return undefined;
+        out = restored;
+    }
+
+    return { text: out, sourceLanguage: read.language };
+}
+
+/**
+ * Translates several messages someone else wrote in as few requests as there
+ * can be, one for a screenful, each shown through `show` as soon as its
+ * request is answered. Each is remembered exactly as a single translation of
+ * it would be, so translating one of them again afterwards costs nothing.
+ * A message the batch cannot answer for is translated on its own. A failure
+ * stops the rest and is thrown, as a single translation's would be.
+ */
+export async function translateBatch(channelId: string, items: BatchItem[], show: (id: string, result: TranslationResult) => void, signal?: AbortSignal): Promise<void> {
+    const target = config().receivedLanguage;
+    const glossary = glossaryKeeps();
+    // Which slot and model a single translation would be cached under; and no key, no batch.
+    const { first, model } = askerFor("received", "", signal);
+
+    const pending: Pending[] = [];
+    /** Messages that go on their own: a request of their own costs less than spoiling a batch. */
+    const alone: Pending[] = [];
+
+    for (const item of items.slice(0, BATCH_MOST)) {
+        const kept = keepPieces(item.text, false, glossary);
+        if (kept.pieces.length && isNotWorthTranslating(kept.bare(kept.masked))) {
+            show(item.id, { text: kept.restore(kept.masked) ?? item.text });
+            continue;
+        }
+
+        // What a single translation of it would be handed, so the answer is found again by it.
+        const context = collectContext(channelId, item.id, item.author, { kind: "received", text: item.text });
+        const key = answerKey("received", first, model, target, context, false, item.text);
+        const hit = cache.get(key);
+        if (hit) {
+            show(item.id, hit);
+            continue;
+        }
+
+        const one = { ...item, kept, key, context };
+        // A line of the message itself that reads like a header would move every translation after it.
+        if (new RegExp(BATCH_HEADER.source, "m").test(kept.masked) || kept.masked.length > BATCH_CHARS) alone.push(one);
+        else pending.push(one);
+    }
+
+    /** Asks one batch, and returns what it could not answer for. */
+    const askBatch = async (batch: Pending[]) => {
+        const text = batch.map((item, n) => batchHeader(n + 1, asName(item.author).replace(/=/g, "")) + "\n" + item.kept.masked).join("\n");
+        // The headers are not the messages: a name in capitals is nobody shouting.
+        const written = batch.map(item => item.kept.masked).join("\n");
+        const has = involved(target, written);
+        const notes = batch.map((item, n) => {
+            const lines = lineCount(item.kept.masked);
+            return (item.kept.note() && `\n\nIn message ${n + 1}: ${item.kept.note().trimStart()}`)
+                + (lines > 1 ? `\n\nMessage ${n + 1} is written on ${lines} separate lines. Its translation must be on ${lines}`
+                    + " lines too, broken in the same places." : "");
+        }).join("");
+        const system = incomingPrompt(target, false, has, true)
+            + messageRules("received", written, has).replace("For this message in particular:", "For these messages in particular:")
+            + notes
+            + collectContext(channelId, batch[0].id, undefined, { kind: "received" });
+
+        const answer = await askerFor("received", text, signal, BATCH_WAIT_MS).raw(system);
+        const parts = splitBatch(answer, batch.length);
+
+        const missing: Pending[] = [];
+        const unsure: Pending[] = [];
+        batch.forEach((item, n) => {
+            const part = parts.get(n + 1);
+            if (part === undefined) return void missing.push(item);
+
+            const result = readBatchItem(item, part, target);
+            if (result === undefined) return void unsure.push(item);
+            if (result === null) return;
+
+            remember(item.key, result);
+            show(item.id, result);
+        });
+
+        if (missing.length || unsure.length)
+            record("info", "received", `batch of ${batch.length}: ${missing.length} missing, ${unsure.length} left to a translation of their own`);
+
+        return { missing, unsure };
+    };
+
+    /** Batches in order, each within both limits. */
+    const chunks: Pending[][] = [];
+    for (const item of pending) {
+        const last = chunks[chunks.length - 1];
+        const size = last?.reduce((sum, one) => sum + one.kept.masked.length, 0) ?? 0;
+        if (last && last.length < BATCH_MESSAGES && size + item.kept.masked.length <= BATCH_CHARS) last.push(item);
+        else chunks.push([item]);
+    }
+
+    for (const chunk of chunks) {
+        const { missing, unsure } = await askBatch(chunk);
+
+        // Left out of the answer: asked once more together, then one by one.
+        let left = missing;
+        if (left.length >= BELOW_AT_LEAST) {
+            const again = await askBatch(left);
+            left = [...again.missing, ...again.unsure];
+        }
+        alone.push(...left, ...unsure);
+    }
+
+    for (const item of alone)
+        show(item.id, await translateWaiting("received", item.text, item.context, false, signal, BATCH_WAIT_MS));
+}

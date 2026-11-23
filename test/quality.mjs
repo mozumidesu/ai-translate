@@ -254,7 +254,9 @@ for (const provider of Object.keys(PROVIDERS)) {
                 forgetAnswers();
                 clear();
                 try {
-                    answer = (await translate(kase.kind, kase.text, kase.context ? collectContext("c") : "")).text;
+                    // The context the plugin would choose for this kind and this message.
+                    const context = kase.context ? collectContext("c", undefined, undefined, { kind: kase.kind, text: kase.text }) : "";
+                    answer = (await translate(kase.kind, kase.text, context)).text;
                     break;
                 } catch (e) {
                     const asked = waitAsked(e.message);

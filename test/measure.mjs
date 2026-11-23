@@ -25,7 +25,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 
 await esbuild.build({
     stdin: {
-        contents: `export { useHost } from "./core/host";\nexport { translate, collectContext } from "./core/translate";\n`,
+        contents: `export { useHost } from "./core/host";\nexport { translate, translateBatch, collectContext } from "./core/translate";\n`,
         resolveDir: plugin,
         loader: "ts"
     },
@@ -46,7 +46,7 @@ globalThis.GM_xmlhttpRequest = options => {
     return { abort() { } };
 };
 
-const { useHost, translate, collectContext } = await import(join(out, "core.mjs"));
+const { useHost, translate, translateBatch, collectContext } = await import(join(out, "core.mjs"));
 
 const settings = {
     provider: "groq", groqApiKey: "k", groqModel: "openai/gpt-oss-120b", baseUrl: "",
@@ -75,11 +75,12 @@ useHost({
     notice: () => { }
 });
 
+/** One translation as the plugin makes it now: the context chosen for this kind and this message. */
 async function cost(kind, text, answer, withContext) {
     asked.length = 0;
     reply = answer;
     settings.useContext = withContext;
-    await translate(kind, text, collectContext("c")).catch(e => console.log("  (failed:", e.message, ")"));
+    await translate(kind, text, collectContext("c", undefined, undefined, { kind, text })).catch(e => console.log("  (failed:", e.message, ")"));
     const sent = asked[0];
     const system = sent.messages[0].content;
     const user = sent.messages[1].content;
@@ -87,16 +88,59 @@ async function cost(kind, text, answer, withContext) {
     return { requests: asked.length, chars: system.length + user.length, tokens: forSystem + forUser, max: sent.max_tokens };
 }
 
+const LONG = "ok so I finally finished it last night and honestly the whole middle part dragged a bit for me,"
+    + " but the last twenty minutes made up for all of it, especially the scene on the bridge where she stops"
+    + " everything just to say goodbye properly";
+
 const rows = [
     ["outgoing, no context", await cost("sent", "Да, мне очень понравилось, особенно концовка", "[ru] Yes, I really liked it, especially the ending", false)],
     ["outgoing, with context", await cost("sent", "Да, мне очень понравилось, особенно концовка ", "[ru] Yes, I really liked it, especially the ending", true)],
     ["incoming, no context", await cost("received", "omg yes!! the ending was so good, I cried", "[en] боже да!! концовка была такая классная, я плакал", false)],
-    ["incoming, with context", await cost("received", "omg yes!! the ending was so good, I cried ", "[en] боже да!! концовка была такая классная, я плакал", true)]
+    ["incoming, with context", await cost("received", "omg yes!! the ending was so good, I cried ", "[en] боже да!! концовка была такая классная, я плакал", true)],
+    ["incoming, long, no context", await cost("received", LONG, "[en] короче, досмотрел вчера", false)],
+    // Long enough to stand on its own: the names stay, the lines do not.
+    ["incoming, long, context", await cost("received", LONG + " ", "[en] короче, досмотрел вчера", true)]
 ];
 
 console.log("\nWhat one request carries (o200k tokens, the tokenizer gpt-oss uses):");
 for (const [name, r] of rows)
-    console.log(`  ${name.padEnd(24)} ${String(r.tokens).padStart(5)} tokens  (${r.chars} characters, answer room ${r.max})`);
+    console.log(`  ${name.padEnd(28)} ${String(r.tokens).padStart(5)} tokens  (${r.chars} characters, answer room ${r.max})`);
+
+// --- ten messages from other people: one request for all of them, or one each
+const TEN = [
+    ["Kaii", "anyone up for a game tonight?"], ["Rin", "maybe, what time?"], ["Kaii", "like 9ish"],
+    ["Tomo", "i'm in but i have to eat first lol"], ["Rin", "same, my mom made dinner late again"],
+    ["Kaii", "no rush, we can wait"], ["Tomo", "btw did u guys see the new update? they nerfed my main"],
+    ["Rin", "nooo not again"], ["Kaii", "it's fine, it was way too strong anyway"],
+    ["Tomo", "easy for you to say, you play the most broken character in the game"]
+].map(([name, content], i) => ({ id: `t${i + 1}`, authorId: name, authorName: name, content }));
+const before = history.slice();
+history.push(...TEN);
+settings.useContext = true;
+
+async function carried() {
+    const [system, user] = [asked.map(a => a.messages[0].content), asked.map(a => a.messages[1].content)];
+    const counts = await perText([...system, ...user]);
+    return { requests: asked.length, tokens: counts.reduce((a, b) => a + b, 0) };
+}
+
+asked.length = 0;
+for (const m of TEN) {
+    reply = "[en] перевод";
+    await translate("received", m.content, collectContext("c", m.id, m.authorName, { kind: "received", text: m.content }));
+}
+const one = await carried();
+
+asked.length = 0;
+reply = TEN.map((_, i) => `=== ${i + 1} ===\n[en] перевод`).join("\n");
+await translateBatch("c", TEN.map(m => ({ id: m.id + "b", text: m.content + " ", author: m.authorName })), () => { });
+const all = await carried();
+history.length = 0;
+history.push(...before);
+
+console.log("\nTen messages from other people, as \"translate all below\" and one by one:");
+console.log(`  one request for all ten   ${String(all.tokens).padStart(5)} tokens in ${all.requests} request(s)`);
+console.log(`  one request each          ${String(one.tokens).padStart(5)} tokens in ${one.requests} requests`);
 
 // --- the plugin's own time, with an instant provider
 settings.useContext = true;

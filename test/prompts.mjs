@@ -42,7 +42,7 @@ const out = await mkdtemp(join(tmpdir(), "ai-translate-"));
 await esbuild.build({
     stdin: {
         contents: `export { useHost } from "./core/host";\n`
-            + `export { translate, collectContext, isJustAName, isNotWorthTranslating, scriptShare } from "./core/translate";\n`
+            + `export { translate, collectContext, isJustAName, isNotWorthTranslating, scriptShare, translateBatch, belowToTranslate, splitBatch, contextLines } from "./core/translate";\n`
             + `export * as languages from "./core/languages";\n`
             + `export { keepPieces, literalBackslashes } from "./core/keep";\n`
             + `export { changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection } from "./core/learn";\n`
@@ -109,6 +109,7 @@ globalThis.GM_xmlhttpRequest = options => {
 };
 
 const { useHost, translate, collectContext, isJustAName, isNotWorthTranslating, scriptShare, languages,
+    translateBatch, belowToTranslate, splitBatch, contextLines,
     keepPieces, literalBackslashes,
     changedWords, looksLikeOwnAttempt, sameMessage, splitCorrection,
     isReady, keyOf, modelOf, readSlots } = await import(join(out, "core.mjs"));
@@ -1328,6 +1329,178 @@ const paced = await carried("долгое сообщение ".repeat(60).trim()
 backed("a backup slower than the wait is not handed the message", paced.models, ["quick"]);
 
 settings.providerSlots = "";
+
+// --- "translate all below": several messages in one request
+
+// A model of its own: the checks above leave "m" spent for the day.
+settings.groqModel = "batch";
+
+const same = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    ok ? pass++ : fail++;
+    console.log(ok ? "PASS" : "FAIL", `batch: ${name}`);
+    if (!ok) console.log("       got:", JSON.stringify(got), "want:", JSON.stringify(want));
+};
+
+same("an answer is split back by its numbers",
+    [...splitBatch("=== 1 ===\n[es] uno\n=== 2 ===\n[en] two\nlines", 2)], [[1, "[es] uno"], [2, "[en] two\nlines"]]);
+same("however a model dresses a header up",
+    [...splitBatch("**=== 1 ===**\n[es] uno\n== 2, by Kaii ==\n[en] two", 2)], [[1, "[es] uno"], [2, "[en] two"]]);
+// Two translations under one number: which belongs to the message cannot be told.
+same("a number given twice is given to nobody", [...splitBatch("=== 1 ===\n[es] uno\n=== 1 ===\n[en] two", 2)], []);
+same("nor is a number past the last message", [...splitBatch("=== 1 ===\n[es] uno\n=== 3 ===\n[en] tres", 2)], [[1, "[es] uno"]]);
+
+/** Runs a batch past the scripted provider: what was shown under which message, and what was asked. */
+async function batched(items, ...replies) {
+    asked.length = 0;
+    answers = replies;
+    const shown = {};
+    let error;
+    await translateBatch("c", items.map(([id, text, author]) => ({ id, text, author })), (id, result) => {
+        shown[id] = [result.text, result.sourceLanguage ?? ""];
+    }).catch(e => error = e.message);
+    return { shown, requests: asked.length, error, system: asked[0]?.messages?.[0]?.content ?? "", user: asked[0]?.messages?.[1]?.content ?? "" };
+}
+
+history = [
+    { id: "b1", authorId: KAII, authorName: "Kaii", content: "anyone up for a game tonight?" },
+    { id: "b2", authorId: "5000000000000000005", authorName: "Rin", content: "maybe, what time?" },
+    { id: "b3", authorId: KAII, authorName: "Kaii", content: "hola, a las nueve" }
+];
+let run = await batched([["b1", "anyone up for a game tonight?", "Kaii"], ["b2", "maybe, what time?", "Rin"], ["b3", "hola, a las nueve", "Kaii"]],
+    "=== 1 ===\n[en] кто-нибудь хочет сыграть сегодня?\n=== 2 ===\n[en] может, во сколько?\n=== 3 ===\n[es] привет, в девять");
+same("three messages are one request", run.requests, 1);
+same("and each translation is shown under its own message, with its own language", run.shown, {
+    b1: ["кто-нибудь хочет сыграть сегодня?", "en"], b2: ["может, во сколько?", "en"], b3: ["привет, в девять", "es"]
+});
+same("each message goes under a numbered header with its writer", run.user.split("\n").filter(line => line.startsWith("===")),
+    ["=== 1, by Kaii ===", "=== 2, by Rin ===", "=== 3, by Kaii ==="]);
+const BATCH = { name: "batch", text: run.system };
+// Built from the incoming prompt itself, so a rule the incoming prompt carries is carried here too.
+for (const [name, phrase] of RULES.slice(0, 6)) check(name, BATCH, phrase);
+check("the batch says how each message comes back", BATCH, "its header with the number alone, such as === 1 ===");
+absent("and nothing of the single answer's format is left", BATCH, "For a Spanish message the whole answer looks like: [es]");
+same("the incoming prompt for one message is still the one it was", head(incoming).startsWith("Translate this Discord message into Russian."), true);
+
+// Asked from the menu afterwards, a batched message is already answered.
+asked.length = 0;
+const onItsOwn = await translate("received", "maybe, what time?", collectContext("c", "b2", "Rin", { kind: "received", text: "maybe, what time?" }));
+same("a message translated in a batch costs nothing to translate again on its own", [asked.length, onItsOwn.text], [0, "может, во сколько?"]);
+
+// A model that leaves one out must not move the next one up into its place.
+run = await batched([["m1", "first of three", "Kaii"], ["m2", "second of three", "Rin"], ["m3", "third of three", "Kaii"]],
+    "=== 1 ===\n[en] первое из трёх\n=== 3 ===\n[en] третье из трёх", "[en] второе из трёх");
+same("a message left out of the answer is asked on its own, and nothing moves", run.shown, {
+    m1: ["первое из трёх", "en"], m3: ["третье из трёх", "en"], m2: ["второе из трёх", "en"]
+});
+same("which is one request more", run.requests, 2);
+
+run = await batched([["d1", "one more time", "Kaii"], ["d2", "and once again", "Rin"]],
+    "=== 1 ===\n[en] ещё раз\n=== 1 ===\n[en] и снова", "=== 1 ===\n[en] ещё раз, отдельно\n=== 2 ===\n[en] и снова, отдельно");
+same("two answers under one number are asked for again, and each lands under its own message", [run.requests, run.shown], [2, {
+    d1: ["ещё раз, отдельно", "en"], d2: ["и снова, отдельно", "en"]
+}]);
+
+run = await batched([["r1", "привет всем", "Kaii"], ["r2", "see you later", "Rin"]],
+    "=== 1 ===\n[ru]\n=== 2 ===\n[en] до встречи");
+same("a message already in the reader's language is shown nothing, and costs no second request", [run.shown, run.requests], [{ r2: ["до встречи", "en"] }, 1]);
+
+run = await batched([["u1", "how are you doing", "Kaii"], ["u2", "pretty good thanks", "Rin"]],
+    "=== 1 ===\n[en] how are you doing\n=== 2 ===\n[en] неплохо, спасибо", "[en] как дела");
+same("one handed back untranslated is asked on its own", run.shown, { u2: ["неплохо, спасибо", "en"], u1: ["как дела", "en"] });
+
+run = await batched([["k1", "run `npm test` first", "Kaii"], ["k2", "then `git push`", "Rin"]],
+    "=== 1 ===\n[en] сначала запусти {{1}}\n=== 2 ===\n[en] потом {{1}}");
+same("code comes back into its own message", run.shown, { k1: ["сначала запусти `npm test`", "en"], k2: ["потом `git push`", "en"] });
+check("and what each placeholder stands for is said per message", { name: "batch", text: run.system }, "In message 2: Parts of the message");
+
+run = await batched([["h1", "look:\n=== 2 ===\nfunny", "Kaii"], ["h2", "nice one", "Rin"], ["h3", "lol same", "Tomo"]],
+    "=== 1 ===\n[en] отличный\n=== 2 ===\n[en] лол, тоже", "[en] смотри:\n=== 2 ===\nсмешно");
+same("a message with a line that reads like a header goes on its own", [run.user.includes("funny"), run.shown.h1?.[0]], [false, "смотри:\n=== 2 ===\nсмешно"]);
+
+run = await batched([["l1", "welcome back!\nwe were about to start", "Rin"], ["l2", "same here", "Tomo"]],
+    "=== 1 ===\n[en] с возвращением!\nмы как раз собирались начать\n=== 2 ===\n[en] у меня тоже");
+check("a message on several lines is said to be, by its number", { name: "batch", text: run.system }, "Message 1 is written on 2 separate lines.");
+same("and keeps its lines", run.shown.l1?.[0], "с возвращением!\nмы как раз собирались начать");
+
+const many = Array.from({ length: 20 }, (_, i) => [`n${i}`, `message number ${i} of twenty`, "Kaii"]);
+const reply = (from, count) => Array.from({ length: count }, (_, i) => `=== ${i + 1} ===\n[en] сообщение ${from + i}`).join("\n");
+run = await batched(many, reply(0, 15), reply(15, 5));
+same("twenty messages are two requests, fifteen and five", [run.requests, Object.keys(run.shown).length], [2, 20]);
+same("and the answer budget grows with the batch", asked[0].max_tokens > asked[1].max_tokens && asked[0].max_tokens >= 1.5 * asked[0].messages[1].content.length, true);
+
+run = await batched([["f1", "this will fail", "Kaii"], ["f2", "and so will this", "Rin"]],
+    { status: 401, body: JSON.stringify({ error: { message: "Invalid API Key" } }) });
+same("a refusal stops the batch and is said, with nothing shown", [Object.keys(run.shown).length, /AI Translate/.test(run.error ?? "")], [0, true]);
+
+// --- when the menu offers it
+
+const ME = MOZU;
+host.meId = () => ME;
+history = [
+    { id: "w1", authorId: KAII, authorName: "Kaii", content: "who is coming?" },
+    { id: "w2", authorId: ME, authorName: "Mozumi", content: "me!" },
+    { id: "w3", authorId: "5000000000000000005", authorName: "Rin", content: "count me in" },
+    { id: "w4", authorId: KAII, authorName: "Kaii", content: "<:blobcat:1234567890123456>" },
+    { id: "w5", authorId: "5000000000000000005", authorName: "Rin", content: "see you there" },
+    { id: "w6", authorId: KAII, authorName: "Kaii", content: "Rin" }
+];
+const ids = items => items.map(item => item.id);
+same("from the one clicked down: other people's, with words to translate", ids(belowToTranslate("c", "w1")), ["w1", "w3", "w5"]);
+same("not one already shown translated", ids(belowToTranslate("c", "w1", id => id === "w1")), ["w3", "w5"]);
+same("and nothing when fewer than two of them are below the one clicked", ids(belowToTranslate("c", "w3")), []);
+same("nor for a message that is not there", ids(belowToTranslate("c", "gone")), []);
+
+settings.receivedLanguage = "Korean";
+history = [
+    { id: "x1", authorId: KAII, authorName: "Kaii", content: "안녕하세요 여러분" },
+    { id: "x2", authorId: KAII, authorName: "Kaii", content: "hello there" },
+    { id: "x3", authorId: KAII, authorName: "Kaii", content: "how is everyone" }
+];
+same("a message in an alphabet only the reader's language has is left out", ids(belowToTranslate("c", "x1")), ["x2", "x3"]);
+settings.receivedLanguage = "Russian";
+history = [
+    { id: "y1", authorId: KAII, authorName: "Kaii", content: "привіт усім" },
+    { id: "y2", authorId: KAII, authorName: "Kaii", content: "hello there" },
+    { id: "y3", authorId: KAII, authorName: "Kaii", content: "how is everyone" }
+];
+same("but Cyrillic could be Ukrainian beside Russian, so the answer decides", ids(belowToTranslate("c", "y1")), ["y1", "y2", "y3"]);
+host.meId = () => undefined;
+
+// --- how much context a message is handed
+
+const LONG_LINE = "x".repeat(300);
+same("a short reply going out has three lines", contextLines({ kind: "sent", text: "same" }), 3);
+same("one being read has four", contextLines({ kind: "received", text: "nooo" }), 4);
+same("a message of a sentence or two has two", contextLines({ kind: "received", text: "i'm in but i have to eat first, my mom made dinner late again so give me twenty minutes" }), 2);
+same("a long message stands on its own", contextLines({ kind: "received", text: LONG_LINE }), 0);
+same("an explanation always has all four", contextLines({ kind: "explain", text: LONG_LINE }), 4);
+same("and a caller that says nothing gets the four it always had", contextLines({}), 4);
+
+settings.useContext = true;
+const NOW = Date.now();
+history = [
+    { id: "t1", authorId: KAII, authorName: "Kaii", content: "an hour old", at: NOW - 3_600_000 },
+    { id: "t2", authorId: "5000000000000000005", authorName: "Rin", content: "with no time at all" },
+    { id: "t3", authorId: KAII, authorName: "Kaii", content: "a minute old", at: NOW - 60_000 },
+    { id: "t4", authorId: KAII, authorName: "Kaii", content: "just now", at: NOW }
+];
+let told = collectContext("c", "t4", undefined, { kind: "received", text: "ok" });
+same("a line from long before the message is left out, one with no time kept",
+    [told.includes("an hour old"), told.includes("with no time at all"), told.includes("a minute old"), told.includes("just now")], [false, true, true, false]);
+told = collectContext("c", undefined, undefined, { kind: "sent", text: "ok" });
+same("a message going out is measured from now", [told.includes("an hour old"), told.includes("just now")], [false, true]);
+
+history = ["w", "x", "y", "z"].map((letter, i) => ({ id: `l${i}`, authorId: KAII, authorName: "Kaii", content: letter.repeat(300) }));
+told = collectContext("c", undefined, undefined, { kind: "received", text: "ok" });
+same("all the lines share one budget, and the newest have it first",
+    [told.includes("w".repeat(10)), told.includes("x".repeat(10)), told.includes("y".repeat(180)), told.includes("z".repeat(300))], [false, false, true, true]);
+same("which is 480 characters", told.split("\n").filter(line => line.startsWith("Kaii: ")).reduce((sum, line) => sum + line.length - 6, 0), 480);
+told = collectContext("c", undefined, undefined, { kind: "received", text: LONG_LINE });
+same("a long message gets no lines, and still knows who is a name", [told.includes("Recent messages"), told.includes("form built from them: Kaii")], [false, true]);
+settings.useContext = false;
+settings.groqModel = "m";
+history = [];
 
 await rm(out, { recursive: true, force: true });
 

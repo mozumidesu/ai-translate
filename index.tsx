@@ -30,7 +30,7 @@ import { openAiTranslateModal } from "./ui/modal";
 import { isChannelEnabled, toggleChannel } from "./core/chats";
 import { migrateSettings, settings } from "./settings";
 import { changedWords, keepCorrection, looksLikeOwnAttempt, Part, sameMessage, splitCorrection } from "./core/learn";
-import { collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, translate, TranslationResult, wasCancelled } from "./core/translate";
+import { belowToTranslate, collectContext, isJustAName, isNotWorthTranslating, notify, scriptShare, translate, translateBatch, TranslationResult, wasCancelled } from "./core/translate";
 import { cancelUpdateCheck, scheduleUpdateCheck } from "./updater";
 
 const cl = classNameFactory("vc-aitrans-");
@@ -98,8 +98,12 @@ const TranslationSetters = new Map<string, (v: Shown | undefined) => void>();
  */
 const shownTranslations = new Map<string, Shown>();
 
+/** Past this many the oldest is forgotten, one at a time: a batch fills it fast. */
+const SHOWN_MOST = 200;
+
 function showUnderMessage(id: string, value: Shown) {
-    if (shownTranslations.size > 200) shownTranslations.clear();
+    shownTranslations.delete(id);
+    if (shownTranslations.size >= SHOWN_MOST) shownTranslations.delete(shownTranslations.keys().next().value!);
     shownTranslations.set(id, value);
     TranslationSetters.get(id)?.(value);
 }
@@ -276,7 +280,7 @@ async function translateMessage(message: Message) {
 
         const author = (message.author as any)?.globalName || message.author?.username;
         const mine = message.author?.id === UserStore.getCurrentUser()?.id;
-        const context = collectContext(message.channel_id, message.id, author);
+        const context = collectContext(message.channel_id, message.id, author, { kind: "received", text: content });
 
         showUnderMessage(message.id, await translate("received", content, context, mine));
     } catch (e) {
@@ -290,12 +294,38 @@ async function explainMessage(message: Message) {
 
     try {
         const author = (message.author as any)?.globalName || message.author?.username;
-        const context = collectContext(message.channel_id, message.id, author);
+        const context = collectContext(message.channel_id, message.id, author, { kind: "explain", text: content });
 
         const result = await translate("explain", content, context);
         showUnderMessage(message.id, { ...result, explained: true });
     } catch (e) {
         notify(e, "failure");
+    }
+}
+
+/** Chats with a "translate all below" still being answered: a second click would ask for it all twice. */
+const translatingBelow = new Set<string>();
+
+/**
+ * Every message from this one down that is someone else's and not yet shown
+ * translated, in as few requests as it takes, each translation under its own
+ * message as soon as its request is answered. A failure stops the rest and is
+ * said once, as a single translation's is; what had arrived stays.
+ */
+async function translateBelow(message: Message) {
+    const channel = message.channel_id;
+    if (translatingBelow.has(channel)) return;
+
+    const items = belowToTranslate(channel, message.id, id => shownTranslations.has(id));
+    if (!items.length) return;
+
+    translatingBelow.add(channel);
+    try {
+        await translateBatch(channel, items, (id, result) => showUnderMessage(id, result));
+    } catch (e) {
+        if (!wasCancelled(e)) notify(e, "failure");
+    } finally {
+        translatingBelow.delete(channel);
     }
 }
 
@@ -314,6 +344,17 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
             action={() => translateMessage(message)}
         />
     ];
+
+    // Offered only where it saves something: two messages or more below this
+    // one that would be translated. Right after AI Translate, before the rest.
+    if (belowToTranslate(message.channel_id, message.id, id => shownTranslations.has(id)).length)
+        items.push(
+            <Menu.MenuItem
+                id="vc-ai-trans-below"
+                label={t("message.translateBelow")}
+                action={() => translateBelow(message)}
+            />
+        );
 
     if (settings.store.explain)
         items.push(
@@ -358,7 +399,7 @@ const inFlight = new Set<string>();
  */
 async function askForCorrection(channelId: string, sent: string, asked = false) {
     try {
-        const { text } = await translate("correct", sent, collectContext(channelId));
+        const { text } = await translate("correct", sent, collectContext(channelId, undefined, undefined, { kind: "correct", text: sent }));
         if (!text) return;
 
         const { native, why } = splitCorrection(text);
@@ -425,7 +466,7 @@ async function translateOutgoing(channelId: string, message: MessageObject) {
         document.addEventListener("keydown", onKey, true);
 
         try {
-            message.content = (await translate("sent", original, collectContext(channelId), false, giveUp.signal)).text;
+            message.content = (await translate("sent", original, collectContext(channelId, undefined, undefined, { kind: "sent", text: original }), false, giveUp.signal)).text;
         } finally {
             document.removeEventListener("keydown", onKey, true);
             inFlight.delete(sending);

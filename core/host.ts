@@ -42,6 +42,8 @@ export interface Said {
     authorId?: string;
     authorName?: string;
     content: string;
+    /** When it was written, in milliseconds: context older than half an hour is left out. Unsaid, it is kept. */
+    at?: number;
 }
 
 export interface Host {

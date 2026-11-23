@@ -38,7 +38,9 @@ export const vencordHost: Host = {
                     id: String(m.id),
                     authorId: m.author?.id,
                     authorName: m.author?.globalName || m.author?.username,
-                    content: String(m.content)
+                    content: String(m.content),
+                    // A moment, or a Date in older builds: either gives its milliseconds.
+                    at: Number.isFinite(+m.timestamp) ? +m.timestamp : undefined
                 }));
         } catch {
             return [];
