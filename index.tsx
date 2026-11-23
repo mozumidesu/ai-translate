@@ -280,7 +280,7 @@ async function translateMessage(message: Message) {
 
         const author = (message.author as any)?.globalName || message.author?.username;
         const mine = message.author?.id === UserStore.getCurrentUser()?.id;
-        const context = collectContext(message.channel_id, message.id, author, { kind: "received", text: content });
+        const context = collectContext(message.channel_id, message.id, author, { kind: "received", text: content, mine });
 
         showUnderMessage(message.id, await translate("received", content, context, mine));
     } catch (e) {
@@ -294,7 +294,8 @@ async function explainMessage(message: Message) {
 
     try {
         const author = (message.author as any)?.globalName || message.author?.username;
-        const context = collectContext(message.channel_id, message.id, author, { kind: "explain", text: content });
+        const mine = message.author?.id === UserStore.getCurrentUser()?.id;
+        const context = collectContext(message.channel_id, message.id, author, { kind: "explain", text: content, mine });
 
         const result = await translate("explain", content, context);
         showUnderMessage(message.id, { ...result, explained: true });

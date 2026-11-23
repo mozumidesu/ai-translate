@@ -819,5 +819,448 @@
         "text": "nm u?"
       }
     ]
+  },
+  {
+    "id": "a-drawn-out-no-is-a-word",
+    "why": "\"nooo!!\" came back as \"нууу!!\" 8 runs out of 11 and as \"нооо\" 3: the sound kept, the word lost. It is \"no\" said long, so it is \"нееет\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "nooo!! that's so sad",
+    "anyOf": [
+      [
+        "нее"
+      ]
+    ],
+    "mustNot": [
+      "нуу",
+      "нооо",
+      "nooo"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-no-with-context",
+    "why": "the same with a conversation in English above it, as Discord sends by default: \"nooo\" was left in Latin 3 runs out of 3",
+    "kind": "received",
+    "to": "Russian",
+    "text": "nooo!! that's so sad",
+    "anyOf": [
+      [
+        "нее"
+      ]
+    ],
+    "mustNot": [
+      "нуу",
+      "нооо",
+      "nooo"
+    ],
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "how was your day?"
+      },
+      {
+        "who": "me",
+        "name": "Me",
+        "text": "long, still at work"
+      },
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "want to come over later?"
+      },
+      {
+        "who": "me",
+        "name": "Me",
+        "text": "can't, i have to be up early tomorrow"
+      }
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-yes-is-a-word",
+    "why": "a word drawn out is translated as the word and drawn out in the other language: \"yesss\" is \"дааа\", not \"йесс\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "yesss finally!! it works",
+    "anyOf": [
+      [
+        "даа"
+      ]
+    ],
+    "mustNot": [
+      "йес",
+      "yess",
+      "есс"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-yes-into-spanish",
+    "why": "the same into a language that stretches its own vowel: \"yesss\" is \"síii\"",
+    "kind": "received",
+    "to": "Spanish",
+    "text": "yesss finally!! it works",
+    "anyOf": [
+      [
+        "síi",
+        "sii",
+        "síí"
+      ]
+    ],
+    "mustNot": [
+      "yess"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-net-is-a-word",
+    "why": "the other way round: \"нееет\" is \"nooo\", never \"nyeee\"",
+    "kind": "sent",
+    "to": "English",
+    "text": "нееет, я опять опоздал на автобус",
+    "anyOf": [
+      [
+        "noo"
+      ]
+    ],
+    "mustNot": [
+      "nyee",
+      "neee",
+      "nye"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-net-with-context",
+    "why": "the same with a conversation above it",
+    "kind": "sent",
+    "to": "English",
+    "text": "нееет, подождите меня",
+    "anyOf": [
+      [
+        "noo"
+      ]
+    ],
+    "mustNot": [
+      "nyee",
+      "neee",
+      "nye"
+    ],
+    "context": [
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "ты где?"
+      },
+      {
+        "who": "me",
+        "name": "Me",
+        "text": "уже еду"
+      },
+      {
+        "who": "them",
+        "name": "Sam",
+        "text": "мы уже начали"
+      }
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-net-into-spanish",
+    "why": "\"нееет\" into Spanish is \"nooo\", not a sound copied from Russian",
+    "kind": "sent",
+    "to": "Spanish",
+    "text": "нееет, я опять опоздал на автобус",
+    "anyOf": [
+      [
+        "noo"
+      ]
+    ],
+    "mustNot": [
+      "nyee",
+      "neee",
+      "nye"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-net-into-japanese",
+    "why": "Japanese draws a word out with ー or a small vowel, and \"нееет\" is not to be spelled out in katakana",
+    "kind": "sent",
+    "to": "Japanese",
+    "text": "нееет, я опять опоздал на автобус",
+    "anyOf": [
+      [
+        "ー",
+        "ぁ",
+        "ぃ",
+        "ぅ",
+        "ぇ",
+        "ぉ",
+        "ああ",
+        "いい",
+        "ええ",
+        "っっ"
+      ]
+    ],
+    "mustNot": [
+      "ニェ",
+      "ネー",
+      "ネェ",
+      "нее"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-sound-keeps-its-sound",
+    "why": "a bare sound keeps its sound and its length: \"Ооо, класс\" is \"Ooo, cool\", never \"Oh, cool\"",
+    "kind": "sent",
+    "to": "English",
+    "text": "Ооо, класс",
+    "anyOf": [
+      [
+        "ooo"
+      ]
+    ],
+    "mustNot": [
+      "oh,",
+      "oh "
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "a-drawn-out-sound-coming-in",
+    "why": "the same coming in: \"mmm\" is \"ммм\", not a word put in its place",
+    "kind": "received",
+    "to": "Russian",
+    "text": "mmm that smells so good",
+    "anyOf": [
+      [
+        "ммм"
+      ]
+    ],
+    "mustNot": [
+      "хм",
+      "mmm",
+      "ням"
+    ],
+    "group": "stretch"
+  },
+  {
+    "id": "you-is-the-reader-in-a-dm",
+    "why": "in a one-to-one chat \"you\" is the reader, whose gender the settings know, and the model guessed it: \"unless you are\" came back feminine. A reader set as female",
+    "kind": "received",
+    "to": "Russian",
+    "text": "you were right all along, sorry",
+    "anyOf": [
+      [
+        "была права"
+      ]
+    ],
+    "mustNot": [
+      "был прав",
+      "(а)"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-the-reader-in-a-dm-male",
+    "why": "the same for a reader set as male",
+    "kind": "received",
+    "to": "Russian",
+    "text": "you were right all along, sorry",
+    "anyOf": [
+      [
+        "был прав"
+      ]
+    ],
+    "mustNot": [
+      "была",
+      "(а)"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "male"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-a-guess-outside-a-dm",
+    "why": "the same message where the chat is not said to be one-to-one: no rule, what the model guesses by itself, to compare against",
+    "kind": "received",
+    "to": "Russian",
+    "text": "you were right all along, sorry",
+    "anyOf": [
+      [
+        "была права"
+      ]
+    ],
+    "mustNot": [
+      "был прав",
+      "(а)"
+    ],
+    "author": "Sam",
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-are-ready-in-a-dm",
+    "why": "a short adjective addressed to the reader: \"are you ready?\" to a reader set as female is \"готова\"",
+    "kind": "received",
+    "to": "Russian",
+    "text": "are you ready? we leave in ten minutes",
+    "anyOf": [
+      [
+        "готова"
+      ]
+    ],
+    "mustNot": [
+      "готов?",
+      "готов ",
+      "(а)"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-are-ready-outside-a-dm",
+    "why": "the same with no rule, to compare against",
+    "kind": "received",
+    "to": "Russian",
+    "text": "are you ready? we leave in ten minutes",
+    "anyOf": [
+      [
+        "готова"
+      ]
+    ],
+    "mustNot": [
+      "готов?",
+      "готов ",
+      "(а)"
+    ],
+    "author": "Sam",
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-the-reader-in-polish",
+    "why": "Polish marks the person spoken to in its past tense: \"you were right\" to a reader set as female is \"miałaś rację\"",
+    "kind": "received",
+    "to": "Polish",
+    "text": "you were right all along, sorry",
+    "anyOf": [
+      [
+        "miałaś"
+      ]
+    ],
+    "mustNot": [
+      "miałeś"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-a-guess-in-polish",
+    "why": "the same with no rule, to compare against",
+    "kind": "received",
+    "to": "Polish",
+    "text": "you were right all along, sorry",
+    "anyOf": [
+      [
+        "miałaś"
+      ]
+    ],
+    "mustNot": [
+      "miałeś"
+    ],
+    "author": "Sam",
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-the-reader-in-hebrew",
+    "why": "Hebrew marks \"you\" itself: \"are you ready?\" to a reader set as female is \"את מוכנה\"",
+    "kind": "received",
+    "to": "Hebrew",
+    "text": "are you ready? we leave in ten minutes",
+    "anyOf": [
+      [
+        "מוכנה"
+      ]
+    ],
+    "mustNot": [
+      "אתה"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "you-is-a-guess-in-hebrew",
+    "why": "the same with no rule, to compare against",
+    "kind": "received",
+    "to": "Hebrew",
+    "text": "are you ready? we leave in ten minutes",
+    "anyOf": [
+      [
+        "מוכנה"
+      ]
+    ],
+    "mustNot": [
+      "אתה"
+    ],
+    "author": "Sam",
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
+  },
+  {
+    "id": "the-reader-is-not-the-writer",
+    "why": "the reader's gender is the reader's: a writer who says \"I was wrong\" to a reader set as female is not made female by it. Sam's own gender is not known, so the writer's past tense is left unmarked or masculine, never feminine",
+    "kind": "received",
+    "to": "Russian",
+    "text": "i was wrong and you were right",
+    "anyOf": [
+      [
+        "была права"
+      ]
+    ],
+    "mustNot": [
+      "я была",
+      "была неправа",
+      "ошиблась"
+    ],
+    "author": "Sam",
+    "direct": true,
+    "settings": {
+      "gender": "female"
+    },
+    "group": "you"
   }
 ]

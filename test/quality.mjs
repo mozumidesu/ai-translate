@@ -22,6 +22,8 @@
  * of which one is enough: "I" in Japanese is any of several words. A correction can
  * also be "unchanged": judged the way the plugin judges it, by its words
  * alone, because a comma or a capital it added is never shown to anybody.
+ * "author" names who wrote the message, and "direct" makes its chat one
+ * between the reader and that one person.
  *
  * Keys come from the environment and never from the repository:
  *   GROQ_API_KEY, or GROQ_API_KEY_ADDITIONAL, GROQ_API_ADDITIONAL or GROQ_API_KEY_2
@@ -117,13 +119,16 @@ if (!chosen.length) {
 
 let settings = {};
 let history = [];
+/** Whether the case's chat is between the reader and one other person. */
+let direct = false;
 const notices = [];
 useHost({
     config: () => settings,
     set: () => { },
     recent: () => history,
     meId: () => "me",
-    notice: text => notices.push(text)
+    notice: text => notices.push(text),
+    isDirect: () => direct
 });
 
 /** A case's own conversation, in the shape core/host.ts hands over. */
@@ -225,6 +230,7 @@ for (const provider of Object.keys(PROVIDERS)) {
 
     for (const kase of chosen) {
         history = conversation(kase);
+        direct = !!kase.direct;
 
         // A case the corpus holds but cannot yet judge. Named rather than left
         // out, so it is plain what is not covered.
@@ -254,8 +260,10 @@ for (const provider of Object.keys(PROVIDERS)) {
                 forgetAnswers();
                 clear();
                 try {
-                    // The context the plugin would choose for this kind and this message.
-                    const context = kase.context ? collectContext("c", undefined, undefined, { kind: kase.kind, text: kase.text }) : "";
+                    // The context the plugin would choose for this kind and this message, and who wrote
+                    // it, as Discord says it, where a case names them.
+                    const context = kase.context || kase.author !== undefined
+                        ? collectContext("c", undefined, kase.author, { kind: kase.kind, text: kase.text }) : "";
                     answer = (await translate(kase.kind, kase.text, context)).text;
                     break;
                 } catch (e) {

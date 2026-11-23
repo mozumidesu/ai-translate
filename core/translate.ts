@@ -16,7 +16,7 @@
 
 import { Bridge } from "./bridge";
 import type { Dialect } from "./dialect";
-import { appName, config, dialect, meId, notice, recent } from "./host";
+import { appName, config, dialect, isDirect, meId, notice, recent } from "./host";
 import { keepPieces } from "./keep";
 import { closeIn, closingOf, hasCase, languageNamed, LANGUAGES, onOneLine, scriptPattern, UNLISTED, writtenIn } from "./languages";
 import { sameMessage } from "./learn";
@@ -235,9 +235,16 @@ const DASH_RULE =
 
 /** "Ооо, класс" is "Ooo, cool": a sound drawn out on purpose is not an "Oh". */
 const STRETCH_RULE =
-    "A sound the writer drew out keeps its sound and its length wherever the other language makes the same sound "
-    + "for the same feeling: Russian \"Ооо\" of surprise or delight is \"Ooo\", never \"Oh\"; \"Ааа\" is \"Aaa\", "
-    + "\"Ммм\" is \"Mmm\", and the same the other way round. Three letters stay three.";
+    "A bare sound the writer drew out, one that is no word, keeps its sound and its length wherever the other "
+    + "language makes the same sound for the same feeling: Russian \"Ооо\" of surprise or delight is \"Ooo\", "
+    + "never \"Oh\"; \"Ааа\" is \"Aaa\", \"Ммм\" is \"Mmm\", and the same the other way round. Three letters stay three.";
+
+// "nooo!!" came back as "нууу!!", a different word, 13 runs out of 19, and as "нооо" or "nooo" the other 6.
+const DRAWN_WORD_RULE =
+    "A word the writer drew out is still that word, not a sound: translate the word, then draw the translation "
+    + "out the way a native speaker of that language would. English \"nooo\" is Russian \"нееет\", \"yesss\" is "
+    + "\"дааа\", and the same the other way round; Japanese draws a word out with ー. Copying the sound of its "
+    + "letters gives another word or none: \"nooo\" is never \"нууу\" or \"нооо\".";
 
 /** "Я прочитал Библию" is "I've read the Bible": "I read" passes for the present. */
 const ASPECT_RULE =
@@ -408,7 +415,7 @@ const hasCapitals = (text: string) =>
 /** "??", "!!", "?!", "?.." and dots in a row: marks repeated for their tone. */
 const REPEATED_MARKS = /[!?！？¿¡]{2,}|[!?！？][.…]|\.{2,}|…/u;
 
-/** "Ооо", "Аааа", "Мм": a sound held longer than the word needs. */
+/** "Ооо", "Аааа", "Мм", "nooo": a sound or a word held longer than it needs. */
 const DRAWN_OUT = /(\p{L})\1{2,}|(?<!\p{L})(\p{L})\2+(?!\p{L})/iu;
 
 /** The short app names SHORT_NAMES_RULE is about, and their like. */
@@ -456,6 +463,7 @@ function messageRules(kind: Kind, text: string, has: Involved) {
             ? (kind === "sent" ? "A drawn-out sound is the exception to choosing an interjection by its feeling. " : "")
             + STRETCH_RULE
             : "",
+        DRAWN_OUT.test(plain) ? DRAWN_WORD_RULE : "",
         SHORT_NAME.test(plain) ? SHORT_NAMES_RULE : "",
         has.address ? ADDRESS_RULE : "",
         has.declines && SEVERAL_SENTENCES.test(plain) ? FRAGMENT_CASE_RULE : "",
@@ -1161,10 +1169,11 @@ const CONTEXT_CHARS = 480;
 /** Lines from longer ago than this before the message say nothing about it: the conversation has moved on. */
 const CONTEXT_WINDOW_MS = 30 * 60_000;
 
-/** What the context is for: the kind of request and the message itself. */
+/** What the context is for: the kind of request, the message itself, and whether the reader wrote it. */
 export interface ContextFor {
     kind?: Kind;
     text?: string;
+    mine?: boolean;
 }
 
 /**
@@ -1210,11 +1219,27 @@ function readable(text: string, names: Map<string, string>) {
 // Without the writer's name, their gender was guessed wherever the target marks it, as Russian past tense does.
 const writtenBy = (author: string) => `\n\nThe message below was written by ${author}.`;
 
+// In a one-to-one chat "you" is the reader, and their gender was guessed: "you were right" came back masculine to a woman.
+const READER_RULES: Record<string, string> = {
+    male: "This is a one-to-one chat, so \"you\" in the message below is the reader, who is male. Use masculine "
+        + "agreement wherever the language marks the gender of the person spoken to. It says nothing about the writer.",
+    female: "This is a one-to-one chat, so \"you\" in the message below is the reader, who is female. Use feminine "
+        + "agreement wherever the language marks the gender of the person spoken to. It says nothing about the writer."
+};
+
+/** The reader's gender, for "you" in a chat the host calls one-to-one, when the settings know it. */
+const readerLine = (channelId: string, several = false) => {
+    const rule = isDirect(channelId) ? READER_RULES[config().gender] : "";
+    return rule ? `\n\n${several ? rule.replace("the message below", "the messages below") : rule}` : "";
+};
+
 /**
  * A message on its own is often ambiguous: "да", "его", "не вставляется" only
  * make sense next to what came before. Handing the model the last few messages
  * costs a few hundred tokens and fixes most of those misreadings. Who wrote the
- * message being read is said whether context is on or not.
+ * message being read is said whether context is on or not, and so, in a
+ * one-to-one chat, is the gender of the reader the message speaks to, when
+ * the settings know it and the message is someone else's.
  */
 export function collectContext(channelId: string, beforeId?: string, author?: string, about: ContextFor = {}): string {
     const protectedWords = new Set(
@@ -1289,8 +1314,10 @@ export function collectContext(channelId: string, beforeId?: string, author?: st
         : "";
 
     const writer = asName(author);
+    // Only a message someone else wrote is read: one going out has no author here.
+    const reader = author !== undefined && !about.mine ? readerLine(channelId) : "";
 
-    return names + conversation + (writer ? writtenBy(writer) : "");
+    return names + conversation + (writer ? writtenBy(writer) : "") + reader;
 }
 
 /**
@@ -2265,7 +2292,9 @@ export async function translateBatch(channelId: string, items: BatchItem[], show
         const system = incomingPrompt(target, false, has, true)
             + messageRules("received", written, has).replace("For this message in particular:", "For these messages in particular:")
             + notes
-            + collectContext(channelId, batch[0].id, undefined, { kind: "received" });
+            + collectContext(channelId, batch[0].id, undefined, { kind: "received" })
+            // Every message in a batch is someone else's.
+            + readerLine(channelId, true);
 
         const answer = await askerFor("received", text, signal, BATCH_WAIT_MS).raw(system);
         const parts = splitBatch(answer, batch.length);

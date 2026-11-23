@@ -2,9 +2,9 @@
  * AI Translate — Vencord as the host.
  *
  * Answers what host.ts asks for out of Vencord: its settings store, its
- * message store, its current user and its toasts. Imported for its own sake
- * before anything else in the plugin, so that whatever loads next already has
- * a host to ask.
+ * message store, its current user, its channels and its toasts. Imported for
+ * its own sake before anything else in the plugin, so that whatever loads next
+ * already has a host to ask.
  *
  * Reads the settings store directly rather than importing the plugin's own
  * settings module: that one imports the whole settings page with it, and this
@@ -14,7 +14,7 @@
  */
 
 import { Settings } from "@api/Settings";
-import { MessageStore, showToast, UserStore } from "@webpack/common";
+import { ChannelStore, MessageStore, showToast, UserStore } from "@webpack/common";
 
 import { Config, Host, Said, useHost } from "./core/host";
 
@@ -48,6 +48,9 @@ export const vencordHost: Host = {
     },
 
     meId: () => UserStore.getCurrentUser()?.id,
+
+    // Discord's type 1 is a DM between two people; a group DM is 3 and is not one.
+    isDirect: (channelId: string) => ChannelStore.getChannel(channelId)?.type === 1,
 
     // The language Discord is shown in, which a plugin set to follow it speaks.
     appLocale: () => document.documentElement.lang || navigator.language || "en",

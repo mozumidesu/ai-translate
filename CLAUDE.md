@@ -56,7 +56,7 @@ effort level is set in `.claude/settings.json`.
 | File | Responsible for |
 |---|---|
 | `core/translate.ts` | The prompts, the translation itself, post-processing, the glossary, conversation context and pacing, and "Translate all below": several messages in one request, split back by number. The biggest file and the one that matters most |
-| `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices, and optionally the chat's name, its dialect and the app's language. Answers empty, not throwing, until a host is installed |
+| `core/host.ts` | What the core cannot know by itself: settings, recent messages, the current user, notices, and optionally the chat's name, its dialect, the app's language and whether a chat is one-to-one. Answers empty, not throwing, until a host is installed |
 | `core/dialect.ts` | How a chat writes text: what Discord draws out of it (raw ids, line markdown, escapes), what Telegram draws (marks around text, @username), and a plain dialect with none of that. The host chooses; Discord when it does not |
 | `core/bridge.ts` | Where a request goes: Electron's main process, or straight from here in a browser. The robot writes the build's name and channel into two constants here |
 | `core/builds.ts` | Where the build robot publishes, and what each channel hands out now |
@@ -94,7 +94,7 @@ which has it as a submodule pinned to a commit, uses it unchanged and speaks the
 | File | Responsible for |
 |---|---|
 | `index.tsx` | The plugin as Vencord sees it: the chat-bar button, the block under a message, the right-click menu, `definePlugin` |
-| `vencord-host.ts` | Answers `core/host.ts` with Vencord's settings, message store, user and toasts, reading `Settings.plugins["AI Translate"]` directly |
+| `vencord-host.ts` | Answers `core/host.ts` with Vencord's settings, message store, user, channels and toasts, reading `Settings.plugins["AI Translate"]` directly |
 | `native.ts` | Electron's main process: provider requests, which CORS blocks in the renderer, and installing updates, all through a session of its own on Chromium's network stack, so they take Discord's proxy and route |
 | `settings.ts` | The settings page and its migrations |
 | `updater.ts` | When a copy on a disk looks for an update, and which channel it follows |

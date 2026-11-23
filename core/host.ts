@@ -8,10 +8,11 @@
  * code. The core asks through here, so everything a new host has to provide
  * is one short list in one small file.
  *
- * Three more things are asked here and may be left unsaid: what the chat is
- * called in the prompts, how it writes text (dialect.ts) and which language
- * the app is shown in. Unsaid, they are Discord's, and English for the
- * language, so a host written before they existed behaves as it did.
+ * Four more things are asked here and may be left unsaid: what the chat is
+ * called in the prompts, how it writes text (dialect.ts), which language the
+ * app is shown in and whether a chat is between two people. Unsaid, they are
+ * Discord's, English for the language and not known for the chat, so a host
+ * written before they existed behaves as it did.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -62,6 +63,8 @@ export interface Host {
     dialect?(): DialectName;
     /** The language the app itself is shown in, as a locale code: what a plugin set to follow the app speaks. */
     appLocale?(): string;
+    /** Whether this chat is between the reader and one other person, so that "you" in it is the reader. */
+    isDirect?(channelId: string): boolean;
 }
 
 /**
@@ -93,3 +96,5 @@ export const notice = (text: string, kind: "message" | "failure") => installed.n
 export const appName = () => installed.appName?.() || "Discord";
 export const dialect = (): Dialect => dialectNamed(installed.dialect?.());
 export const appLocale = () => installed.appLocale?.() || "en";
+/** A host that does not say is taken not to know, never to mean a one-to-one chat. */
+export const isDirect = (channelId: string) => installed.isDirect?.(channelId) === true;

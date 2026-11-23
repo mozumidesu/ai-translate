@@ -36,8 +36,18 @@ when `release` moves.
 - **A translation shown under a message stays until Discord restarts.** Past
   200 of them, the oldest is forgotten, one at a time, where before all of
   them went at once. Translations kept to be reused work the same way.
+- **In a one-to-one chat, "you" in someone's message now agrees with your own
+  gender.** When "My grammatical gender" is set, a direct message's "you" is
+  you, so "you were right" reaches a reader set as female as "ты была права",
+  where it used to come out masculine or as a guess. Group chats and server
+  channels are unchanged, and so is your own message read back.
 
 ### Fixed
+
+- **A word drawn out for feeling is translated, then drawn out.** "nooo!!"
+  came in as "нууу!!", another word, or as "nooo" left in English; it is now
+  "нееет!!", and "нееет" goes out as "nooo", "yesss" comes in as "дааа". A bare
+  sound such as "Ооо" or "Ммм" keeps its sound as before.
 
 - **The install command on macOS and Linux no longer deletes the old folder
   while a Discord still loads from it, when the home folder's name has `&`,
